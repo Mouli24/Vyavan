@@ -1,0 +1,331 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans:    "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* ── Shadows ── */
+  --shadow-soft:    0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-card:    0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.07);
+  --shadow-card-md: 0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-hover:   0 8px 32px rgba(124,58,237,0.14);
+  --shadow-purple:  0 4px 20px rgba(124,58,237,0.22);
+  --shadow-inset:   inset 0 1px 2px rgba(0,0,0,0.04);
+
+  /* ── Sepbio / Marketplace Primary palette ── */
+  --color-sp-purple:        #7C3AED;
+  --color-sp-purple-dark:   #6D28D9;
+  --color-sp-purple-light:  #EDE9FE;
+  --color-sp-purple-pale:   #F5F3FF;
+  --color-sp-violet:        #8B5CF6;
+  --color-sp-indigo:        #6366F1;
+
+  /* ── Sepbio backgrounds ── */
+  --color-sp-bg:            #F9FAFB;
+  --color-sp-bg-warm:       #FAFAFA;
+  --color-sp-surface:       #FFFFFF;
+  --color-sp-surface-2:     #F8F9FF;
+
+  /* ── Sepbio text ── */
+  --color-sp-text:          #111827;
+  --color-sp-text-secondary:#374151;
+  --color-sp-muted:         #6B7280;
+  --color-sp-placeholder:   #9CA3AF;
+
+  /* ── Sepbio accents ── */
+  --color-sp-peach:         #FFF3E8;
+  --color-sp-peach-border:  #FDDCB8;
+  --color-sp-mint:          #ECFDF5;
+  --color-sp-mint-border:   #A7F3D0;
+  --color-sp-lavender:      #F3F0FF;
+  --color-sp-lavender-2:    #EDE9FE;
+  --color-sp-sky:           #EFF6FF;
+  --color-sp-rose:          #FFF1F2;
+
+  /* ── Sepbio semantic ── */
+  --color-sp-success:       #10B981;
+  --color-sp-warning:       #F59E0B;
+  --color-sp-error:         #EF4444;
+  --color-sp-info:          #3B82F6;
+
+  /* ── Sepbio border ── */
+  --color-sp-border:        #E5E7EB;
+  --color-sp-border-light:  #F3F4F6;
+
+  /* ── Manufacturer palette (keep existing for compat) ── */
+  --color-mfr-bg:           #F5F2ED;
+  --color-mfr-sidebar:      #EFE9E1;
+  --color-mfr-surface:      #FDFBF9;
+  --color-mfr-brown:        #6B4E3D;
+  --color-mfr-brown-hover:  #5A4133;
+  --color-mfr-peach:        #FCE7D6;
+  --color-mfr-peach-mid:    #F9D5B8;
+  --color-mfr-border:       #E5E1DA;
+  --color-mfr-muted:        #A89F91;
+  --color-mfr-dark:         #1A1A1A;
+
+  /* ── Buyer palette (keep existing for compat) ── */
+  --color-buyer-primary:    #AFC3E6;
+  --color-buyer-coral:      #F4B5A4;
+  --color-buyer-bg:         #F5EFE6;
+  --color-buyer-success:    #B4E1D1;
+  --color-buyer-outline:    #D1D5DB;
+  --color-on-surface:       #334155;
+
+  /* ── Browse page brand-* tokens ── */
+  --color-brand-bg:             #F9F6F1;
+  --color-brand-primary:        #7C3AED;
+  --color-brand-primary-hover:  #6D28D9;
+  --color-brand-secondary:      #EDE9FE;
+  --color-brand-text:           #111827;
+  --color-brand-text-muted:     #6B7280;
+  --color-brand-card:           #FFFFFF;
+  --color-brand-accent:         #EDE9FE;
+  --color-brand-accent-dark:    #C4B5FD;
+
+  /* ── Extra tokens ── */
+  --color-brand-peach:      #FFF3E8;
+  --color-brand-bronze:     #7C3AED;
+  --color-brand-warm:       #F9FAFB;
+  --color-brand-cream:      #F9FAFB;
+  --color-brand-brown:      #7C3AED;
+  --color-accent:           #7C3AED;
+  --color-highlight:        #EDE9FE;
+  --color-brand-purple:     #7C3AED;
+  --color-brand-blue:       #3B82F6;
+  --color-brand-charcoal:   #374151;
+
+  /* ── shadcn/ui semantic tokens ── */
+  --color-background:           #F9FAFB;
+  --color-foreground:           #111827;
+  --color-card:                 #FFFFFF;
+  --color-card-foreground:      #111827;
+  --color-popover:              #FFFFFF;
+  --color-popover-foreground:   #111827;
+  --color-primary:              #7C3AED;
+  --color-primary-foreground:   #FFFFFF;
+  --color-secondary:            #F3F4F6;
+  --color-secondary-foreground: #111827;
+  --color-muted:                #F3F4F6;
+  --color-muted-foreground:     #6B7280;
+  --color-accent-foreground:    #FFFFFF;
+  --color-destructive:          #EF4444;
+  --color-border:               #E5E7EB;
+  --color-input:                #E5E7EB;
+  --color-ring:                 #7C3AED;
+  --color-sidebar:              #FFFFFF;
+  --color-sidebar-foreground:   #111827;
+  --color-sidebar-primary:      #7C3AED;
+  --color-sidebar-primary-foreground: #FFFFFF;
+  --color-sidebar-accent:       #EDE9FE;
+  --color-sidebar-accent-foreground: #111827;
+  --color-sidebar-border:       #E5E7EB;
+
+  /* ── Radius scale ── */
+  --radius:    0.75rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+  body {
+    @apply bg-sp-bg text-sp-text font-sans antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.025em;
+  }
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #D1D5DB;
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #9CA3AF;
+  }
+  input, select, textarea {
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+  }
+}
+
+/* ── Utility classes ── */
+.glass {
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.card-hover {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(124,58,237,0.1);
+}
+
+/* ── Professional card base ── */
+.pro-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.06);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.pro-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.08);
+}
+
+/* ── Table improvements ── */
+.pro-table thead tr {
+  background: #F9FAFB;
+}
+.pro-table thead th {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9CA3AF;
+  padding: 12px 16px;
+  border-bottom: 1px solid #F3F4F6;
+}
+.pro-table tbody tr {
+  border-bottom: 1px solid #F9FAFB;
+  transition: background 0.15s ease;
+}
+.pro-table tbody tr:hover {
+  background: #FAFAFA;
+}
+.pro-table tbody td {
+  padding: 14px 16px;
+  font-size: 13px;
+  color: #374151;
+}
+.pro-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+/* ── Stat card ── */
+.stat-card {
+  background: #FFFFFF;
+  border: 1px solid #F3F4F6;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.05);
+  transition: box-shadow 0.2s ease;
+}
+.stat-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+/* ── Sidebar nav item ── */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6B7280;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+.nav-item:hover {
+  background: rgba(0,0,0,0.04);
+  color: #111827;
+}
+.nav-item.active {
+  background: #F5F3FF;
+  color: #7C3AED;
+  font-weight: 600;
+}
+
+/* ── Badge ── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* ── Gradient backgrounds ── */
+.gradient-hero {
+  background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 30%, #FFF3E8 60%, #ECFDF5 100%);
+}
+.gradient-card-purple {
+  background: linear-gradient(135deg, #7C3AED, #6366F1);
+}
+.gradient-card-green {
+  background: linear-gradient(135deg, #10B981, #059669);
+}
+.gradient-card-orange {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+}
+.gradient-card-blue {
+  background: linear-gradient(135deg, #3B82F6, #2563EB);
+}
+
+/* ── Page header ── */
+.page-header {
+  margin-bottom: 1.5rem;
+}
+.page-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.025em;
+}
+.page-header p {
+  font-size: 0.875rem;
+  color: #6B7280;
+  margin-top: 0.25rem;
+}
+
+/* ── Section label ── */
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #9CA3AF;
+}
+
+/* ── Input focus ring ── */
+.input-focus {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.input-focus:focus {
+  border-color: #7C3AED;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+/* ── Smooth transitions ── */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
