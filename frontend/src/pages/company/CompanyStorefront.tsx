@@ -1,0 +1,406 @@
+import { useEffect, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { api } from '@/lib/api'
+import { useAuth } from '@/context/AuthContext'
+import {
+  MapPin, Star, Shield, CheckCircle, Package,
+  MessageCircle, Phone, Factory, Award, Users,
+  ArrowLeft, ShoppingCart, Calendar, ExternalLink
+} from 'lucide-react'
+
+export default function CompanyStorefront() {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const { user: authUser } = useAuth()
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'products' | 'about' | 'certifications'>('products')
+  const [holidayInfo, setHolidayInfo] = useState<any>(null)
+
+  const handleAction = (type: string, productId?: string) => {
+    if (!authUser) {
+      navigate('/login')
+      return
+    }
+    
+    if (authUser.role !== 'buyer') {
+      if (authUser.role === 'manufacturer') {
+        navigate('/manufacturer/negotiation');
+        return;
+      }
+      alert('Only buyers can initiate negotiations.')
+      return
+    }
+
+    const mfrId = data.user._id
+    if (type === 'negotiate' || type === 'contact') {
+      navigate(`/buyer/negotiation?manufacturer=${mfrId}${productId ? `&product=${productId}` : ''}`)
+    } else if (type === 'cart' && productId) {
+      api.addToCart(productId, 1).then(() => {
+        navigate('/buyer/checkout')
+      }).catch(e => alert(e.message ?? 'Failed to add to cart'))
+    } else if (type === 'schedule') {
+      navigate('/buyer/schedule')
+    }
+  }
+
+  useEffect(() => {
+    if (!id) return
+    const fetchData = async () => {
+      try {
+        // Try by company code first, then by ID
+        let result
+        if (id.startsWith('MFR-')) {
+          const profile = await api.getCompanyByCode(id)
+          result = await api.getCompany(profile.user._id)
+        } else {
+          result = await api.getCompany(id)
+        }
+        setData(result)
+        
+        // Fetch holiday status
+        const mfrId = result.user._id
+        api.checkManufacturerHoliday(mfrId).then(setHolidayInfo).catch(() => {})
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-sp-bg flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-sp-purple border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-sp-bg flex flex-col items-center justify-center text-center p-6" id="manufacturer-not-found">
+        <Factory className="w-16 h-16 text-sp-border mb-4" />
+        <h2 className="text-2xl font-bold text-sp-text mb-2">Company Not Found</h2>
+        <p className="text-sp-muted mb-6">The manufacturer you're looking for doesn't exist or hasn't been approved yet.</p>
+        <button onClick={() => navigate('/buyer/browse')} className="px-6 py-3 gradient-card-purple text-white rounded-xl font-bold hover:opacity-90 transition-all">
+          Browse All Manufacturers
+        </button>
+      </div>
+    )
+  }
+
+  const { user, profile, products } = data
+  const isVerified = profile?.status === 'approved'
+
+  return (
+    <div className="min-h-screen bg-sp-bg" id="company-storefront">
+      {/* Holiday Banner */}
+      {holidayInfo?.isOnHoliday && (
+        <div className="bg-amber-600 text-white px-4 py-3 flex items-center justify-center gap-3 animate-in slide-in-from-top duration-500">
+          <Calendar className="w-5 h-5 flex-shrink-0" />
+          <div className="text-sm font-medium">
+            <span className="font-black uppercase tracking-widest mr-2">Manufacturer on holiday:</span>
+            {holidayInfo.autoResponse || "We are currently closed and will return soon."} 
+            {holidayInfo.backInOfficeDate && ` We'll be back on ${new Date(holidayInfo.backInOfficeDate).toLocaleDateString()}.`}
+          </div>
+        </div>
+      )}
+
+      {/* Nav */}
+      <header className="sticky top-0 z-10 bg-white border-b border-sp-border px-4 sm:px-6 py-4 flex items-center justify-between">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-sp-muted hover:text-sp-purple transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => handleAction('contact')}
+            className="flex items-center gap-2 px-4 py-2 gradient-card-purple text-white text-sm font-bold rounded-xl hover:opacity-90 transition-all"
+          >
+            <MessageCircle className="w-4 h-4" /> Contact
+          </button>
+        </div>
+      </header>
+
+      {/* Hero / Banner */}
+      <div className="relative">
+        <div
+          className="h-48 sm:h-64 gradient-hero relative overflow-hidden"
+          style={profile?.profileBanner ? { backgroundImage: `url(${profile.profileBanner})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        </div>
+
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="relative -mt-16 flex items-end gap-4 mb-6">
+            {/* Logo */}
+            <div className="w-24 h-24 bg-white rounded-2xl border-4 border-white shadow-card overflow-hidden flex-shrink-0">
+              {profile?.logo ? (
+                <img src={profile.logo} alt={user.company} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full gradient-card-purple flex items-center justify-center">
+                  <span className="text-3xl font-black text-white">{user.company?.[0] ?? 'M'}</span>
+                </div>
+              )}
+            </div>
+            <div className="pb-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-2xl font-bold text-sp-text">{user.company ?? user.name}</h1>
+                {isVerified && (
+                  <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 bg-sp-mint text-sp-success rounded-full">
+                    <Shield className="w-3 h-3" /> Verified
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-sp-muted mt-1">
+                <MapPin className="w-3.5 h-3.5" />
+                {user.location ?? 'India'}
+                {profile?.companyCode && (
+                  <span className="ml-2 text-xs font-mono bg-sp-bg border border-sp-border px-2 py-0.5 rounded">
+                    {profile.companyCode}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
+        {/* Stats bar */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          {[
+            { icon: Package,  label: 'Products',    value: products?.length ?? 0 },
+            { icon: Star,     label: 'Avg Rating',  value: profile?.stats?.avgRating?.toFixed(1) ?? '4.5' },
+            { icon: Users,    label: 'Employees',   value: profile?.employeeCount ?? '—' },
+            { icon: Award,    label: 'Est.',         value: profile?.yearEstablished ?? '—' },
+          ].map(stat => (
+            <div key={stat.label} className="bg-white rounded-xl p-4 border border-sp-border shadow-card flex items-center gap-3">
+              <div className="w-8 h-8 bg-sp-purple-pale rounded-lg flex items-center justify-center">
+                <stat.icon className="w-4 h-4 text-sp-purple" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-sp-text">{stat.value}</p>
+                <p className="text-xs text-sp-muted">{stat.label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-wrap gap-3 mb-8">
+          <button
+            onClick={() => handleAction('negotiate')}
+            className="flex items-center gap-2 px-5 py-2.5 gradient-card-purple text-white font-bold rounded-xl text-sm hover:opacity-90 transition-all"
+          >
+            <MessageCircle className="w-4 h-4" /> Start Negotiation
+          </button>
+          <button
+            onClick={() => handleAction('chat')}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-sp-border text-sp-purple font-bold rounded-xl text-sm hover:border-sp-purple/30 transition-all"
+          >
+            <MessageCircle className="w-4 h-4" /> Chat Now
+          </button>
+          <button
+            onClick={() => handleAction('schedule')}
+            disabled={!canSchedule}
+            className={`flex items-center gap-2 px-5 py-2.5 bg-white border border-sp-border font-semibold rounded-xl text-sm transition-all ${
+              canSchedule 
+                ? 'text-sp-text hover:border-sp-purple/30' 
+                : 'text-sp-muted opacity-50 cursor-not-allowed grayscale'
+            }`}
+          >
+            <Calendar className="w-4 h-4" /> Schedule Call
+          </button>
+          <button
+            onClick={() => handleAction('contact')}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-sp-border text-sp-text font-semibold rounded-xl text-sm hover:border-sp-purple/30 transition-all"
+          >
+            <Phone className="w-4 h-4" /> Contact
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 mb-6 border-b border-sp-border">
+          {(['products', 'about', 'certifications'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-5 py-3 text-sm font-semibold capitalize transition-all border-b-2 -mb-px ${
+                activeTab === tab
+                  ? 'border-sp-purple text-sp-purple'
+                  : 'border-transparent text-sp-muted hover:text-sp-text'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab: Products */}
+        {activeTab === 'products' && (
+          <div>
+            {(!products || products.length === 0) ? (
+              <div className="text-center py-16 text-sp-muted">
+                <Package className="w-12 h-12 mx-auto mb-3 text-sp-border" />
+                <p className="font-medium">No products listed yet</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {products.map((product: any) => (
+                  <div key={product._id} className="bg-white rounded-2xl border border-sp-border shadow-card overflow-hidden group hover:border-sp-purple/30 hover:shadow-hover transition-all">
+                    <div className="aspect-square overflow-hidden bg-sp-bg">
+                      <img
+                        src={product.image ?? `https://placehold.co/300x300/EDE9FE/7C3AED?text=${encodeURIComponent(product.name[0])}`}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={e => { (e.target as HTMLImageElement).src = `https://placehold.co/300x300/EDE9FE/7C3AED?text=${encodeURIComponent(product.name[0])}` }}
+                      />
+                    </div>
+                    <div className="p-4">
+                      <p className="text-[10px] text-sp-muted uppercase tracking-wider mb-1">{product.category}</p>
+                      <h3 className="font-bold text-sm text-sp-text mb-1">{product.name}</h3>
+                      {product.material && <p className="text-xs text-sp-muted mb-2">Material: {product.material}</p>}
+                      <div className="flex items-center justify-between pt-3 border-t border-sp-border">
+                        <div>
+                          <span className="text-base font-extrabold text-sp-purple">₹{product.price?.toLocaleString()}</span>
+                          <span className="text-[10px] text-sp-muted"> /{product.unit ?? 'pc'}</span>
+                          <p className="text-[10px] text-sp-muted">MOQ: {product.moq}</p>
+                        </div>
+                        <button
+                          onClick={() => handleAction('cart', product._id)}
+                          className="p-2 gradient-card-purple text-white rounded-lg hover:opacity-90 transition-all"
+                        >
+                          <ShoppingCart className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab: About */}
+        {activeTab === 'about' && (
+          <div className="grid sm:grid-cols-2 gap-6">
+            <div className="bg-white rounded-2xl border border-sp-border shadow-card p-6">
+              <h3 className="font-bold text-sp-text mb-4 flex items-center gap-2">
+                <Factory className="w-4 h-4 text-sp-purple" /> Company Details
+              </h3>
+              <div className="space-y-3">
+                {[
+                  { label: 'Company Name', value: user.company },
+                  { label: 'Contact Person', value: user.name },
+                  { label: 'Location', value: user.location },
+                  { label: 'Year Established', value: profile?.yearEstablished },
+                  { label: 'Employee Count', value: profile?.employeeCount },
+                  { label: 'Annual Turnover', value: profile?.annualTurnover },
+                ].map(row => (
+                  <div key={row.label} className="flex justify-between py-2 border-b border-sp-border last:border-0">
+                    <span className="text-sm text-sp-muted">{row.label}</span>
+                    <span className="text-sm font-medium text-sp-text">{row.value ?? '—'}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {profile?.address?.city && (
+              <div className="bg-white rounded-2xl border border-sp-border shadow-card p-6">
+                <h3 className="font-bold text-sp-text mb-4 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-sp-purple" /> Address
+                </h3>
+                <p className="text-sm text-sp-text leading-relaxed">
+                  {profile.address.street && <>{profile.address.street}<br /></>}
+                  {profile.address.city}, {profile.address.state}<br />
+                  {profile.address.pincode && <>{profile.address.pincode}<br /></>}
+                  {profile.address.country}
+                </p>
+                {profile?.exportMarkets?.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-sp-border">
+                    <p className="text-xs text-sp-muted uppercase tracking-wider mb-2">Export Markets</p>
+                    <div className="flex flex-wrap gap-2">
+                      {profile.exportMarkets.map((m: string) => (
+                        <span key={m} className="text-xs px-2 py-1 bg-sp-purple-pale text-sp-purple rounded-full">{m}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {profile?.categories?.length > 0 && (
+              <div className="bg-white rounded-2xl border border-sp-border shadow-card p-6">
+                <h3 className="font-bold text-sp-text mb-4">Product Categories</h3>
+                <div className="flex flex-wrap gap-2">
+                  {profile.categories.map((c: string) => (
+                    <span key={c} className="px-3 py-1.5 bg-sp-purple-pale text-sp-purple rounded-full text-xs font-medium">{c}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Certifications */}
+        {activeTab === 'certifications' && (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Verification documents */}
+            {[
+              { label: 'GST Verified', value: profile?.gstNumber, verified: !!profile?.gstNumber },
+              { label: 'PAN Verified', value: profile?.panNumber, verified: !!profile?.panNumber },
+              { label: 'MSME Registered', value: profile?.msmeNumber, verified: !!profile?.msmeNumber },
+            ].map(cert => (
+              <div key={cert.label} className="bg-white rounded-2xl border border-sp-border shadow-card p-5 flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${cert.verified ? 'bg-sp-mint' : 'bg-sp-bg'}`}>
+                  <CheckCircle className={`w-5 h-5 ${cert.verified ? 'text-sp-success' : 'text-sp-border'}`} />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm text-sp-text">{cert.label}</p>
+                  <p className="text-xs text-sp-muted">{cert.verified ? cert.value : 'Not provided'}</p>
+                </div>
+              </div>
+            ))}
+
+            {profile?.certifications?.map((cert: string) => (
+              <div key={cert} className="bg-white rounded-2xl border border-sp-border shadow-card p-5 flex items-center gap-4">
+                <div className="w-10 h-10 bg-sp-mint rounded-xl flex items-center justify-center">
+                  <Award className="w-5 h-5 text-sp-success" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm text-sp-text">{cert}</p>
+                  <p className="text-xs text-sp-muted">Industry Certification</p>
+                </div>
+              </div>
+            ))}
+
+            {(!profile?.certifications?.length && !profile?.gstNumber) && (
+              <div className="col-span-3 text-center py-16 text-sp-muted">
+                <Shield className="w-12 h-12 mx-auto mb-3 text-sp-border" />
+                <p>No certifications listed yet</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Factory images */}
+        {activeTab === 'about' && profile?.factoryImages?.length > 0 && (
+          <div className="mt-6">
+            <h3 className="font-bold text-sp-text mb-4 flex items-center gap-2">
+              <ExternalLink className="w-4 h-4 text-sp-purple" /> Factory Images
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {profile.factoryImages.map((img: string, idx: number) => (
+                <div key={idx} className="aspect-square rounded-xl overflow-hidden border border-sp-border">
+                  <img src={img} alt={`Factory ${idx + 1}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
