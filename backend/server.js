@@ -36,12 +36,19 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Allow requests with no origin (like mobile apps)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1 && process.env.NODE_ENV === 'production') {
-      return callback(new Error('The CORS policy for this site does not allow access from the specified Origin.'), false);
+    
+    const isAllowed = 
+      allowedOrigins.includes(origin) || 
+      origin.includes('vercel.app') || 
+      origin.includes('netlify.app');
+
+    if (isAllowed || process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    } else {
+      return callback(new Error('CORS Not Allowed'), false);
     }
-    return callback(null, true);
   },
   credentials: true,
 }));
@@ -68,7 +75,7 @@ app.use('/api/communication', communicationRoutes);
 app.use('/api/addresses',     addressRoutes);
 app.use('/api/manufacturer/payment', manufacturerPaymentRoutes);
 app.use('/api/product-lister',       productListerRoutes);
-app.use('/api/admin', seedRoutes);
+app.use('/api/seed',                 seedRoutes);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({

@@ -12,7 +12,7 @@ import Notification from '../models/Notification.js';
 
 const router = express.Router();
 
-router.get('/seed-data', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     // ── Wipe existing data ────────────────────────────────────────────────────────
     await Promise.all([

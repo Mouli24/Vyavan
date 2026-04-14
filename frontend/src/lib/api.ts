@@ -1,4 +1,16 @@
-const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api';
+const getBaseUrl = () => {
+  let url = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  // Ensure it doesn't end with a slash
+  url = url.replace(/\/$/, '');
+  // Ensure it ends with /api
+  if (!url.endsWith('/api')) {
+    url += '/api';
+  }
+  console.log('🚀 API Base URL set to:', url); // DEBUG LOG
+  return url;
+};
+
+const BASE = getBaseUrl();
 
 function getToken() {
   return localStorage.getItem('token');
