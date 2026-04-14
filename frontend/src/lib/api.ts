@@ -1,16 +1,4 @@
-const getBaseUrl = () => {
-  let url = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-  // Ensure it doesn't end with a slash
-  url = url.replace(/\/$/, '');
-  // Ensure it ends with /api
-  if (!url.endsWith('/api')) {
-    url += '/api';
-  }
-  console.log('🚀 API Base URL set to:', url); // DEBUG LOG
-  return url;
-};
-
-const BASE = getBaseUrl();
+const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api';
 
 function getToken() {
   return localStorage.getItem('token');
@@ -72,6 +60,16 @@ export const api = {
   deleteProduct: (id: string) =>
     request<{ message: string }>(`/products/${id}`, { method: 'DELETE' }),
 
+  analyzeProductImage: (imageUrl: string, instruction?: string) =>
+    request<{
+      product_type: string;
+      quality_score: number;
+      issues: string[];
+      suggestions: string[];
+      background_type: string;
+      lighting_quality: string;
+    }>('/ai/analyze-image', { method: 'POST', body: JSON.stringify({ imageUrl, instruction }) }),
+
   // ── Orders ────────────────────────────────────────────────────────────────
   getOrders: (params?: { status?: string }) => {
     const qs = params ? '?' + new URLSearchParams(params as Record<string,string>).toString() : '';
@@ -123,7 +121,26 @@ export const api = {
   updateShipment: (id: string, data: Partial<Shipment>) =>
     request<Shipment>(`/shipments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
-  // ── Deals ─────────────────────────────────────────────────────────────────
+  // ── Negotiation (New) ───────────────────────────────────────────────────
+  getNegotiations: () => request<Negotiation[]>('/negotiation'),
+  
+  getNegotiation: (id: string) => request<Negotiation & { rounds: NegotiationRound[] }>(`/negotiation/${id}`),
+
+  initiateNegotiation: (data: { 
+    manufacturer: string; 
+    product: string; 
+    quantity: number; 
+    offeredPrice: number; 
+    message: string 
+  }) => request<Negotiation>('/negotiation', { method: 'POST', body: JSON.stringify(data) }),
+
+  counterOffer: (id: string, data: { offeredPrice: number; message: string }) =>
+    request<NegotiationRound>(`/negotiation/${id}/counter`, { method: 'POST', body: JSON.stringify(data) }),
+
+  updateNegotiationStatus: (id: string, status: 'Accepted' | 'Rejected') =>
+    request<Negotiation>(`/negotiation/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+
+  // ── Existing Deals (Legacy) ───────────────────────────────────────────────
   getDeals: () => request<Deal[]>('/deals'),
 
   getBuyerDeals: () => request<Deal[]>('/deals/buyer'),
@@ -563,5 +580,34 @@ export interface Notification {
   message: string;
   read: boolean;
   link?: string;
+  createdAt: string;
+}
+
+export interface Negotiation {
+  _id: string;
+  buyer: string | User;
+  manufacturer: string | User;
+  product: string | Product;
+  quantity: number;
+  currentOfferPrice: number;
+  status: 'Initiated' | 'Active' | 'Accepted' | 'Rejected' | 'Expired';
+  totalRounds: number;
+  maxRounds: number;
+  expiresAt: string;
+  lastActivityAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NegotiationRound {
+  _id: string;
+  negotiationId: string;
+  sender: string | User;
+  senderRole: 'buyer' | 'manufacturer';
+  offeredPrice: number;
+  message: string;
+  roundNumber: number;
+  isLatest: boolean;
+  isRead: boolean;
   createdAt: string;
 }

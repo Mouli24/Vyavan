@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import {
   X, Plus, Trash2, Check, ChevronLeft, ChevronRight,
-  Image as ImageIcon, ToggleLeft, ToggleRight, Eye, Loader2, GripHorizontal, ArrowLeftRight
+  Image as ImageIcon, ToggleLeft, ToggleRight, Eye, Loader2, GripHorizontal, ArrowLeftRight, Sparkles, AlertCircle
 } from 'lucide-react'
 import { motion, AnimatePresence, Reorder } from 'motion/react'
 import { api, Product } from '@/lib/api'
@@ -393,9 +393,72 @@ function Step2({
   removePhoto: (i: number) => void
   reorderPhotos: (p: string[]) => void
 }) {
+  const [analyzingIndex, setAnalyzingIndex] = useState<number | null>(null);
+  const [aiReport, setAiReport] = useState<any | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [aiInstruction, setAiInstruction] = useState('');
+  const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
+
+  const runAIEnhancer = async (url: string, index: number) => {
+    try {
+      setAnalyzingIndex(index);
+      const res = await api.analyzeProductImage(url, aiInstruction);
+      setAiReport({ index, url, data: res });
+    } catch (err: any) {
+      alert(`AI Enhancement Failed:\n\n${err.message}`);
+    } finally {
+      setAnalyzingIndex(null);
+    }
+  };
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const processFiles = (filesList: FileList | File[]) => {
+    const files = Array.from(filesList);
+    const validFiles = files.filter(f => f.type.startsWith('image/')).slice(0, 12 - form.photos.length);
+    if (validFiles.length === 0) return;
+
+    let processed = 0;
+    const newPhotos: string[] = [];
+    
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if (ev.target?.result) newPhotos.push(ev.target.result as string);
+        processed++;
+        if (processed === validFiles.length) set('photos', [...form.photos, ...newPhotos]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files) processFiles(e.dataTransfer.files);
+  };
+  
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) processFiles(e.target.files);
+    e.target.value = ''; // Reset input
+  };
+
   return (
-    <div className="flex flex-col gap-6">
+    <div 
+      className={`flex flex-col gap-6 p-2 rounded-3xl transition-all ${isDragging ? 'bg-purple-50 ring-4 ring-purple-200 border border-dashed border-purple-400' : ''}`}
+      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+      onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+      onDrop={handleDrop}
+    >
       <div>
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          className="hidden" 
+          multiple 
+          accept="image/*" 
+          onChange={handleFileSelect} 
+        />
         <label className="block text-sm font-bold text-slate-700 mb-2">
           Add Photo URL <span className="text-red-400">*</span>
         </label>
@@ -409,9 +472,17 @@ function Step2({
             className="flex-1 px-4 py-3 rounded-2xl border border-slate-200 bg-[#F5E6D3]/30 focus:outline-none focus:ring-2 focus:ring-[#5D4037]/30 text-slate-800 placeholder:text-slate-400 text-sm"
           />
           <button
+            onClick={() => runAIEnhancer(form.photoInput, -1)}
+            disabled={!form.photoInput.trim() || analyzingIndex === -1}
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white text-sm font-bold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md flex-shrink-0"
+          >
+            {analyzingIndex === -1 ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            AI Enhancer
+          </button>
+          <button
             onClick={addPhoto}
             disabled={!form.photoInput.trim() || form.photos.length >= 12}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#5D4037] text-white text-sm font-bold hover:bg-[#5D4037]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#5D4037] text-white text-sm font-bold hover:bg-[#5D4037]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-shrink-0"
           >
             <Plus size={16} /> Add Photo
           </button>
@@ -419,6 +490,19 @@ function Step2({
         <p className="text-xs text-slate-400 mt-2 flex items-center gap-1.5">
           <ArrowLeftRight size={12} /> Drag photos to reorder. First photo is always the main display image.
         </p>
+      </div>
+
+      <div className="mb-2">
+        <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+          <Sparkles size={14} className="text-purple-500" /> Tell the AI what you want to improve <span className="text-xs text-slate-400 font-normal">(Optional)</span>
+        </label>
+        <input
+          type="text"
+          value={aiInstruction}
+          onChange={e => setAiInstruction(e.target.value)}
+          placeholder="e.g. How can I make this lighting look more professional and luxurious?"
+          className="w-full px-4 py-3 rounded-2xl border border-purple-200 bg-purple-50/50 focus:outline-none focus:ring-2 focus:ring-purple-400 text-slate-800 placeholder:text-purple-300 text-sm transition-all shadow-inner"
+        />
       </div>
 
       {form.photos.length > 0 ? (
@@ -432,7 +516,7 @@ function Step2({
             <Reorder.Item 
               key={url} 
               value={url}
-              className="relative group w-24 h-24 rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-100 cursor-grab active:cursor-grabbing"
+              className="relative group w-36 h-36 rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-100 cursor-grab active:cursor-grabbing"
             >
               <img src={url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover pointer-events-none" />
               {i === 0 && (
@@ -444,25 +528,165 @@ function Step2({
                 <GripHorizontal size={20} className="text-white" />
               </div>
               <button
+                onClick={(e) => { e.stopPropagation(); setPreviewPhoto(url); }}
+                className="absolute top-1 left-1 w-6 h-6 rounded-full bg-slate-800/80 hover:bg-slate-900 text-white shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+              >
+                <Eye size={12} />
+              </button>
+              <button
                 onClick={() => removePhoto(i)}
-                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-white text-red-500 shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-white hover:bg-red-50 text-red-500 shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
               >
                 <Trash2 size={12} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); runAIEnhancer(url, i); }}
+                disabled={analyzingIndex === i}
+                className="absolute bottom-1 right-1 rounded-lg bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white text-[9px] font-bold px-2 py-1 shadow-md flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+              >
+                {analyzingIndex === i ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                AI
               </button>
             </Reorder.Item>
           ))}
           {form.photos.length < 12 && (
-            <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-300">
-              <ImageIcon size={24} />
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="w-36 h-36 rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-300 cursor-pointer hover:bg-slate-50 hover:text-slate-500 transition-colors"
+            >
+              <ImageIcon size={32} />
             </div>
           )}
         </Reorder.Group>
       ) : (
-        <div className="flex flex-col items-center justify-center h-36 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 text-slate-300 gap-2">
+        <div 
+          onClick={() => fileInputRef.current?.click()}
+          className="flex flex-col items-center justify-center h-36 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 text-slate-400 gap-2 cursor-pointer hover:bg-slate-100 hover:text-slate-500 transition-colors"
+        >
           <ImageIcon size={32} />
-          <span className="text-xs font-medium text-slate-400">No photos added yet</span>
+          <span className="text-xs font-medium">No photos added yet. Click to browse or drop an image here.</span>
         </div>
       )}
+
+      {/* AI Enhancer Report Modal */}
+      <AnimatePresence>
+        {aiReport && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="mt-6 border border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl p-6 relative overflow-hidden"
+          >
+            <button 
+              onClick={() => setAiReport(null)}
+              className="absolute top-4 right-4 text-purple-400 hover:text-purple-600 bg-white rounded-full p-1 shadow-sm transition-all"
+            >
+              <X size={16} />
+            </button>
+            
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center shadow-md">
+                <Sparkles size={16} className="text-white" />
+              </div>
+              <h3 className="font-bold text-slate-800 text-lg">AI Enhancer Report</h3>
+            </div>
+
+            {/* Before & After Visuals */}
+            <div className="flex gap-6 mb-8">
+              <div className="flex-1 flex flex-col gap-2">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider pl-1">Original Upload</span>
+                <div className="aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
+                  <img src={aiReport.url} alt="Before" className="w-full h-full object-contain" />
+                </div>
+              </div>
+              <div className="flex-1 flex flex-col gap-2">
+                <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider pl-1 flex items-center justify-between">
+                  AI Enhanced 
+                  <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-[9px]">PRO</span>
+                </span>
+                <div className="aspect-square rounded-2xl overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-white border-2 border-purple-300 relative shadow-[0_0_30px_rgba(168,85,247,0.2)] group">
+                  <img 
+                    src={aiReport.url} 
+                    alt="After" 
+                    className="w-full h-full object-contain mix-blend-multiply"
+                    style={{ filter: 'brightness(1.1) contrast(1.15) saturate(1.2)' }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-purple-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-3 pointer-events-none">
+                     <span className="text-white text-[10px] font-bold">Auto-Color Corrected</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-6">
+              <div className="col-span-1 flex flex-col gap-3">
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-purple-100 flex flex-col items-center justify-center text-center">
+                  <span className="text-3xl font-black text-purple-600 mb-1">{aiReport.data.quality_score}<span className="text-lg text-purple-300">/10</span></span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Quality Score</span>
+                </div>
+                
+                <div className="bg-white p-3 rounded-2xl shadow-sm border border-purple-100">
+                  <p className="text-xs font-bold text-slate-700 mb-1">Product Details</p>
+                  <p className="text-xs text-slate-500"><strong>Type:</strong> <span className="capitalize">{aiReport.data.product_type}</span></p>
+                  <p className="text-xs text-slate-500"><strong>Lighting:</strong> <span className="capitalize">{aiReport.data.lighting_quality}</span></p>
+                  <p className="text-xs text-slate-500"><strong>Bg:</strong> <span className="capitalize">{aiReport.data.background_type}</span></p>
+                </div>
+              </div>
+
+              <div className="col-span-2 flex flex-col gap-3">
+                {aiReport.data.issues?.length > 0 && (
+                  <div className="bg-red-50/50 p-4 rounded-2xl border border-red-100">
+                    <h4 className="text-xs font-bold text-red-600 flex items-center gap-1.5 mb-2 uppercase tracking-wide">
+                      <AlertCircle size={14} /> Issues Found
+                    </h4>
+                    <ul className="text-sm text-red-800 space-y-1 pl-5 list-disc marker:text-red-300">
+                      {aiReport.data.issues.map((issue: string, idx: number) => (
+                        <li key={idx} className="leading-snug">{issue}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {aiReport.data.suggestions?.length > 0 && (
+                  <div className="bg-green-50/50 p-4 rounded-2xl border border-green-100">
+                    <h4 className="text-xs font-bold text-green-600 flex items-center gap-1.5 mb-2 uppercase tracking-wide">
+                      <Check size={14} /> Enhancement Suggestions
+                    </h4>
+                    <ul className="text-sm text-green-800 space-y-1 pl-5 list-disc marker:text-green-300">
+                      {aiReport.data.suggestions.map((sug: string, idx: number) => (
+                        <li key={idx} className="leading-snug">{sug}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Lightbox Preview Modal */}
+      <AnimatePresence>
+        {previewPhoto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+            onClick={() => setPreviewPhoto(null)}
+          >
+            <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center">
+               <button 
+                 onClick={() => setPreviewPhoto(null)} 
+                 className="absolute -top-12 right-0 text-white/70 hover:text-white bg-slate-800/50 hover:bg-slate-800 p-2 rounded-full transition-all"
+               >
+                 <X size={24} />
+               </button>
+               <img src={previewPhoto} alt="Preview" className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -3,12 +3,16 @@ import express from 'express';
 import cors from 'cors';
 import { connectDB } from './config/db.js';
 
+import http from 'http';
+import { Server } from 'socket.io';
+
 // Route imports
 import authRoutes          from './routes/auth.js';
 import productRoutes       from './routes/products.js';
 import orderRoutes         from './routes/orders.js';
 import shipmentRoutes      from './routes/shipments.js';
 import dealRoutes          from './routes/deals.js';
+import negotiationRoutes   from './routes/negotiation.js';
 import messageRoutes       from './routes/messages.js';
 import complaintRoutes     from './routes/complaints.js';
 import paymentRoutes       from './routes/payments.js';
@@ -22,38 +26,39 @@ import kycRoutes           from './routes/kyc.js';
 import communicationRoutes from './routes/communication.js';
 import addressRoutes       from './routes/addresses.js';
 import manufacturerPaymentRoutes from './routes/manufacturerPayment.js';
-import seedRoutes from './routes/seed.js';
-import productListerRoutes from './routes/productLister.js';
-
+import aiRoutes from './routes/ai.js';
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "PATCH"]
+  }
+});
 
 // ── Middleware ───────────────────────────────────────────────────────────────
-const allowedOrigins = [
-  process.env.CLIENT_ORIGIN,
-  'http://localhost:5173',
-  'http://localhost:3000'
-];
-
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps)
-    if (!origin) return callback(null, true);
-    
-    const isAllowed = 
-      allowedOrigins.includes(origin) || 
-      origin.includes('vercel.app') || 
-      origin.includes('netlify.app');
-
-    if (isAllowed || process.env.NODE_ENV !== 'production') {
-      return callback(null, true);
-    } else {
-      return callback(new Error('CORS Not Allowed'), false);
-    }
-  },
+  origin: true,
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// ── Socket.io ────────────────────────────────────────────────────────────────
+io.on('connection', (socket) => {
+  socket.on('join_negotiation', (negotiationId) => {
+    socket.join(negotiationId);
+  });
+  socket.on('leave_negotiation', (negotiationId) => {
+    socket.leave(negotiationId);
+  });
+});
+
+// Attach io to req
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
 // ── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth',          authRoutes);
@@ -61,6 +66,7 @@ app.use('/api/products',      productRoutes);
 app.use('/api/orders',        orderRoutes);
 app.use('/api/shipments',     shipmentRoutes);
 app.use('/api/deals',         dealRoutes);
+app.use('/api/negotiation',   negotiationRoutes);
 app.use('/api/messages',      messageRoutes);
 app.use('/api/complaints',    complaintRoutes);
 app.use('/api/payments',      paymentRoutes);
@@ -74,13 +80,12 @@ app.use('/api/kyc',           kycRoutes);
 app.use('/api/communication', communicationRoutes);
 app.use('/api/addresses',     addressRoutes);
 app.use('/api/manufacturer/payment', manufacturerPaymentRoutes);
-app.use('/api/product-lister',       productListerRoutes);
-app.use('/api/seed',                 seedRoutes);
+app.use('/api/ai',            aiRoutes);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({
   status: 'ok',
-  version: '2.0.0',
+  version: '2.1.0-neg',
   timestamp: new Date().toISOString(),
 }));
 
@@ -96,5 +101,5 @@ app.use((err, _req, res, _next) => {
 // ── Start ─────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT ?? 5000;
 connectDB().then(() => {
-  app.listen(PORT, () => console.log(`🚀 API running on http://localhost:${PORT}`));
+  server.listen(PORT, () => console.log(`🚀 API running on http://localhost:${PORT}`));
 });
