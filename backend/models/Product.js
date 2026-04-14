@@ -16,9 +16,10 @@ const productSchema = new mongoose.Schema({
   isActive:     { type: Boolean, default: true },
   
   // Extended fields for Manufacturer AddProductModal
-  description:    { type: String },
-  photos:         [{ type: String }],
-  specs:          { type: Map, of: String },
+  shortDescription: { type: String },
+  seoTags:          [{ type: String }],
+  hsCode:           { type: String },
+  packagingType:    { type: String },
   bulkSlabs: [{
     from:  { type: Number },
     to:    { type: Number }, // null means infinity

@@ -23,6 +23,7 @@ import communicationRoutes from './routes/communication.js';
 import addressRoutes       from './routes/addresses.js';
 import manufacturerPaymentRoutes from './routes/manufacturerPayment.js';
 import seedRoutes from './routes/seed.js';
+import productListerRoutes from './routes/productLister.js';
 
 const app = express();
 
@@ -66,6 +67,7 @@ app.use('/api/kyc',           kycRoutes);
 app.use('/api/communication', communicationRoutes);
 app.use('/api/addresses',     addressRoutes);
 app.use('/api/manufacturer/payment', manufacturerPaymentRoutes);
+app.use('/api/product-lister',       productListerRoutes);
 app.use('/api/admin', seedRoutes);
 
 // ── Health check ─────────────────────────────────────────────────────────────

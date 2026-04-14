@@ -1,21 +1,14 @@
 import mongoose from 'mongoose';
 
-export async function connectDB() {
-  const uri = process.env.MONGO_URI;
-  if (!uri) {
-    console.error('MONGO_URI is missing from environment variables!');
-    process.exit(1);
-  }
-  
-  // Diagnostic log (doesn't leak password)
-  console.log(`Database URI length: ${uri.length}`);
-  console.log(`Database URI prefix: ${uri.substring(0, 15)}...`);
-
+export const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(uri);
-    console.log(`MongoDB connected: ${conn.connection.host}`);
-  } catch (err) {
-    console.error('MongoDB connection error:', err.message);
-    process.exit(1);
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000, 
+      socketTimeoutMS: 45000,
+    });
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error(`❌ MongoDB connection error: ${error.message}`);
+    // Don't exit here, let the watch mode try to restart
   }
-}
+};

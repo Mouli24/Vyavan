@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import {
   Search, Bell, Globe, HelpCircle, AlertTriangle,
   Download, SlidersHorizontal, Plus, CheckCircle2,
-  Loader2, Image as ImageIcon,
+  Loader2, Image as ImageIcon, Sparkles,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator'
 import { api, Product } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import AddProductModal from '@/features/manufacturer/AddProductModal'
+import ProductLister from '@/features/manufacturer/ProductLister'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface StockRow {
@@ -63,6 +64,7 @@ export default function Inventory() {
   
   // Add Product Modal state
   const [showAdd, setShowAdd] = useState(false)
+  const [showAiLister, setShowAiLister] = useState(false)
   const [showBulk, setShowBulk] = useState(false)
 
   // Recent adjustments (local log)
@@ -448,17 +450,34 @@ export default function Inventory() {
             </div>
           </div>
 
-          <motion.button
-            onClick={() => setShowAdd(true)}
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.95 }}
-            className="self-end w-12 h-12 bg-[#5D4037] hover:bg-[#4E342E] text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
-          >
-            <Plus size={22} />
-          </motion.button>
+          <div className="flex flex-col gap-4 self-end">
+            <motion.button
+              onClick={() => setShowAiLister(true)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 h-12 bg-white border-2 border-indigo-100 hover:border-indigo-300 text-indigo-600 rounded-full shadow-sm flex items-center justify-center gap-2 transition-all font-bold whitespace-nowrap"
+            >
+              <Sparkles size={18} /> AI Smart List
+            </motion.button>
+
+            <motion.button
+              onClick={() => setShowAdd(true)}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.95 }}
+              className="w-12 h-12 bg-[#5D4037] hover:bg-[#4E342E] text-white rounded-full shadow-lg flex items-center justify-center transition-colors self-end"
+            >
+              <Plus size={22} />
+            </motion.button>
+          </div>
         </div>
       </div>
       
+      <ProductLister 
+        open={showAiLister} 
+        onClose={() => setShowAiLister(false)} 
+        onSuccess={() => { setShowAiLister(false); fetchProducts(); }} 
+      />
+
       <AddProductModal 
         open={showAdd} 
         onClose={() => setShowAdd(false)} 
