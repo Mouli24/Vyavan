@@ -75,7 +75,7 @@ app.use('/api/communication', communicationRoutes);
 app.use('/api/addresses',     addressRoutes);
 app.use('/api/manufacturer/payment', manufacturerPaymentRoutes);
 app.use('/api/product-lister',       productListerRoutes);
-app.use('/api/admin', seedRoutes);
+app.use('/api/seed',                 seedRoutes);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({
