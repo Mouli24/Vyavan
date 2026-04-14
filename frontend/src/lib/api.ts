@@ -6,6 +6,7 @@ const getBaseUrl = () => {
   if (!url.endsWith('/api')) {
     url += '/api';
   }
+  console.log('🚀 API Base URL set to:', url); // DEBUG LOG
   return url;
 };
 
