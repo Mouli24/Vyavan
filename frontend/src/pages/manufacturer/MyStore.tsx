@@ -15,18 +15,26 @@ import {
   Truck,
   ArrowRight,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import AddProductModal from '@/features/manufacturer/AddProductModal';
+import ProductLister from '@/features/manufacturer/ProductLister';
 import { api, Product } from '@/lib/api';
+import { useNavigate } from 'react-router-dom';
 
 export default function MyStore() {
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [showAiLister, setShowAiLister] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const navigate = useNavigate();
+  const [onboardingPlan, setOnboardingPlan] = useState<any>(null);
+  const [loadingOnboarding, setLoadingOnboarding] = useState(true);
 
   const fetchProducts = () => {
     setLoadingProducts(true);
@@ -39,7 +47,14 @@ export default function MyStore() {
       .finally(() => setLoadingProducts(false));
   };
 
-  useEffect(() => { fetchProducts(); }, []);
+  useEffect(() => { 
+    fetchProducts();
+    // Fetch AI Onboarding Plan
+    api.getOnboardingAdvice()
+      .then(plan => setOnboardingPlan(plan))
+      .catch(err => console.error('Failed to load AI Onboarding:', err))
+      .finally(() => setLoadingOnboarding(false));
+  }, []);
 
   const handleEdit = (product: Product) => {
     setEditProduct(product);
@@ -139,6 +154,13 @@ export default function MyStore() {
             Customize Storefront
           </button>
           <button
+            onClick={() => setShowAiLister(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-50 text-indigo-700 font-semibold rounded-xl text-sm hover:bg-indigo-100 transition-colors"
+          >
+            <Sparkles size={16} />
+            AI Smart List
+          </button>
+          <button
             onClick={() => setShowAddProduct(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-brand-bronze text-white font-semibold rounded-xl text-sm hover:bg-brand-bronze/90 transition-colors"
           >
@@ -154,23 +176,81 @@ export default function MyStore() {
         onPublished={handlePublished}
         editProduct={editProduct}
       />
+      <ProductLister 
+        open={showAiLister} 
+        onClose={() => setShowAiLister(false)} 
+        onSuccess={() => { setShowAiLister(false); fetchProducts(); }} 
+      />
 
       {/* Top Grid */}
       <div className="grid grid-cols-12 gap-6 mb-8">
-        <motion.div variants={itemVariants} className="col-span-4 bg-brand-peach/20 p-8 rounded-[32px] relative overflow-hidden">
-          <div className="flex items-center gap-2 mb-6">
-            <span className="px-3 py-1 bg-brand-peach text-brand-bronze text-[10px] font-bold rounded-full uppercase tracking-wider">Active Store</span>
-            <span className="text-sm font-bold text-brand-bronze">85% Complete</span>
-          </div>
-          <h3 className="text-2xl font-serif font-bold text-brand-bronze mb-3 leading-tight">
-            Finish Your Store<br />Identity Setup
-          </h3>
-          <p className="text-sm text-brand-bronze/70 mb-8 max-w-[200px]">
-            Add tax details and warehouse locations to unlock global shipments.
-          </p>
-          <div className="w-full h-2 bg-brand-bronze/10 rounded-full overflow-hidden">
-            <div className="w-[85%] h-full bg-brand-bronze"></div>
-          </div>
+        <motion.div variants={itemVariants} className="col-span-4 bg-brand-peach/20 p-8 rounded-[32px] relative overflow-hidden flex flex-col justify-between group">
+          {loadingOnboarding ? (
+            <div className="flex-1 flex flex-col items-center justify-center py-6">
+              <Loader2 className="w-8 h-8 text-brand-bronze animate-spin mb-4" />
+              <p className="text-sm font-bold text-brand-bronze text-center">AI Agent calculating<br/>optimal next steps...</p>
+            </div>
+          ) : onboardingPlan ? (
+            <>
+              <div>
+                <div className="flex items-center gap-2 mb-6">
+                  <span className="px-3 py-1 bg-brand-peach text-brand-bronze text-[10px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles size={10} /> Agent Guidance
+                  </span>
+                  <span className="text-sm font-bold text-brand-bronze">{onboardingPlan.completion_percentage}% Complete</span>
+                </div>
+                <h3 className="text-xl font-serif font-bold text-brand-bronze mb-2 leading-tight">
+                  {onboardingPlan.next_action?.title || onboardingPlan.headline_message}
+                </h3>
+                <p className="text-xs text-brand-bronze/80 mb-6 font-medium leading-relaxed">
+                  {onboardingPlan.next_action?.description || onboardingPlan.agent_advice}
+                </p>
+                
+                {onboardingPlan.missing_fields?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-6">
+                    {onboardingPlan.missing_fields.slice(0, 3).map((field: string) => (
+                      <span key={field} className="text-[9px] bg-white/40 text-brand-bronze px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+                        Missing: {field}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <button 
+                  onClick={() => navigate(onboardingPlan.next_action?.redirect_url || '/manufacturer/settings')}
+                  className="w-full bg-brand-bronze text-white text-xs font-bold py-3 rounded-xl hover:bg-brand-bronze/90 transition-all flex items-center justify-center gap-2"
+                >
+                  {onboardingPlan.next_action?.action_button || 'Continue Setup'} <ArrowRight size={14} />
+                </button>
+                <div className="w-full h-1.5 bg-brand-bronze/10 rounded-full overflow-hidden mt-4">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${onboardingPlan.completion_percentage}%` }}
+                    transition={{ duration: 1, delay: 0.2 }}
+                    className="h-full bg-brand-bronze"
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 mb-6">
+                <span className="px-3 py-1 bg-brand-peach text-brand-bronze text-[10px] font-bold rounded-full uppercase tracking-wider">Active Store</span>
+                <span className="text-sm font-bold text-brand-bronze">100% Complete</span>
+              </div>
+              <h3 className="text-2xl font-serif font-bold text-brand-bronze mb-3 leading-tight">
+                Profile Built!
+              </h3>
+              <p className="text-sm text-brand-bronze/70 mb-8 max-w-[200px]">
+                Your profile is completely set up. You are ready to receive orders!
+              </p>
+              <div className="w-full h-2 bg-brand-bronze/10 rounded-full overflow-hidden">
+                <div className="w-[100%] h-full bg-brand-bronze"></div>
+              </div>
+            </>
+          )}
         </motion.div>
 
         <motion.div variants={itemVariants} className="col-span-4 bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm">

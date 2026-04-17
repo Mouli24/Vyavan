@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import Shipment from '../models/Shipment.js';
 import Order from '../models/Order.js';
 import Notification from '../models/Notification.js';
@@ -94,6 +95,157 @@ router.get('/combine-check', protect, requireRole('manufacturer'), async (req, r
     res.json({ groups });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// ── GET /api/shipments/ai-plan — AI Shipment Planner ───────────────────────────
+router.get('/ai-plan', protect, requireRole('manufacturer'), async (req, res) => {
+  try {
+    const confirmed = await Order.find({
+      manufacturer: req.user._id,
+      status: 'Confirmed',
+    }).populate('buyer.ref', 'name company');
+
+    if (confirmed.length === 0) {
+      return res.status(400).json({ message: 'No pending confirmed orders to plan.' });
+    }
+
+    const pending_orders = confirmed.map(o => {
+      // Stub weight/volume: approx 1kg per ₹100 of value
+      const valueInr = o.valueRaw || 0;
+      const computedWeight = Math.max(10, Math.round(valueInr / 100));
+      const computedVolume = Math.max(1, Math.round(computedWeight / 20));
+
+      return {
+        order_id: o.orderId,
+        buyer_name: o.buyer?.name || 'Unknown',
+        delivery_city: o.deliveryAddress?.city || 'Unknown',
+        delivery_state: o.deliveryAddress?.state || 'Unknown',
+        delivery_pincode: o.deliveryAddress?.pincode || 'Unknown',
+        total_weight_kg: computedWeight,
+        total_volume_cubic_feet: computedVolume,
+        order_value_inr: valueInr,
+        order_confirmed_date: o.updatedAt || o.createdAt,
+        buyer_priority: true // Assuming all are repeat/urgent for MVP stub
+      };
+    });
+
+    const mfrLocation = req.user.location || req.user.company || 'Unknown Address';
+
+    const inputData = {
+      manufacturer_location: mfrLocation,
+      pending_orders
+    };
+
+    const prompt = `
+You are a Shipment Planning AI Agent for a B2B manufacturing platform. Your job is to help manufacturers optimize their order dispatch by analyzing pending orders and suggesting the most efficient shipment plan.
+
+You will receive a JSON object containing:
+- manufacturer_location: The manufacturer's factory/warehouse city and state
+- pending_orders: A list of confirmed orders that have not yet been shipped, each containing:
+  - order_id
+  - buyer_name
+  - delivery_city
+  - delivery_state
+  - delivery_pincode
+  - total_weight_kg
+  - total_volume_cubic_feet
+  - order_value_inr
+  - order_confirmed_date
+  - buyer_priority (repeat_buyer: true/false)
+
+Your job is to analyze all pending orders and return a structured shipment plan.
+
+RULES YOU MUST FOLLOW:
+
+1. Group orders going to the same city or within 50km radius into one combined shipment wherever possible.
+
+2. For each group suggest the most suitable transport mode based on:
+   - Weight and volume of combined orders
+   - Distance from manufacturer location to delivery city
+   - Order value (high value = safer transport mode)
+   - Use "own_vehicle" if total weight is under 500kg and distance is under 200km
+   - Use "transport_company" if weight is above 500kg or distance is above 200km
+   - Use "bus_cargo" if weight is under 100kg and distance is under 500km
+   - Use "train_parcel" if distance is above 500km and weight is manageable
+
+3. Estimate cost savings when combining orders vs sending separately. Use these rough per-km rates:
+   - own_vehicle: ₹12/km
+   - transport_company: ₹8/km (but minimum ₹1500 per trip)
+   - bus_cargo: ₹6/kg flat
+   - train_parcel: ₹4/kg flat
+
+4. Prioritize repeat buyers and high value orders — suggest dispatching these first.
+
+5. Flag any order that has been confirmed for more than 3 days and not yet shipped — mark as URGENT.
+
+6. Suggest optimal dispatch timing — morning dispatches (before 10am) reach faster for nearby cities, overnight transport for distant cities.
+
+7. If manufacturer has provided available vehicles in input, factor that in. If no vehicle data provided, suggest based on order size only.
+
+RESPONSE FORMAT:
+Return ONLY a valid JSON object. No extra text. No markdown. No explanation outside JSON.
+
+Response structure:
+{
+  "summary": {
+    "total_pending_orders": number,
+    "total_shipment_groups": number,
+    "estimated_total_savings_inr": number,
+    "urgent_orders": ["order_id", ...]
+  },
+  "shipment_groups": [
+    {
+      "group_id": "SG-001",
+      "orders_included": ["order_id", ...],
+      "delivery_area": "city name or area description",
+      "combined_weight_kg": number,
+      "suggested_transport": "own_vehicle / transport_company / bus_cargo / train_parcel",
+      "estimated_cost_inr": number,
+      "savings_vs_separate_inr": number,
+      "suggested_dispatch_time": "Morning before 10AM / Evening after 5PM / Overnight",
+      "estimated_delivery_date": "approximate date or days",
+      "priority": "high / medium / low",
+      "reason": "short explanation of why this grouping and transport was chosen"
+    }
+  ],
+  "individual_shipments": [
+    {
+      "order_id": "string",
+      "reason_not_grouped": "too far / different direction / urgent solo dispatch needed",
+      "suggested_transport": "string",
+      "estimated_cost_inr": number,
+      "suggested_dispatch_time": "string",
+      "estimated_delivery_date": "string",
+      "priority": "high / medium / low"
+    }
+  ],
+  "agent_notes": "Any overall recommendation the manufacturer should know — max 2 sentences."
+}
+
+INPUT DATA:
+${JSON.stringify(inputData, null, 2)}
+`;
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'fake-key');
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    // Explicitly enforce structured output using generationConfig
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+      }
+    });
+
+    const response = await result.response;
+    const text = response.text();
+    
+    const parsedPlan = JSON.parse(text);
+    res.json(parsedPlan);
+  } catch (error) {
+    console.error('[AI_PLAN_ERROR]', error);
+    res.status(500).json({ message: 'Failed to generate shipment plan.', error: error.message });
   }
 });
 

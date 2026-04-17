@@ -13,8 +13,6 @@ import { Separator } from '@/components/ui/separator'
 import { api, Product } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import AddProductModal from '@/features/manufacturer/AddProductModal'
-import ProductLister from '@/features/manufacturer/ProductLister'
-
 // ── Types ──────────────────────────────────────────────────────────────────
 interface StockRow {
   product: Product
@@ -64,7 +62,6 @@ export default function Inventory() {
   
   // Add Product Modal state
   const [showAdd, setShowAdd] = useState(false)
-  const [showAiLister, setShowAiLister] = useState(false)
   const [showBulk, setShowBulk] = useState(false)
 
   // Recent adjustments (local log)
@@ -452,15 +449,6 @@ export default function Inventory() {
 
           <div className="flex flex-col gap-4 self-end">
             <motion.button
-              onClick={() => setShowAiLister(true)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-6 h-12 bg-white border-2 border-indigo-100 hover:border-indigo-300 text-indigo-600 rounded-full shadow-sm flex items-center justify-center gap-2 transition-all font-bold whitespace-nowrap"
-            >
-              <Sparkles size={18} /> AI Smart List
-            </motion.button>
-
-            <motion.button
               onClick={() => setShowAdd(true)}
               whileHover={{ scale: 1.08 }}
               whileTap={{ scale: 0.95 }}
@@ -472,11 +460,6 @@ export default function Inventory() {
         </div>
       </div>
       
-      <ProductLister 
-        open={showAiLister} 
-        onClose={() => setShowAiLister(false)} 
-        onSuccess={() => { setShowAiLister(false); fetchProducts(); }} 
-      />
 
       <AddProductModal 
         open={showAdd} 

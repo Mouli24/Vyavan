@@ -362,6 +362,9 @@ export const api = {
   checkCombineOrders: () =>
     request<{ groups: { city: string; orders: any[] }[] }>('/shipments/combine-check'),
 
+  getAiShipmentPlan: () =>
+    request<any>('/shipments/ai-plan'),
+
   getShipmentReminders: () =>
     request<{ reminders: any[] }>('/shipments/reminders/check'),
 
@@ -391,6 +394,9 @@ export const api = {
       weeklyOffDays: number[];
       holidays: { date: string; label: string }[];
     }>(`/manufacturer/holiday/check/${manufacturerId}`),
+
+  getOnboardingAdvice: () =>
+    request<any>('/manufacturer/onboarding-assistant'),
 };
 
 

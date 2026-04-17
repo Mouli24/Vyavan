@@ -5,8 +5,8 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch ./server.js",
+    "start": "nodemon server.js",
+    "dev": "nodemon -e js,json,env server.js",
     "seed": "node seed/seed.js",
     "seed:test": "node seed/test_seed.js"
   },

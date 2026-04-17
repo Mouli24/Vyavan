@@ -42,6 +42,7 @@ export default function ProductLister({ open, onClose, onSuccess }: Props) {
   const [price, setPrice] = useState<string>('');
   const [moq, setMoq] = useState<string>('');
   const [publishing, setPublishing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -52,6 +53,31 @@ export default function ProductLister({ open, onClose, onSuccess }: Props) {
     if (selected) {
       setFile(selected);
       setPreview(URL.createObjectURL(selected));
+      setError(null);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile && droppedFile.type.startsWith('image/')) {
+      setFile(droppedFile);
+      setPreview(URL.createObjectURL(droppedFile));
+      setError(null);
+    } else {
+      setError('Please upload a valid image file.');
     }
   };
 
@@ -65,7 +91,11 @@ export default function ProductLister({ open, onClose, onSuccess }: Props) {
     formData.append('image', file);
 
     try {
-      const response = await fetch('/api/product-lister/analyze', {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+      const apiUrl = cleanBaseUrl.endsWith('/api') ? cleanBaseUrl : `${cleanBaseUrl}/api`;
+
+      const response = await fetch(`${apiUrl}/product-lister/analyze`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -153,7 +183,11 @@ export default function ProductLister({ open, onClose, onSuccess }: Props) {
               >
                 <div 
                   onClick={() => fileInputRef.current?.click()}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
                   className={`border-4 border-dashed rounded-[2rem] p-12 flex flex-col items-center justify-center text-center transition-all cursor-pointer group ${
+                    isDragging ? 'border-indigo-400 bg-indigo-50/50 scale-[1.02]' : 
                     file ? 'border-green-200 bg-green-50/30' : 'border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50/30'
                   }`}
                 >
@@ -174,12 +208,12 @@ export default function ProductLister({ open, onClose, onSuccess }: Props) {
                     </div>
                   ) : (
                     <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                      <Upload size={32} className="text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                      <Upload size={32} className={`${isDragging ? 'text-indigo-600' : 'text-slate-400'} group-hover:text-indigo-500 transition-colors`} />
                     </div>
                   )}
 
                   <h3 className="text-xl font-bold text-slate-800 mb-2">
-                    {file ? 'Photo Ready!' : 'Upload Product Photo'}
+                    {file ? 'Photo Ready!' : 'Upload your product'}
                   </h3>
                   <p className="text-sm text-slate-500 mb-8 max-w-sm">
                     Just upload one clear photo. Our AI will identify the model, material, and features automatically.
