@@ -95,7 +95,7 @@ router.post('/analyze', protect, requireRole('manufacturer'), upload.single('ima
     }
 
     // 2. Prepare Gemini Prompt
-    const model = getGenAI().getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-2.5-flash" });
     const prompt = `
       You are an expert B2B product specialist. Analyze this product image and generate a professional B2B listing in JSON format.
       
@@ -179,7 +179,7 @@ router.post('/regenerate-field', protect, requireRole('manufacturer'), async (re
   try {
     const { field, context, instruction } = req.body;
 
-    const model = getGenAI().getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-2.5-flash" });
     const prompt = `
       You are a product specialist. I have a listing for "${context.name}".
       Specifically for the field "${field}", here is the current value: "${context.currentValue}".

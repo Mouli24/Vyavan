@@ -28,7 +28,7 @@ import productListerRoutes from './routes/productLister.js';
 import seedRoutes from './routes/seed.js';
 import aiRoutes from './routes/ai.js';
 
-// import negotiationRoutes from './routes/negotiation.js'; // Missing file, commented out to avoid crash
+import negotiationRoutes from './routes/negotiation.js'; 
 
 const app = express();
 const server = http.createServer(app);
@@ -107,7 +107,7 @@ app.use('/api/product-lister', productListerRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/api/ai', aiRoutes);
 
-// app.use('/api/negotiation', negotiationRoutes); // Missing file, commented out
+app.use('/api/negotiation', negotiationRoutes);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({
