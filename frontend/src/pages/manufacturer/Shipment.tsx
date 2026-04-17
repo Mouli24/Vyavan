@@ -3,7 +3,7 @@ import {
   Truck, Train, Bus, Package, Search, Bell, HelpCircle, Globe,
   FileText, Barcode, ChevronDown, CheckCircle2, Edit3, Plus,
   MapPin, AlertTriangle, Loader2, Phone, User, Calendar,
-  Info, X, ChevronRight, Layers, Clock, RefreshCw, Navigation
+  Info, X, ChevronRight, Layers, Clock, RefreshCw, Navigation, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -94,6 +94,11 @@ export default function Shipment() {
   const [updating, setUpdating] = useState(false);
   const detailsRef = useRef<HTMLDivElement>(null);
 
+  // AI Shipment Planner
+  const [aiPlan, setAiPlan] = useState<any>(null);
+  const [loadingAi, setLoadingAi] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
+
   // ── Load data ────────────────────────────────────────────────────────────────
   useEffect(() => {
     Promise.all([
@@ -154,6 +159,20 @@ export default function Shipment() {
     }
   };
 
+  const handleAiPlan = async () => {
+    setLoadingAi(true);
+    setShowAiModal(true);
+    try {
+      const plan = await api.getAiShipmentPlan();
+      setAiPlan(plan);
+    } catch (err: any) {
+      alert(err.message || 'Failed to generate AI plan');
+      setShowAiModal(false);
+    } finally {
+      setLoadingAi(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center p-8 bg-[#F5F2ED]">
@@ -200,12 +219,20 @@ export default function Shipment() {
               </h1>
               <p className="text-[#A89F91] text-sm mt-1">Manage all your order dispatches from one place</p>
             </div>
-            <Button
-              onClick={() => setShowForm(true)}
-              className="bg-[#6B4E3D] hover:bg-[#5A4133] text-white rounded-full px-6 h-12 font-bold gap-2 shadow-lg shadow-[#6B4E3D]/20"
-            >
-              <Plus size={18} /> Create Shipment
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                onClick={handleAiPlan}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-6 h-12 font-bold gap-2 shadow-lg shadow-indigo-600/20"
+              >
+                <Sparkles size={18} /> AI Smart Plan
+              </Button>
+              <Button
+                onClick={() => setShowForm(true)}
+                className="bg-[#6B4E3D] hover:bg-[#5A4133] text-white rounded-full px-6 h-12 font-bold gap-2 shadow-lg shadow-[#6B4E3D]/20"
+              >
+                <Plus size={18} /> Create Shipment
+              </Button>
+            </div>
           </div>
 
           {/* 24h/48h Reminders */}
@@ -749,6 +776,149 @@ export default function Shipment() {
                   {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update Status'}
                 </Button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── AI PLANNER MODAL ──────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showAiModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-end"
+            onClick={() => setShowAiModal(false)}
+          >
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-3xl h-full bg-[#F5F2ED] flex flex-col shadow-2xl overflow-hidden"
+            >
+              <div className="px-8 pt-8 pb-6 bg-indigo-600 text-white shrink-0">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-2xl font-black flex items-center gap-2"><Sparkles size={24} /> AI Shipment Plan</h2>
+                  <button onClick={() => setShowAiModal(false)} className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30">
+                    <X size={18} />
+                  </button>
+                </div>
+                <p className="text-white/70 text-sm">
+                  {loadingAi ? 'Calculating optimal logistics routes...' : 'Smart grouping and transport suggestions'}
+                </p>
+              </div>
+
+              <ScrollArea className="flex-1">
+                <div className="p-8 space-y-8">
+                  {loadingAi ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-indigo-600">
+                      <Loader2 className="w-12 h-12 animate-spin mb-4" />
+                      <p className="font-bold">Analyzing pending orders and routes...</p>
+                    </div>
+                  ) : aiPlan ? (
+                    <>
+                      <div className="bg-white rounded-2xl p-6 border border-indigo-100 shadow-sm flex items-center justify-between">
+                        <div>
+                          <p className="text-xs uppercase tracking-widest font-bold text-[#A89F91]">Est. Savings</p>
+                          <p className="text-3xl font-black text-indigo-600">₹{aiPlan.summary?.estimated_total_savings_inr?.toLocaleString('en-IN')}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-[#1A1A1A]">{aiPlan.summary?.total_shipment_groups} Optimized Groups</p>
+                          <p className="text-xs text-[#A89F91]">{aiPlan.summary?.total_pending_orders} total orders analyzed</p>
+                        </div>
+                      </div>
+
+                      {aiPlan.summary?.urgent_orders?.length > 0 && (
+                        <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-200 flex items-start gap-3">
+                          <AlertTriangle className="shrink-0 mt-0.5" size={18} />
+                          <div>
+                            <p className="font-bold text-sm">Urgent Dispatches Needed</p>
+                            <p className="text-xs mt-1">Orders confirmed 3+ days ago: {aiPlan.summary.urgent_orders.join(', ')}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {aiPlan.shipment_groups?.map((group: any, idx: number) => (
+                        <div key={idx} className="bg-white rounded-2xl p-6 border border-[#E5E1DA] shadow-sm relative overflow-hidden">
+                          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                            <Layers size={80} className="text-indigo-600" />
+                          </div>
+                          <div className="relative z-10">
+                            <div className="flex items-center justify-between mb-4">
+                              <div>
+                                <Badge className="bg-indigo-100 text-indigo-700 border-none mb-2">{group.group_id}</Badge>
+                                <h3 className="text-lg font-black text-[#1A1A1A]">{group.delivery_area}</h3>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[10px] uppercase font-bold text-[#A89F91]">Est. Cost</p>
+                                <p className="text-lg font-bold text-[#1A1A1A]">₹{group.estimated_cost_inr}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4 mb-4 text-xs">
+                              <div className="bg-[#F5F2ED] p-3 rounded-xl border border-[#E5E1DA]">
+                                <p className="text-[#A89F91] font-bold mb-1">Method</p>
+                                <p className="font-bold text-[#1A1A1A] uppercase">{group.suggested_transport.replace('_', ' ')}</p>
+                              </div>
+                              <div className="bg-[#F5F2ED] p-3 rounded-xl border border-[#E5E1DA]">
+                                <p className="text-[#A89F91] font-bold mb-1">Timing</p>
+                                <p className="font-bold text-[#1A1A1A]">{group.suggested_dispatch_time}</p>
+                              </div>
+                            </div>
+
+                            <div className="bg-green-50 p-3 rounded-xl border border-green-200 mb-4">
+                              <p className="text-xs text-green-800"><strong>Why?</strong> {group.reason}</p>
+                            </div>
+
+                            <div>
+                              <p className="text-[10px] uppercase font-bold text-[#A89F91] mb-2">Orders Included</p>
+                              <div className="flex flex-wrap gap-2">
+                                {group.orders_included?.map((oid: string) => (
+                                  <span key={oid} className="bg-[#EFE9E1] text-[#6B4E3D] px-2 py-1 rounded border border-[#E5E1DA] text-xs font-bold">
+                                    {oid}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+
+                            <Button
+                              onClick={() => {
+                                setShowAiModal(false);
+                                
+                                const matchingOrderIds = confirmedOrders
+                                  .filter(o => group.orders_included.includes(o.orderId))
+                                  .map(o => o._id);
+                                  
+                                setSelectedOrders(matchingOrderIds);
+                                
+                                const aiTransportLower = group.suggested_transport.toLowerCase();
+                                const matchingType = TRANSPORT_TYPES.find(t => 
+                                  aiTransportLower.includes(t.id) || t.id.includes(aiTransportLower)
+                                );
+                                
+                                setTransportType(matchingType ? matchingType.id : 'own_vehicle');
+                                setShowForm(true);
+                              }}
+                              className="w-full mt-5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold border border-indigo-200"
+                            >
+                              Setup This Shipment
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {aiPlan.agent_notes && (
+                        <div className="bg-[#F5F2ED] p-4 rounded-xl border border-[#E5E1DA] text-sm text-[#6B4E3D] text-center italic font-medium mt-4">
+                          " {aiPlan.agent_notes} "
+                        </div>
+                      )}
+                    </>
+                  ) : null}
+                </div>
+              </ScrollArea>
             </motion.div>
           </motion.div>
         )}

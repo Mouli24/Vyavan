@@ -7,6 +7,7 @@ import Product from '../models/Product.js';
 import Complaint from '../models/Complaint.js';
 import CallSchedule from '../models/CallSchedule.js';
 import ManufacturerProfile from '../models/ManufacturerProfile.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const router = Router();
 
@@ -123,6 +124,84 @@ router.get('/stats', protect, requireRole('manufacturer'), async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// GET /api/manufacturer/onboarding-assistant — AI-driven onboarding guide
+router.get('/onboarding-assistant', protect, requireRole('manufacturer'), async (req, res) => {
+  try {
+    const mfrId = req.user._id;
+
+    const [profile, productCount, dealCount, shipmentCount] = await Promise.all([
+      ManufacturerProfile.findOne({ user: mfrId }).lean(),
+      Product.countDocuments({ manufacturer: mfrId, isActive: true }),
+      Deal.countDocuments({ manufacturer: mfrId }),
+      Shipment.countDocuments({ manufacturer: mfrId }),
+    ]);
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+
+    const contextData = {
+      user: {
+        name: req.user.name,
+        company: req.user.company,
+        email: req.user.email,
+        location: req.user.location,
+        createdAt: req.user.createdAt,
+      },
+      profile: profile || { status: 'none', message: 'Profile not created yet.' },
+      metrics: {
+        total_products: productCount,
+        total_deals: dealCount,
+        total_shipments: shipmentCount,
+      }
+    };
+
+    const prompt = `
+You are Agent 10, the Onboarding Assistant for B2B Mang (a B2B manufacturing platform).
+Your job is to analyze the following user profile and metrics and determine exactly what step they should take next to grow their business on the platform.
+
+Here is the data for the manufacturer:
+${JSON.stringify(contextData, null, 2)}
+
+Based on this data, provide a structured onboarding guide. Calculate a realistic "completion_percentage" from 0 to 100 based on their critical fields (like gstNumber, panNumber, address, factoryImages, bankDetails, and having at least 1 product listed). 
+
+Provide a JSON response matching this schema exactly:
+{
+  "completion_percentage": 50,
+  "headline_message": "String (e.g. Finish Your Store Identity Setup)",
+  "missing_fields": ["array of missing fields"],
+  "next_action": {
+    "title": "String (e.g. Add Tax Details)",
+    "description": "String (short description of why to do this)",
+    "action_button": "String (e.g. Update Profile)",
+    "redirect_url": "String (e.g. /manufacturer/settings or /manufacturer/store)"
+  },
+  "agent_advice": "String (a friendly, encouraging tip addressing them)"
+}
+
+Rules for redirect_url:
+- For profile/tax/bank edits use: /manufacturer/settings
+- For adding products use: /manufacturer/store
+- For dealing with orders use: /manufacturer/orders
+`;
+
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.2,
+        responseMimeType: "application/json",
+      }
+    });
+
+    const textPayload = result.response.text();
+    const parsedData = JSON.parse(textPayload);
+
+    res.json(parsedData);
+  } catch (err) {
+    console.error("AI Onboarding Assistant Error:", err);
+    res.status(500).json({ message: 'Failed to generate onboarding advice', details: err.message });
   }
 });
 

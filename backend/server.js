@@ -2,31 +2,34 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { connectDB } from './config/db.js';
-
 import http from 'http';
 import { Server } from 'socket.io';
 
 // Route imports
-import authRoutes          from './routes/auth.js';
-import productRoutes       from './routes/products.js';
-import orderRoutes         from './routes/orders.js';
-import shipmentRoutes      from './routes/shipments.js';
-import dealRoutes          from './routes/deals.js';
-import negotiationRoutes   from './routes/negotiation.js';
-import messageRoutes       from './routes/messages.js';
-import complaintRoutes     from './routes/complaints.js';
-import paymentRoutes       from './routes/payments.js';
-import adminRoutes         from './routes/admin.js';
-import notificationRoutes  from './routes/notifications.js';
-import scheduleRoutes      from './routes/schedule.js';
-import companiesRoutes     from './routes/companies.js';
-import manufacturerRoutes  from './routes/manufacturer.js';
-import cartRoutes          from './routes/cart.js';
-import kycRoutes           from './routes/kyc.js';
+import authRoutes from './routes/auth.js';
+import productRoutes from './routes/products.js';
+import orderRoutes from './routes/orders.js';
+import shipmentRoutes from './routes/shipments.js';
+import dealRoutes from './routes/deals.js';
+import messageRoutes from './routes/messages.js';
+import complaintRoutes from './routes/complaints.js';
+import paymentRoutes from './routes/payments.js';
+import adminRoutes from './routes/admin.js';
+import notificationRoutes from './routes/notifications.js';
+import scheduleRoutes from './routes/schedule.js';
+import companiesRoutes from './routes/companies.js';
+import manufacturerRoutes from './routes/manufacturer.js';
+import cartRoutes from './routes/cart.js';
+import kycRoutes from './routes/kyc.js';
 import communicationRoutes from './routes/communication.js';
-import addressRoutes       from './routes/addresses.js';
+import addressRoutes from './routes/addresses.js';
 import manufacturerPaymentRoutes from './routes/manufacturerPayment.js';
+import productListerRoutes from './routes/productLister.js';
+import seedRoutes from './routes/seed.js';
 import aiRoutes from './routes/ai.js';
+
+// import negotiationRoutes from './routes/negotiation.js'; // Missing file, commented out to avoid crash
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -37,10 +40,31 @@ const io = new Server(server, {
 });
 
 // ── Middleware ───────────────────────────────────────────────────────────────
+const allowedOrigins = [
+  process.env.CLIENT_ORIGIN,
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
 app.use(cors({
-  origin: true,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps)
+    if (!origin) return callback(null, true);
+
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
+      origin.includes('vercel.app') ||
+      origin.includes('netlify.app');
+
+    if (isAllowed || process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    } else {
+      return callback(new Error('CORS Not Allowed'), false);
+    }
+  },
   credentials: true,
 }));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -61,31 +85,34 @@ app.use((req, res, next) => {
 });
 
 // ── Routes ───────────────────────────────────────────────────────────────────
-app.use('/api/auth',          authRoutes);
-app.use('/api/products',      productRoutes);
-app.use('/api/orders',        orderRoutes);
-app.use('/api/shipments',     shipmentRoutes);
-app.use('/api/deals',         dealRoutes);
-app.use('/api/negotiation',   negotiationRoutes);
-app.use('/api/messages',      messageRoutes);
-app.use('/api/complaints',    complaintRoutes);
-app.use('/api/payments',      paymentRoutes);
-app.use('/api/admin',         adminRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/shipments', shipmentRoutes);
+app.use('/api/deals', dealRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/complaints', complaintRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/schedule',      scheduleRoutes);
-app.use('/api/companies',     companiesRoutes);
-app.use('/api/manufacturer',  manufacturerRoutes);
-app.use('/api/cart',          cartRoutes);
-app.use('/api/kyc',           kycRoutes);
+app.use('/api/schedule', scheduleRoutes);
+app.use('/api/companies', companiesRoutes);
+app.use('/api/manufacturer', manufacturerRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/kyc', kycRoutes);
 app.use('/api/communication', communicationRoutes);
-app.use('/api/addresses',     addressRoutes);
+app.use('/api/addresses', addressRoutes);
 app.use('/api/manufacturer/payment', manufacturerPaymentRoutes);
-app.use('/api/ai',            aiRoutes);
+app.use('/api/product-lister', productListerRoutes);
+app.use('/api/seed', seedRoutes);
+app.use('/api/ai', aiRoutes);
+
+// app.use('/api/negotiation', negotiationRoutes); // Missing file, commented out
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({
   status: 'ok',
-  version: '2.1.0-neg',
+  version: '2.1.0-fixed',
   timestamp: new Date().toISOString(),
 }));
 

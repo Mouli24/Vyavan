@@ -58,8 +58,8 @@ Respond in JSON format:
   "lighting_quality": "poor/average/good"
 }`;
 
-    // 3. Make direct REST API call to Gemini
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
     
     const geminiBody = {
       contents: [{
