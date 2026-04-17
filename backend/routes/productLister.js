@@ -95,7 +95,7 @@ router.post('/analyze', protect, requireRole('manufacturer'), upload.single('ima
     }
 
     // 2. Prepare Gemini Prompt
-    const model = getGenAI().getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-2.0-flash-exp" });
     const prompt = `
       You are an expert B2B product specialist. Analyze this product image and generate a professional B2B listing in JSON format.
       
@@ -122,7 +122,18 @@ router.post('/analyze', protect, requireRole('manufacturer'), upload.single('ima
       result = await model.generateContent([prompt, imagePart]);
     } catch (aiError) {
       console.error('[GEMINI_AI_ERROR]', aiError);
-      throw new Error('Gemini AI failed: ' + aiError.message);
+      let errMsg = aiError.message;
+      
+      // Attempt to extract more specific error info if available
+      if (aiError.response?.status === 400 || aiError.status === 400) {
+        errMsg = "Bad Request: Check if your API key or model name is correct.";
+      } else if (aiError.response?.status === 404 || aiError.status === 404) {
+        errMsg = "Model Not Found: The model name 'gemini-2.0-flash-exp' might not be available in your region.";
+      } else if (aiError.response?.status === 429 || aiError.status === 429) {
+        errMsg = "Quota Exceeded: You have reached your Gemini API limit.";
+      }
+      
+      throw new Error('Gemini AI failed: ' + errMsg);
     }
 
     const response = await result.response;
@@ -168,7 +179,7 @@ router.post('/regenerate-field', protect, requireRole('manufacturer'), async (re
   try {
     const { field, context, instruction } = req.body;
 
-    const model = getGenAI().getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-2.0-flash-exp" });
     const prompt = `
       You are a product specialist. I have a listing for "${context.name}".
       Specifically for the field "${field}", here is the current value: "${context.currentValue}".

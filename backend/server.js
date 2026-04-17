@@ -2,6 +2,8 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { connectDB } from './config/db.js';
+import http from 'http';
+import { Server } from 'socket.io';
 
 // Route imports
 import authRoutes from './routes/auth.js';
@@ -22,10 +24,20 @@ import kycRoutes from './routes/kyc.js';
 import communicationRoutes from './routes/communication.js';
 import addressRoutes from './routes/addresses.js';
 import manufacturerPaymentRoutes from './routes/manufacturerPayment.js';
-import seedRoutes from './routes/seed.js';
 import productListerRoutes from './routes/productLister.js';
+import seedRoutes from './routes/seed.js';
+import aiRoutes from './routes/ai.js';
+
+// import negotiationRoutes from './routes/negotiation.js'; // Missing file, commented out to avoid crash
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "PATCH"]
+  }
+});
 
 // ── Middleware ───────────────────────────────────────────────────────────────
 const allowedOrigins = [
@@ -52,8 +64,25 @@ app.use(cors({
   },
   credentials: true,
 }));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// ── Socket.io ────────────────────────────────────────────────────────────────
+io.on('connection', (socket) => {
+  socket.on('join_negotiation', (negotiationId) => {
+    socket.join(negotiationId);
+  });
+  socket.on('leave_negotiation', (negotiationId) => {
+    socket.leave(negotiationId);
+  });
+});
+
+// Attach io to req
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
 // ── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
@@ -76,11 +105,14 @@ app.use('/api/addresses', addressRoutes);
 app.use('/api/manufacturer/payment', manufacturerPaymentRoutes);
 app.use('/api/product-lister', productListerRoutes);
 app.use('/api/seed', seedRoutes);
+app.use('/api/ai', aiRoutes);
+
+// app.use('/api/negotiation', negotiationRoutes); // Missing file, commented out
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({
   status: 'ok',
-  version: '2.0.0',
+  version: '2.1.0-fixed',
   timestamp: new Date().toISOString(),
 }));
 
@@ -96,5 +128,5 @@ app.use((err, _req, res, _next) => {
 // ── Start ─────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT ?? 5000;
 connectDB().then(() => {
-  app.listen(PORT, () => console.log(`🚀 API running on http://localhost:${PORT}`));
+  server.listen(PORT, () => console.log(`🚀 API running on http://localhost:${PORT}`));
 });

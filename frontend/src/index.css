@@ -125,7 +125,16 @@
   --color-sidebar-accent-foreground: #111827;
   --color-sidebar-border:       #E5E7EB;
 
-  /* ── Radius scale ── */
+  /* ── Admin palette ── */
+  --color-admin-bg:         #F8F7F5;
+  --color-admin-sidebar:    #1E1E2E;
+  --color-admin-sidebar-hover: #2A2A3E;
+  --color-admin-sidebar-active: #2D2B55;
+  --color-admin-border:     #2E2E42;
+  --color-admin-text:       #E2E2F0;
+  --color-admin-muted:      #8B8BA8;
+  --color-admin-accent:     #7C3AED;
+  --color-admin-accent-pale:#3D2B6B;
   --radius:    0.75rem;
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
@@ -173,6 +182,33 @@
   background: rgba(255,255,255,0.75);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+}
+
+/* ── Admin dark sidebar ── */
+.admin-sidebar {
+  background: #16161F;
+}
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #8B8BA8;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+.admin-nav-item:hover {
+  background: rgba(255,255,255,0.06);
+  color: #E2E2F0;
+}
+.admin-nav-item.active {
+  background: rgba(124,58,237,0.18);
+  color: #C4B5FD;
+  font-weight: 600;
 }
 
 .card-hover {
