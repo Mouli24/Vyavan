@@ -368,10 +368,6 @@ export default function ManufacturerOrders() {
         </div>
 
       </div>
-<<<<<<< HEAD
-=======
-
->>>>>>> e2a4ff1aa134e90ae148fcdaa7688052a1b08afc
       
       {/* Modification Modal */}
       {showModModal && selectedOrder && (
