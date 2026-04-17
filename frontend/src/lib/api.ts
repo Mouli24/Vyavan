@@ -70,6 +70,46 @@ export const api = {
       lighting_quality: string;
     }>('/ai/analyze-image', { method: 'POST', body: JSON.stringify({ imageUrl, instruction }) }),
 
+  smartListerAnalyze: async (front?: File, back?: File) => {
+    const formData = new FormData();
+    if (front) formData.append('front', front);
+    if (back) formData.append('back', back);
+    
+    const token = localStorage.getItem('token');
+    const base = import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api';
+    
+    const res = await fetch(`${base}/product-lister/analyze`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: 'Analysis failed' }));
+      throw new Error(err.message);
+    }
+    
+    return res.json() as Promise<{
+      success: boolean;
+      cloudinaryUrls: { front?: string; back?: string };
+      analysis: {
+        name: string;
+        category: string;
+        shortDescription: string;
+        description: string;
+        specs: Record<string, string>;
+        keyFeatures: string[];
+        seoTags: string[];
+        hsCode: string;
+        packagingType: string;
+        suggestedPrice: number;
+        suggestedMoq: number;
+      };
+    }>;
+  },
+
   // ── Orders ────────────────────────────────────────────────────────────────
   getOrders: (params?: { status?: string }) => {
     const qs = params ? '?' + new URLSearchParams(params as Record<string,string>).toString() : '';

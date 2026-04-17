@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import {
   X, Plus, Trash2, Check, ChevronLeft, ChevronRight,
-  Image as ImageIcon, ToggleLeft, ToggleRight, Eye, Loader2, GripHorizontal, ArrowLeftRight, Sparkles, AlertCircle
+  Image as ImageIcon, ToggleLeft, ToggleRight, Eye, Loader2, GripHorizontal, Sparkles, AlertCircle
 } from 'lucide-react'
 import { motion, AnimatePresence, Reorder } from 'motion/react'
 import { api, Product } from '@/lib/api'
@@ -24,7 +24,7 @@ const PAYMENT_OPTIONS = [
 ]
 
 const STEPS = [
-  'Basic Details', 'Photos', 'Specifications', 'Pricing', 'Stock', 'Payment Terms', 'Preview & Publish',
+  'AI Smart Lister', 'Basic Details', 'Photos', 'Specifications', 'Pricing', 'Stock', 'Payment Terms', 'Preview & Publish',
 ]
 
 interface Spec { key: string; value: string }
@@ -35,7 +35,6 @@ interface FormState {
   category: string
   description: string
   photos: string[]
-  photoInput: string
   specs: Spec[]
   basePrice: number | ''
   moq: number | ''
@@ -48,6 +47,12 @@ interface FormState {
   paymentTerms: string[]
   defaultTerm: string
   paymentNotes: string
+  // AI fields
+  frontPhotoFile?: File
+  backPhotoFile?: File
+  isAnalyzing: boolean
+  // Enhanced photos tracking: {[url]: boolean}
+  enhancedPhotos: Record<string, boolean>
 }
 
 const initialForm: FormState = {
@@ -55,7 +60,6 @@ const initialForm: FormState = {
   category: '',
   description: '',
   photos: [],
-  photoInput: '',
   specs: [{ key: '', value: '' }],
   basePrice: '',
   moq: '',
@@ -68,6 +72,8 @@ const initialForm: FormState = {
   paymentTerms: [],
   defaultTerm: '',
   paymentNotes: '',
+  isAnalyzing: false,
+  enhancedPhotos: {},
 }
 
 export default function AddProductModal({ open, onClose, onPublished, editProduct }: Props) {
@@ -103,32 +109,13 @@ export default function AddProductModal({ open, onClose, onPublished, editProduc
 
   // ── Step validation ──────────────────────────────────────────────────────
   function canProceed(): boolean {
-    if (step === 0) return form.name.trim() !== '' && form.category !== ''
-    if (step === 1) return form.photos.length >= 1
-    if (step === 3) return form.basePrice !== '' && form.moq !== ''
-    if (step === 4) return form.stock !== ''
-    if (step === 5) return form.paymentTerms.length > 0
+    if (step === 0) return true // Analysis is optional but recommended
+    if (step === 1) return form.name.trim() !== '' && form.category !== ''
+    if (step === 2) return form.photos.length >= 1
+    if (step === 4) return form.basePrice !== '' && form.moq !== ''
+    if (step === 5) return form.stock !== ''
+    if (step === 6) return form.paymentTerms.length > 0
     return true
-  }
-
-  // ── Photo helpers ────────────────────────────────────────────────────────
-  function addPhoto() {
-    const url = form.photoInput.trim()
-    if (!url || form.photos.length >= 12) return
-    set('photos', [...form.photos, url])
-    set('photoInput', '')
-  }
-
-  function removePhoto(idx: number) {
-    set('photos', form.photos.filter((_, i) => i !== idx))
-  }
-
-  function reorderPhotos(fromIndex: number, toIndex: number) {
-    if (toIndex < 0 || toIndex >= form.photos.length) return
-    const next = [...form.photos]
-    const [moved] = next.splice(fromIndex, 1)
-    next.splice(toIndex, 0, moved)
-    set('photos', next)
   }
 
   // ── Spec helpers ─────────────────────────────────────────────────────────
@@ -291,19 +278,53 @@ export default function AddProductModal({ open, onClose, onPublished, editProduc
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
               >
-                {step === 0 && <Step1 form={form} set={set} />}
-                {step === 1 && <Step2 form={form} set={set} addPhoto={addPhoto} removePhoto={removePhoto} reorderPhotos={(p) => set('photos', p)} />}
-                {step === 2 && <Step3 form={form} updateSpec={updateSpec} addSpec={addSpec} removeSpec={removeSpec} />}
-                {step === 3 && <Step4 form={form} set={set} updateSlab={updateSlab} addSlab={addSlab} removeSlab={removeSlab} />}
-                {step === 4 && <Step5 form={form} set={set} />}
-                {step === 5 && <Step6 form={form} set={set} toggleTerm={toggleTerm} />}
-                {step === 6 && (
+                {step === 0 && (
+                  <Step0 
+                    form={form} 
+                    set={set} 
+                    onSkip={() => setStep(1)}
+                    onAnalyze={async () => {
+                      set('isAnalyzing', true)
+                      try {
+                        const res = await api.smartListerAnalyze(form.frontPhotoFile, form.backPhotoFile)
+                        const cloudUrls = []
+                        if (res.cloudinaryUrls.front) cloudUrls.push(res.cloudinaryUrls.front)
+                        if (res.cloudinaryUrls.back) cloudUrls.push(res.cloudinaryUrls.back)
+                        
+                        setForm(f => ({
+                          ...f,
+                          name: res.analysis.name,
+                          category: res.analysis.category,
+                          description: res.analysis.description,
+                          photos: [...f.photos, ...cloudUrls],
+                          specs: Object.entries(res.analysis.specs).map(([key, value]) => ({ key, value })),
+                          basePrice: res.analysis.suggestedPrice || f.basePrice,
+                          moq: res.analysis.suggestedMoq || f.moq,
+                          isAnalyzing: false
+                        }))
+                        setStep(1) // Advance to review
+                      } catch (err: any) {
+                        alert('Magic Analysis Failed: ' + (err.message || 'Unknown error') + '. \n\nStarting manual entry...');
+                        set('isAnalyzing', false)
+                        setStep(1) // Fallback to manual entry
+                      }
+                    }}
+                  />
+                )}
+                {step === 1 && <Step1 form={form} set={set} />}
+                {step === 2 && <Step2 form={form} set={set} removePhoto={(idx) => set('photos', form.photos.filter((_, i) => i !== idx))} reorderPhotos={(p) => set('photos', p)} />}
+                {step === 3 && <Step3 form={form} updateSpec={updateSpec} addSpec={addSpec} removeSpec={removeSpec} />}
+                {step === 4 && <Step4 form={form} set={set} updateSlab={updateSlab} addSlab={addSlab} removeSlab={removeSlab} />}
+                {step === 5 && <Step5 form={form} set={set} />}
+                {step === 6 && <Step6 form={form} set={set} toggleTerm={toggleTerm} />}
+                {step === 7 && (
                   <Step7
                     form={form}
                     publishing={publishing}
                     published={published}
                     onDraft={() => handlePublish(true)}
                     onPublish={() => handlePublish(false)}
+                    set={set}
                   />
                 )}
               </motion.div>
@@ -385,11 +406,10 @@ function Step1({ form, set }: { form: FormState; set: <K extends keyof FormState
 
 // ── Step 2: Photos ────────────────────────────────────────────────────────────
 function Step2({
-  form, set, addPhoto, removePhoto, reorderPhotos
+  form, set, removePhoto, reorderPhotos
 }: {
   form: FormState
   set: <K extends keyof FormState>(k: K, v: FormState[K]) => void
-  addPhoto: () => void
   removePhoto: (i: number) => void
   reorderPhotos: (p: string[]) => void
 }) {
@@ -403,9 +423,23 @@ function Step2({
     try {
       setAnalyzingIndex(index);
       const res = await api.analyzeProductImage(url, aiInstruction);
-      setAiReport({ index, url, data: res });
+      setAiReport({ index, url, data: res, isManual: false });
     } catch (err: any) {
-      alert(`AI Enhancement Failed:\n\n${err.message}`);
+      console.error("AI Enhancement Failed, switching to manual fallback:", err);
+      // Fallback: Show a manual comparison report
+      setAiReport({ 
+        index, 
+        url, 
+        isManual: true,
+        data: { 
+          quality_score: "—", 
+          product_type: "Manual Adjustment",
+          lighting_quality: "Standard",
+          background_type: "Preserved",
+          issues: ["AI analysis unavailable. You can still apply a manual visual fix."],
+          suggestions: ["Click 'AI Enhanced' to apply instant brightness/contrast/saturate filters."]
+        } 
+      });
     } finally {
       setAnalyzingIndex(null);
     }
@@ -445,64 +479,26 @@ function Step2({
 
   return (
     <div 
-      className={`flex flex-col gap-6 p-2 rounded-3xl transition-all ${isDragging ? 'bg-purple-50 ring-4 ring-purple-200 border border-dashed border-purple-400' : ''}`}
+      className={`relative flex flex-col gap-6 p-2 rounded-3xl transition-all ${isDragging ? 'bg-purple-50 ring-4 ring-purple-200 border border-dashed border-purple-400' : ''}`}
       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
       onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
       onDrop={handleDrop}
     >
-      <div>
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          className="hidden" 
-          multiple 
-          accept="image/*" 
-          onChange={handleFileSelect} 
-        />
-        <label className="block text-sm font-bold text-slate-700 mb-2">
-          Add Photo URL <span className="text-red-400">*</span>
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileSelect} 
+        multiple 
+        accept="image/*" 
+        className="hidden" 
+      />
+      <div className="flex flex-col gap-2">
+        <label className="block text-sm font-bold text-slate-700">
+          Product Photos <span className="text-red-400">*</span>
         </label>
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={form.photoInput}
-            onChange={e => set('photoInput', e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && addPhoto()}
-            placeholder="https://example.com/photo.jpg"
-            className="flex-1 px-4 py-3 rounded-2xl border border-slate-200 bg-[#F5E6D3]/30 focus:outline-none focus:ring-2 focus:ring-[#5D4037]/30 text-slate-800 placeholder:text-slate-400 text-sm"
-          />
-          <button
-            onClick={() => runAIEnhancer(form.photoInput, -1)}
-            disabled={!form.photoInput.trim() || analyzingIndex === -1}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white text-sm font-bold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md flex-shrink-0"
-          >
-            {analyzingIndex === -1 ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-            AI Enhancer
-          </button>
-          <button
-            onClick={addPhoto}
-            disabled={!form.photoInput.trim() || form.photos.length >= 12}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#5D4037] text-white text-sm font-bold hover:bg-[#5D4037]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-shrink-0"
-          >
-            <Plus size={16} /> Add Photo
-          </button>
-        </div>
-        <p className="text-xs text-slate-400 mt-2 flex items-center gap-1.5">
-          <ArrowLeftRight size={12} /> Drag photos to reorder. First photo is always the main display image.
+        <p className="text-xs text-slate-400">
+          Upload at least 1 photo. Drag photos to reorder. First photo is the main display.
         </p>
-      </div>
-
-      <div className="mb-2">
-        <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-          <Sparkles size={14} className="text-purple-500" /> Tell the AI what you want to improve <span className="text-xs text-slate-400 font-normal">(Optional)</span>
-        </label>
-        <input
-          type="text"
-          value={aiInstruction}
-          onChange={e => setAiInstruction(e.target.value)}
-          placeholder="e.g. How can I make this lighting look more professional and luxurious?"
-          className="w-full px-4 py-3 rounded-2xl border border-purple-200 bg-purple-50/50 focus:outline-none focus:ring-2 focus:ring-purple-400 text-slate-800 placeholder:text-purple-300 text-sm transition-all shadow-inner"
-        />
       </div>
 
       {form.photos.length > 0 ? (
@@ -534,19 +530,23 @@ function Step2({
                 <Eye size={12} />
               </button>
               <button
+                onClick={(e) => { e.stopPropagation(); runAIEnhancer(url, i); }}
+                disabled={analyzingIndex === i}
+                className="absolute top-1 left-8 w-6 h-6 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+              >
+                {analyzingIndex === i ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+              </button>
+              <button
                 onClick={() => removePhoto(i)}
                 className="absolute top-1 right-1 w-6 h-6 rounded-full bg-white hover:bg-red-50 text-red-500 shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
               >
                 <Trash2 size={12} />
               </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); runAIEnhancer(url, i); }}
-                disabled={analyzingIndex === i}
-                className="absolute bottom-1 right-1 rounded-lg bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white text-[9px] font-bold px-2 py-1 shadow-md flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-              >
-                {analyzingIndex === i ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                AI
-              </button>
+              {form.enhancedPhotos[url] && (
+                <div className="absolute bottom-1 right-1 bg-purple-500 text-white p-1 rounded-full shadow-lg">
+                  <Sparkles size={10} />
+                </div>
+              )}
             </Reorder.Item>
           ))}
           {form.photos.length < 12 && (
@@ -588,31 +588,51 @@ function Step2({
               <div className="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center shadow-md">
                 <Sparkles size={16} className="text-white" />
               </div>
-              <h3 className="font-bold text-slate-800 text-lg">AI Enhancer Report</h3>
+              <h3 className="font-bold text-slate-800 text-lg">
+                {aiReport.isManual ? 'Manual Visual Adjustment' : 'AI Enhancer Report'}
+              </h3>
             </div>
 
-            {/* Before & After Visuals */}
-            <div className="flex gap-6 mb-8">
-              <div className="flex-1 flex flex-col gap-2">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider pl-1">Original Upload</span>
-                <div className="aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
+            {aiReport.isManual && (
+              <div className="mb-4 bg-amber-50 text-amber-700 p-3 rounded-2xl text-[11px] font-bold flex items-center gap-2 border border-amber-100 italic">
+                <AlertCircle size={14} /> AI Analysis is currently unavailable. Using manual visual presets.
+              </div>
+            )}
+
+            {/* Before & After Visuals with Comparison Selection */}
+            <div className="grid grid-cols-2 gap-6 mb-8">
+              <div 
+                onClick={() => set('enhancedPhotos', { ...form.enhancedPhotos, [aiReport.url]: false })}
+                className={`flex flex-col gap-2 cursor-pointer group/card transition-all ${!form.enhancedPhotos[aiReport.url] ? 'scale-[1.02]' : 'opacity-60 grayscale-[0.5]'}`}
+              >
+                <div className="flex items-center justify-between pl-1">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Original Upload</span>
+                  {!form.enhancedPhotos[aiReport.url] && <div className="w-5 h-5 rounded-full bg-[#5D4037] text-white flex items-center justify-center"><Check size={12} /></div>}
+                </div>
+                <div className={`aspect-square rounded-2xl overflow-hidden bg-slate-100 border-2 transition-all ${!form.enhancedPhotos[aiReport.url] ? 'border-[#5D4037] shadow-lg' : 'border-slate-200'}`}>
                   <img src={aiReport.url} alt="Before" className="w-full h-full object-contain" />
                 </div>
               </div>
-              <div className="flex-1 flex flex-col gap-2">
-                <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider pl-1 flex items-center justify-between">
-                  AI Enhanced 
-                  <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-[9px]">PRO</span>
-                </span>
-                <div className="aspect-square rounded-2xl overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-white border-2 border-purple-300 relative shadow-[0_0_30px_rgba(168,85,247,0.2)] group">
+
+              <div 
+                onClick={() => set('enhancedPhotos', { ...form.enhancedPhotos, [aiReport.url]: true })}
+                className={`flex flex-col gap-2 cursor-pointer group/card transition-all ${form.enhancedPhotos[aiReport.url] ? 'scale-[1.02]' : 'opacity-60 grayscale-[0.5]'}`}
+              >
+                <div className="flex items-center justify-between pl-1">
+                  <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider flex items-center gap-1.5">
+                    AI Enhanced <Sparkles size={10} />
+                  </span>
+                  {form.enhancedPhotos[aiReport.url] && <div className="w-5 h-5 rounded-full bg-purple-500 text-white flex items-center justify-center"><Check size={12} /></div>}
+                </div>
+                <div className={`aspect-square rounded-2xl overflow-hidden bg-white border-2 transition-all relative shadow-sm ${form.enhancedPhotos[aiReport.url] ? 'border-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.2)]' : 'border-slate-200'}`}>
                   <img 
                     src={aiReport.url} 
                     alt="After" 
-                    className="w-full h-full object-contain mix-blend-multiply"
+                    className="w-full h-full object-contain"
                     style={{ filter: 'brightness(1.1) contrast(1.15) saturate(1.2)' }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-purple-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-3 pointer-events-none">
-                     <span className="text-white text-[10px] font-bold">Auto-Color Corrected</span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-purple-900/50 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity flex items-end justify-center p-3 pointer-events-none">
+                     <span className="text-white text-[10px] font-bold">Recommended Enhancement</span>
                   </div>
                 </div>
               </div>
@@ -1001,133 +1021,285 @@ function Step6({
 
 // ── Step 7: Preview & Publish ─────────────────────────────────────────────────
 function Step7({
-  form, publishing, published, onDraft, onPublish
+  form, publishing, published, onDraft, onPublish, set
 }: {
   form: FormState
   publishing: boolean
   published: boolean
   onDraft: () => void
   onPublish: () => void
+  set: <K extends keyof FormState>(k: K, v: FormState[K]) => void
 }) {
   if (published) {
     return (
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="flex flex-col items-center justify-center py-12 gap-4"
-      >
-        <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
-          <Check size={36} className="text-green-600" />
+      <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in zoom-in duration-500">
+        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-6 shadow-inner">
+          <Check size={40} strokeWidth={3} />
         </div>
-        <h3 className="text-2xl font-serif font-bold text-slate-900">
-          {publishing ? 'Saving...' : 'Product Published!'}
-        </h3>
-        <p className="text-slate-500 text-sm text-center max-w-xs">
-          Your product is now live and visible to buyers on the marketplace.
+        <h3 className="text-3xl font-serif font-bold text-slate-900 mb-2">Product Live!</h3>
+        <p className="text-slate-500 mb-8 max-w-sm">
+          Your product has been successfully listed in the marketplace and is now visible to buyers.
         </p>
-      </motion.div>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-8 py-3 rounded-2xl bg-[#5D4037] text-white font-bold hover:bg-[#5D4037]/90 transition-all shadow-lg"
+        >
+          View in Storefront
+        </button>
+      </div>
     )
   }
 
-  const filledSpecs = form.specs.filter(s => s.key.trim() && s.value.trim())
+  const mainPhoto = form.photos[0]
+  const isEnhanced = mainPhoto && form.enhancedPhotos[mainPhoto]
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-2 mb-1">
-        <Eye size={18} className="text-[#5D4037]" />
-        <h3 className="text-sm font-bold text-slate-700">Buyer Preview</h3>
+    <div className="flex flex-col gap-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-bold text-slate-800">Review & Publish</h3>
+          <p className="text-sm text-slate-400">Final buyer-side storefront preview</p>
+        </div>
       </div>
 
-      {/* Preview card */}
-      <div className="rounded-[24px] border border-slate-200 overflow-hidden bg-white shadow-sm">
-        {/* Photo strip */}
-        <div className="h-48 bg-slate-100 relative overflow-hidden">
-          {form.photos[0] ? (
-            <img src={form.photos[0]} alt="Main" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-300">
-              <ImageIcon size={48} />
-            </div>
-          )}
-          {form.category && (
-            <span className="absolute top-4 left-4 px-3 py-1 bg-[#5D4037] text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
-              {form.category}
-            </span>
-          )}
-        </div>
-
-        <div className="p-6">
-          <h4 className="text-xl font-serif font-bold text-slate-900 mb-1">
-            {form.name || <span className="text-slate-300">Product Name</span>}
-          </h4>
-
-          {form.description && (
-            <p className="text-sm text-slate-500 mb-4 line-clamp-2">{form.description}</p>
-          )}
-
-          <div className="flex items-baseline gap-3 mb-4">
-            <span className="text-2xl font-serif font-bold text-slate-900">
-              {form.basePrice !== '' ? `₹${Number(form.basePrice).toLocaleString('en-IN')}` : '₹—'}
-            </span>
-            <span className="text-xs text-slate-400 font-medium">per unit</span>
-            {form.moq !== '' && (
-              <span className="ml-auto text-xs font-bold text-[#5D4037] bg-[#F5E6D3] px-3 py-1 rounded-full">
-                MOQ: {form.moq} units
-              </span>
+      {/* Buyer Preview Layout */}
+      <div className="bg-[#FAF7F4] rounded-[32px] overflow-hidden border border-slate-200 shadow-xl group">
+        <div className="grid grid-cols-5 gap-0">
+          {/* Main Photo Card */}
+          <div className="col-span-2 relative aspect-square bg-white border-r border-slate-100 p-8 flex items-center justify-center">
+            {mainPhoto ? (
+              <img 
+                src={mainPhoto} 
+                className="w-full h-full object-contain transition-all duration-1000" 
+                style={isEnhanced ? { filter: 'brightness(1.1) contrast(1.15) saturate(1.2)' } : {}}
+                alt="Preview" 
+              />
+            ) : (
+               <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-200">
+                  <ImageIcon size={64} />
+               </div>
+            )}
+            {isEnhanced && (
+              <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full border border-purple-100 flex items-center gap-1.5 shadow-sm">
+                <Sparkles size={12} className="text-purple-500" />
+                <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider italic">AI Enhanced Visuals</span>
+              </div>
             )}
           </div>
 
-          {filledSpecs.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {filledSpecs.slice(0, 6).map((s, i) => (
-                <span key={i} className="px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full font-medium">
-                  {s.key}: {s.value}
-                </span>
-              ))}
-              {filledSpecs.length > 6 && (
-                <span className="px-3 py-1 bg-slate-100 text-slate-400 text-xs rounded-full">
-                  +{filledSpecs.length - 6} more
-                </span>
-              )}
-            </div>
-          )}
+          {/* Product Info Card */}
+          <div className="col-span-3 p-10 flex flex-col">
+             <div className="flex items-center gap-2 mb-3">
+               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#5D4037] bg-white px-3 py-1 rounded-full border border-[#5D4037]/20 shadow-sm">
+                 {form.category || 'Standard Category'}
+               </span>
+               <span className="text-[10px] font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-100">Verified Listing</span>
+             </div>
 
-          {form.paymentTerms.length > 0 && (
-            <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-100">
-              {form.paymentTerms.map(t => (
-                <span key={t} className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider ${
-                  t === form.defaultTerm
-                    ? 'bg-[#5D4037] text-white'
-                    : 'bg-[#F5E6D3] text-[#5D4037]'
-                }`}>
-                  {t}
-                </span>
-              ))}
-            </div>
-          )}
+             <div className="group/edit relative">
+               <h2 
+                 className="text-3xl font-serif font-bold text-slate-900 mb-2 hover:bg-white transition-colors p-1 -ml-1 rounded-lg cursor-text"
+                 onClick={() => {
+                   const n = prompt("Edit Product Name:", form.name);
+                   if (n !== null) set('name', n);
+                 }}
+               >
+                 {form.name || 'Untitled Product'}
+               </h2>
+             </div>
+
+             <div 
+               className="mb-6 cursor-text"
+               onClick={() => {
+                 const d = prompt("Edit Description:", form.description);
+                 if (d !== null) set('description', d);
+               }}
+             >
+               <p className="text-sm text-slate-500 leading-relaxed line-clamp-4 hover:bg-white p-1 -ml-1 rounded-lg transition-colors">
+                 {form.description || 'No description provided yet.'}
+               </p>
+             </div>
+
+             <div className="mt-auto">
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="text-4xl font-serif font-bold text-slate-900" onClick={() => {
+                    const p = prompt("Edit Price:", String(form.basePrice));
+                    if (p !== null) set('basePrice', p === '' ? '' : Number(p));
+                  }}>
+                    {form.basePrice ? `₹${Number(form.basePrice).toLocaleString('en-IN')}` : '₹—'}
+                  </span>
+                  <span className="text-sm text-slate-400 font-medium">/ unit (Excl. Tax)</span>
+                </div>
+                
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="bg-white rounded-2xl px-6 py-3 border border-slate-100 shadow-sm transition-all hover:border-slate-300">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Minimum Order</p>
+                    <p className="text-lg font-bold text-slate-800">{form.moq || 1} Units</p>
+                  </div>
+                  <div className="bg-white rounded-2xl px-6 py-3 border border-slate-100 shadow-sm flex-1">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Stock Available</p>
+                    <p className="text-lg font-bold text-slate-800">{form.stock || 0} Units</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                   <button className="flex-1 h-14 rounded-2xl bg-slate-900 text-white font-bold text-sm tracking-widest uppercase hover:bg-black transition-all shadow-lg flex items-center justify-center gap-2">
+                     <Plus size={18} /> Request Quote
+                   </button>
+                   <button className="w-14 h-14 rounded-2xl border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all shadow-sm">
+                     <X size={20} />
+                   </button>
+                </div>
+             </div>
+          </div>
         </div>
       </div>
 
       {/* Publish actions */}
-      <div className="flex gap-3 pt-2">
+      <div className="flex gap-4 pt-4 border-t border-slate-100">
         <button
           onClick={onDraft}
           disabled={publishing}
-          className="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 disabled:opacity-50 transition-all"
+          className="px-8 py-4 rounded-[2rem] border-2 border-slate-200 text-slate-600 font-bold text-sm tracking-widest uppercase hover:bg-slate-50 disabled:opacity-50 transition-all flex items-center gap-2"
         >
-          {publishing ? <Loader2 size={16} className="animate-spin mx-auto" /> : 'Save as Draft'}
+          {publishing ? <Loader2 size={16} className="animate-spin" /> : 'Save Draft'}
         </button>
         <button
           onClick={onPublish}
           disabled={publishing}
-          className="flex-1 py-3 rounded-2xl bg-[#5D4037] text-white font-bold text-sm hover:bg-[#5D4037]/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+          className="flex-1 py-4 rounded-[2rem] bg-gradient-to-r from-[#5D4037] to-[#4E342E] text-white font-bold text-sm tracking-widest uppercase hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-3 shadow-2xl relative group overflow-hidden"
         >
           {publishing ? (
-            <><Loader2 size={16} className="animate-spin" /> Publishing...</>
+            <><Loader2 size={18} className="animate-spin" /> Finalizing...</>
           ) : (
-            'Publish Now'
+            <>
+              <Check size={20} />
+              Approve & Publish to Storefront
+              <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
+            </>
           )}
         </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Step 0: AI Smart Lister (Restored) ─────────────────────────────────────────────
+function Step0({ 
+  form, set, onAnalyze, onSkip 
+}: { 
+  form: FormState; 
+  set: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
+  onAnalyze: () => void;
+  onSkip: () => void;
+}) {
+  const frontInputRef = React.useRef<HTMLInputElement>(null)
+  const backInputRef = React.useRef<HTMLInputElement>(null)
+
+  const handleFileChange = (side: 'front' | 'back', e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      set(side === 'front' ? 'frontPhotoFile' : 'backPhotoFile', file)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-8 pb-4">
+      <div className="text-center space-y-2">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-amber-100 text-[#5D4037] mb-2">
+          <Sparkles size={32} />
+        </div>
+        <h3 className="text-xl font-bold text-slate-800 font-serif">AI-Powered Listing Assistant</h3>
+        <p className="text-sm text-slate-500 max-w-sm mx-auto">
+          Upload photos of the front and back of your product. Our AI will automatically identify materials, specs, and details!
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-6">
+        {/* Front Photo */}
+        <div 
+          onClick={() => frontInputRef.current?.click()}
+          className={`relative aspect-[4/3] rounded-3xl border-2 border-dashed transition-all flex flex-col items-center justify-center cursor-pointer overflow-hidden ${
+            form.frontPhotoFile ? 'border-[#5D4037] bg-[#F5E6D3]/20' : 'border-slate-200 hover:border-[#5D4037] bg-slate-50 hover:bg-white'
+          }`}
+        >
+          <input type="file" ref={frontInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange('front', e)} />
+          {form.frontPhotoFile ? (
+            <div className="absolute inset-0 p-3">
+              <img src={URL.createObjectURL(form.frontPhotoFile)} className="w-full h-full object-contain rounded-2xl" alt="Front" />
+              <div className="absolute bottom-4 left-0 right-0 text-center">
+                <span className="bg-[#5D4037] text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">Front Side</span>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 mb-3 shadow-sm group-hover:text-[#5D4037]">
+                <Plus size={24} />
+              </div>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Front Photo</span>
+              <span className="text-[10px] text-slate-400 mt-1">(Product Branding)</span>
+            </>
+          )}
+        </div>
+
+        {/* Back Photo */}
+        <div 
+          onClick={() => backInputRef.current?.click()}
+          className={`relative aspect-[4/3] rounded-3xl border-2 border-dashed transition-all flex flex-col items-center justify-center cursor-pointer overflow-hidden ${
+            form.backPhotoFile ? 'border-[#5D4037] bg-[#F5E6D3]/20' : 'border-slate-200 hover:border-[#5D4037] bg-slate-50 hover:bg-white'
+          }`}
+        >
+          <input type="file" ref={backInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange('back', e)} />
+          {form.backPhotoFile ? (
+            <div className="absolute inset-0 p-3">
+              <img src={URL.createObjectURL(form.backPhotoFile)} className="w-full h-full object-contain rounded-2xl" alt="Back" />
+              <div className="absolute bottom-4 left-0 right-0 text-center">
+                <span className="bg-[#5D4037] text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">Back Side</span>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 mb-3 shadow-sm group-hover:text-[#5D4037]">
+                <Plus size={24} />
+              </div>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Back Photo</span>
+              <span className="text-[10px] text-slate-400 mt-1">(Specs & Labels)</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="pt-4 flex flex-col gap-3">
+        <button
+          onClick={onAnalyze}
+          disabled={(!form.frontPhotoFile && !form.backPhotoFile) || form.isAnalyzing}
+          className="w-full py-4 rounded-[2rem] bg-[#5D4037] text-white font-bold text-lg hover:bg-[#4E342E] disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xl flex items-center justify-center gap-3 relative overflow-hidden"
+        >
+          {form.isAnalyzing ? (
+            <>
+              <Loader2 size={24} className="animate-spin" />
+              Analyzing Packets...
+              <div className="absolute bottom-0 left-0 h-1 bg-white/20 animate-pulse w-full" />
+            </>
+          ) : (
+            <>
+              <Sparkles size={20} />
+              Magic Analysis
+            </>
+          )}
+        </button>
+        
+        <button
+          onClick={onSkip}
+          disabled={form.isAnalyzing}
+          className="w-full py-4 rounded-[2rem] border-2 border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+        >
+          Skip & Fill Details Manually
+        </button>
+
+        <p className="text-[10px] text-slate-400 text-center font-medium">
+          Note: This uses high-precision AI vision. It may take 5-10 seconds to process.
+        </p>
       </div>
     </div>
   )
