@@ -1,15 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 .login-page {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 25%, #F3E8FF 50%, #FCE7F3 75%, #FEF3C7 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3rem 1.5rem;
+  padding: 1rem 1.5rem;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   position: relative;
-  overflow: hidden;
 }
 
 .floating-shapes {
@@ -85,53 +85,62 @@
   max-width: 1400px;
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .logo-section {
   text-align: center;
-  margin-bottom: 4rem;
+  margin-bottom: 1.5rem;
   animation: fadeInDown 0.8s ease;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .platform-logo {
-  max-width: 280px;
+  max-width: 160px;
   height: auto;
-  filter: drop-shadow(0 6px 24px rgba(0, 0, 0, 0.1));
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.1));
 }
 
 .cards-wrapper {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
   gap: 2.5rem;
+  flex-wrap: wrap;
   max-width: 1200px;
   margin: 0 auto;
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(30px);
   border-radius: 24px;
-  padding: 2.5rem 2rem;
+  padding: 1.75rem 2rem;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.6);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
   animation: fadeInUp 0.8s ease;
+}
+
+.admin-entrance {
+  animation: slideInFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+@keyframes slideInFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes fadeInUp {
@@ -174,9 +183,9 @@
 }
 
 .illustration-container {
-  width: 140px;
-  height: 140px;
-  margin: 0 auto 1.5rem;
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -191,20 +200,53 @@
 }
 
 .card-title {
-  font-size: 1.875rem;
+  font-size: 1.5rem;
   font-weight: 700;
   text-align: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
   color: #1e293b;
   letter-spacing: -0.03em;
 }
 
 .card-subtitle {
   text-align: center;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   color: #64748b;
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
   font-weight: 400;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-input {
+  padding: 0.75rem 1rem;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-family: 'Inter', sans-serif;
+  background: rgba(255, 255, 255, 0.8);
+  color: #334155;
+  transition: all 0.25s ease;
+  outline: none;
+  font-weight: 400;
+}
+
+.footer-text {
+  text-align: center;
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin-top: 0.75rem;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.btn-full {
+  width: 100%;
+  margin-top: 0.5rem;
 }
 
 .restricted-subtitle {
@@ -367,79 +409,35 @@
 /* Responsive Design */
 @media (max-width: 1024px) {
   .cards-wrapper {
-    grid-template-columns: repeat(2, 1fr);
+    flex-direction: column;
+    align-items: center;
   }
-  
-  .login-card:last-child {
-    grid-column: 1 / -1;
-    max-width: 420px;
-    margin: 0 auto;
-    width: 100%;
-  }
+}
+
+
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 768px) {
   .login-page {
-    padding: 2rem 1rem;
+    height: 100dvh;
+    padding: 1rem;
+    overflow-y: auto;
   }
-  
-  .cards-wrapper {
-    grid-template-columns: 1fr;
-    gap: 2rem;
-  }
-  
   .login-card {
-    padding: 2rem 1.5rem;
+    padding: 1.5rem 1.25rem;
+    width: 100%;
+    max-width: 420px !important;
   }
-  
-  .login-card:last-child {
-    grid-column: auto;
-    max-width: 100%;
-  }
-  
-  .platform-logo {
-    max-width: 140px;
-  }
-  
-  .logo-section {
-    margin-bottom: 2.5rem;
-  }
-  
-  .card-title {
-    font-size: 1.625rem;
-  }
-  
-  .illustration-container {
-    width: 120px;
-    height: 120px;
-  }
+  .illustration-container { width: 80px; height: 80px; }
+  .card-title { font-size: 1.375rem; }
+  .shape { opacity: 0.08; }
 }
-
-@media (max-width: 480px) {
-  .login-page {
-    padding: 1.5rem 1rem;
-  }
-  
-  .login-card {
-    padding: 1.75rem 1.25rem;
-  }
-  
-  .button-group {
-    grid-template-columns: 1fr;
-  }
-  
-  .illustration-container {
-    width: 100px;
-    height: 100px;
-  }
-  
-  .card-title {
-    font-size: 1.5rem;
-  }
-  
-  .shape {
-    opacity: 0.08;
-  }
-}
-
-
