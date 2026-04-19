@@ -7,19 +7,41 @@ import {
 } from "lucide-react"
 import { motion, useInView, useScroll, useTransform } from "motion/react"
 import Masonry from "@/components/Masonry"
+import ManufacturerRegisterModal from "@/features/manufacturer/RegisterModal"
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 const INDUSTRIES = [
-  { name: "Textiles",        icon: "🧵", bg: "#FFF3E8", border: "#FDDCB8", count: "320+ suppliers", desc: "Saree, Denim, Knits, Technical Fabrics" },
-  { name: "Electronics",     icon: "⚡", bg: "#EFF6FF", border: "#BFDBFE", count: "180+ suppliers", desc: "Consumer, Industrial, PCB, Semiconductors" },
-  { name: "Machinery",       icon: "⚙️", bg: "#F0FDF4", border: "#BBF7D0", count: "240+ suppliers", desc: "CNC, Packaging, Food Processing" },
-  { name: "FMCG",            icon: "🛒", bg: "#FFF7ED", border: "#FED7AA", count: "150+ suppliers", desc: "Personal Care, Food & Beverage, Household" },
-  { name: "Automotive",      icon: "🚗", bg: "#FDF4FF", border: "#E9D5FF", count: "90+ suppliers",  desc: "Auto Parts, EV Components, Tyres" },
-  { name: "Construction",    icon: "🏗️", bg: "#FFFBEB", border: "#FDE68A", count: "110+ suppliers", desc: "Cement, Steel, Tiles, Plumbing" },
-  { name: "Chemicals",       icon: "🧪", bg: "#F0FDFA", border: "#99F6E4", count: "75+ suppliers",  desc: "Industrial, Agrochemicals, Specialty" },
-  { name: "Agriculture",     icon: "🌾", bg: "#F7FEE7", border: "#BEF264", count: "130+ suppliers", desc: "Seeds, Fertilizers, Farm Equipment" },
-  { name: "Pharmaceuticals", icon: "💊", bg: "#FFF1F2", border: "#FECDD3", count: "60+ suppliers",  desc: "Formulations, APIs, Medical Devices" },
-  { name: "Home & Furniture",icon: "🛋️", bg: "#F5F3FF", border: "#DDD6FE", count: "95+ suppliers",  desc: "Wooden, Metal, Upholstered, Outdoor" },
+  { name: "Food & Grocery",          img: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=280&fit=crop", count: "420+ suppliers", desc: "Packaged foods, staples, beverages" },
+  { name: "Personal Care",           img: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=280&fit=crop", count: "180+ suppliers", desc: "Household & personal care products" },
+  { name: "Textiles & Fabrics",      img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=280&fit=crop", count: "320+ suppliers", desc: "Saree, denim, knits, technical fabrics" },
+  { name: "Apparel & Garments",      img: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400&h=280&fit=crop", count: "290+ suppliers", desc: "Ready-made garments, uniforms, fashion" },
+  { name: "Footwear",                img: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=280&fit=crop", count: "140+ suppliers", desc: "Casual, formal, sports footwear" },
+  { name: "Pharmaceuticals",         img: "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=400&h=280&fit=crop", count: "160+ suppliers", desc: "Formulations, APIs, medical devices" },
+  { name: "Building Materials",      img: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&h=280&fit=crop", count: "210+ suppliers", desc: "Cement, steel, tiles, paints" },
+  { name: "Electrical Goods",        img: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&h=280&fit=crop", count: "175+ suppliers", desc: "Wires, switches, lighting" },
+  { name: "Consumer Electronics",    img: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=280&fit=crop", count: "230+ suppliers", desc: "Appliances, gadgets, smart devices" },
+  { name: "Mobile & Accessories",    img: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=280&fit=crop", count: "195+ suppliers", desc: "Phones, covers, chargers, accessories" },
+  { name: "Hardware & Tools",        img: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&h=280&fit=crop", count: "155+ suppliers", desc: "Hand tools, power tools, fasteners" },
+  { name: "Industrial Supplies",     img: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=280&fit=crop", count: "240+ suppliers", desc: "Machinery, equipment, industrial parts" },
+  { name: "Automobile Parts",        img: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=400&h=280&fit=crop", count: "190+ suppliers", desc: "Auto parts, EV components, accessories" },
+  { name: "Furniture",               img: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&h=280&fit=crop", count: "130+ suppliers", desc: "Home, office, outdoor furniture" },
+  { name: "Home Decor",              img: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=280&fit=crop", count: "165+ suppliers", desc: "Handicrafts, decor, furnishings" },
+  { name: "Toys & Games",            img: "https://images.unsplash.com/photo-1558060370-d644479cb6f7?w=400&h=280&fit=crop", count: "95+ suppliers",  desc: "Educational toys, board games, outdoor" },
+  { name: "Stationery & Office",     img: "https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?w=400&h=280&fit=crop", count: "110+ suppliers", desc: "Office supplies, stationery, printing" },
+  { name: "Gifts & Novelties",       img: "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=400&h=280&fit=crop", count: "85+ suppliers",  desc: "Corporate gifts, novelties, souvenirs" },
+  { name: "Chemicals",               img: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=400&h=280&fit=crop", count: "120+ suppliers", desc: "Industrial, cleaning, specialty chemicals" },
+  { name: "Fertilizers & Pesticides",img: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&h=280&fit=crop", count: "100+ suppliers", desc: "Agri inputs, crop protection" },
+  { name: "Seeds & Agri Supplies",   img: "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=400&h=280&fit=crop", count: "130+ suppliers", desc: "Seeds, farm equipment, organic" },
+  { name: "Packaging Materials",     img: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&h=280&fit=crop", count: "145+ suppliers", desc: "Plastic, paper, cartons, pouches" },
+  { name: "Plastic & Rubber",        img: "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400&h=280&fit=crop", count: "115+ suppliers", desc: "Plastic products, rubber goods" },
+  { name: "Beauty & Salon",          img: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&h=280&fit=crop", count: "90+ suppliers",  desc: "Professional salon & beauty products" },
+  { name: "Hospitality Supplies",    img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=280&fit=crop", count: "75+ suppliers",  desc: "Hotel, kitchen, bulk hospitality goods" },
+  { name: "Dairy Products",          img: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&h=280&fit=crop", count: "60+ suppliers",  desc: "Dairy distribution, milk products" },
+  { name: "Animal Feed",             img: "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=400&h=280&fit=crop", count: "70+ suppliers",  desc: "Animal feed, livestock supplies" },
+  { name: "Jewelry & Imitation",     img: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=280&fit=crop", count: "200+ suppliers", desc: "Wholesale jewelry, imitation, gems" },
+  { name: "Leather Goods",           img: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&h=280&fit=crop", count: "80+ suppliers",  desc: "Bags, belts, wallets, leather goods" },
+  { name: "Sports Goods",            img: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&h=280&fit=crop", count: "95+ suppliers",  desc: "Sports equipment, fitness, outdoor" },
+  { name: "Books & Education",       img: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=280&fit=crop", count: "65+ suppliers",  desc: "Books, educational materials, stationery" },
 ]
 
 const MASONRY_ITEMS = [
@@ -103,13 +125,20 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeIndustry, setActiveIndustry] = useState<string|null>(null)
   const heroRef = useRef<HTMLElement>(null)
+  const masonryRef = useRef<HTMLElement>(null)
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start","end start"] })
   const heroY = useTransform(scrollYProgress, [0,1], ["0%","25%"])
   const heroOpacity = useTransform(scrollYProgress, [0,0.7], [1,0])
 
+  const [showRegisterModal, setShowRegisterModal] = useState(false)
+
   const handleIndustryClick = (name: string) => {
     setActiveIndustry(name)
     setTimeout(() => navigate("/login"), 280)
+  }
+
+  const handleStartSourcing = () => {
+    masonryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
   return (
@@ -180,11 +209,11 @@ export default function HomePage() {
               </motion.p>
               <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.6, delay:0.3 }}
                 className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-10">
-                <button onClick={() => navigate("/login")}
+                <button onClick={handleStartSourcing}
                   className="flex items-center justify-center gap-2 px-8 py-4 gradient-card-purple text-white font-bold rounded-2xl hover:opacity-90 transition-all shadow-purple text-sm">
                   Start Sourcing <ArrowRight className="w-4 h-4" />
                 </button>
-                <button onClick={() => navigate("/login")}
+                <button onClick={() => setShowRegisterModal(true)}
                   className="flex items-center justify-center gap-2 px-8 py-4 bg-white text-sp-text font-bold rounded-2xl border border-sp-border hover:border-sp-purple hover:text-sp-purple transition-all text-sm shadow-card">
                   <Factory className="w-4 h-4" /> List Your Business
                 </button>
@@ -274,38 +303,53 @@ export default function HomePage() {
             <h2 className="text-4xl font-extrabold text-sp-text tracking-tight mb-3">Explore Every Sector</h2>
             <p className="text-sp-muted max-w-xl mx-auto">Click any industry to discover verified manufacturers. Sign in to browse, negotiate, and place orders.</p>
           </FadeIn>
-          <StaggerGrid className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            {INDUSTRIES.map(ind => (
-              <StaggerItem key={ind.name}>
-                <motion.button
-                  onClick={() => handleIndustryClick(ind.name)}
-                  whileHover={{ y:-4, scale:1.02 }}
-                  whileTap={{ scale:0.97 }}
-                  animate={activeIndustry === ind.name ? { scale:0.95, opacity:0.7 } : {}}
-                  className="w-full text-left p-5 rounded-2xl border-2 transition-all group"
-                  style={{ background: ind.bg, borderColor: ind.border }}>
-                  <div className="text-3xl mb-3 group-hover:scale-110 transition-transform inline-block">{ind.icon}</div>
-                  <h3 className="font-bold text-sm text-sp-text mb-1">{ind.name}</h3>
-                  <p className="text-[10px] text-sp-muted leading-relaxed mb-2">{ind.desc}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-semibold text-sp-purple bg-white/70 px-2 py-0.5 rounded-full">{ind.count}</span>
-                    <ChevronRight className="w-3.5 h-3.5 text-sp-muted group-hover:text-sp-purple group-hover:translate-x-0.5 transition-all" />
-                  </div>
-                </motion.button>
-              </StaggerItem>
-            ))}
-          </StaggerGrid>
-          <FadeIn delay={0.3} className="text-center mt-10">
-            <button onClick={() => navigate("/login")}
-              className="inline-flex items-center gap-2 px-6 py-3 gradient-card-purple text-white font-semibold rounded-xl hover:opacity-90 transition-all shadow-sm text-sm">
-              View All Industries <ArrowRight className="w-4 h-4" />
-            </button>
-          </FadeIn>
+
+          {(() => {
+            const [showAll, setShowAll] = useState(false)
+            const visible = showAll ? INDUSTRIES : INDUSTRIES.slice(0, 8)
+            return (
+              <>
+                <StaggerGrid className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {visible.map(ind => (
+                    <StaggerItem key={ind.name}>
+                      <motion.button
+                        onClick={() => handleIndustryClick(ind.name)}
+                        whileHover={{ y: -4, scale: 1.02 }}
+                        whileTap={{ scale: 0.97 }}
+                        animate={activeIndustry === ind.name ? { scale: 0.95, opacity: 0.7 } : {}}
+                        className="w-full text-left rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-all group bg-white">
+                        <div className="relative h-32 overflow-hidden">
+                          <img src={ind.img} alt={ind.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                          <span className="absolute bottom-2 left-3 text-[10px] font-bold text-white/90 bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full">{ind.count}</span>
+                        </div>
+                        <div className="p-3">
+                          <h3 className="font-bold text-sm text-sp-text leading-tight mb-0.5">{ind.name}</h3>
+                          <p className="text-[10px] text-sp-muted leading-relaxed line-clamp-2">{ind.desc}</p>
+                        </div>
+                      </motion.button>
+                    </StaggerItem>
+                  ))}
+                </StaggerGrid>
+
+                <FadeIn delay={0.2} className="text-center mt-8">
+                  <button
+                    onClick={() => setShowAll(v => !v)}
+                    className="inline-flex items-center gap-2 px-6 py-3 gradient-card-purple text-white font-semibold rounded-xl hover:opacity-90 transition-all shadow-sm text-sm">
+                    {showAll ? 'Show Less' : `View All ${INDUSTRIES.length} Industries`}
+                    <motion.span animate={{ rotate: showAll ? 180 : 0 }} transition={{ duration: 0.25 }}>
+                      <ChevronRight className="w-4 h-4 rotate-90" />
+                    </motion.span>
+                  </button>
+                </FadeIn>
+              </>
+            )
+          })()}
         </div>
       </section>
 
       {/* MASONRY GALLERY */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <section ref={masonryRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <FadeIn className="text-center mb-12">
             <h2 className="text-4xl font-extrabold text-sp-text tracking-tight mb-3">Manufacturers Across India</h2>
@@ -323,69 +367,9 @@ export default function HomePage() {
               blurToFocus
               colorShiftOnHover={false}
               gap={14}
-              onItemClick={() => navigate("/login")}
+              onItemClick={(item) => navigate(`/login?company=${encodeURIComponent(item.label || '')}`)}
             />
           </FadeIn>
-        </div>
-      </section>
-
-      {/* FEATURED COMPANIES */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8" style={{ background:"#FAFAF9" }}>
-        <div className="max-w-7xl mx-auto">
-          <FadeIn className="flex items-end justify-between mb-10">
-            <div>
-              <h2 className="text-3xl font-extrabold text-sp-text tracking-tight mb-2">Featured Suppliers</h2>
-              <p className="text-sp-muted">Handpicked verified manufacturers across India</p>
-            </div>
-            <button onClick={() => navigate("/login")}
-              className="hidden sm:flex items-center gap-2 text-sm font-semibold text-sp-purple hover:underline">
-              View all <ChevronRight className="w-4 h-4" />
-            </button>
-          </FadeIn>
-          <StaggerGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {FEATURED_COMPANIES.map(co => (
-              <StaggerItem key={co.name}>
-                <motion.div whileHover={{ y:-3 }}
-                  className="bg-white rounded-2xl border border-sp-border shadow-card overflow-hidden cursor-pointer group"
-                  onClick={() => navigate("/login")}>
-                  <div className="h-28 relative flex items-center justify-center" style={{ background: co.bg }}>
-                    <span className="text-5xl font-black opacity-20" style={{ color: co.tc }}>{co.initials}</span>
-                    {co.verified && (
-                      <span className="absolute top-3 right-3 bg-white/90 text-sp-success text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                        <CheckCircle className="w-3 h-3" /> Verified
-                      </span>
-                    )}
-                    <div className="absolute -bottom-5 left-5 w-10 h-10 rounded-full border-2 border-white shadow-md flex items-center justify-center text-xs font-black"
-                      style={{ background: co.bg, color: co.tc }}>
-                      {co.initials}
-                    </div>
-                  </div>
-                  <div className="pt-8 px-5 pb-5">
-                    <h3 className="font-bold text-sp-text text-base mb-1">{co.name}</h3>
-                    <div className="flex items-center gap-1 text-xs text-sp-muted mb-3">
-                      <MapPin className="w-3 h-3" /> {co.location}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 mb-4">
-                      <div className="bg-sp-bg rounded-xl p-2.5">
-                        <p className="text-[9px] uppercase tracking-wider text-sp-muted font-semibold mb-1">Rating</p>
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm font-bold text-sp-text">{co.rating}</span>
-                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        </div>
-                      </div>
-                      <div className="bg-sp-bg rounded-xl p-2.5">
-                        <p className="text-[9px] uppercase tracking-wider text-sp-muted font-semibold mb-1">Min Order</p>
-                        <p className="text-sm font-bold text-sp-text">{co.moq}</p>
-                      </div>
-                    </div>
-                    <button className="w-full py-2.5 rounded-xl text-sm font-semibold border-2 border-sp-border text-sp-text hover:border-sp-purple hover:text-sp-purple transition-all">
-                      View Company
-                    </button>
-                  </div>
-                </motion.div>
-              </StaggerItem>
-            ))}
-          </StaggerGrid>
         </div>
       </section>
 
@@ -573,6 +557,13 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* REGISTER MODAL */}
+      <ManufacturerRegisterModal
+        open={showRegisterModal}
+        onClose={() => setShowRegisterModal(false)}
+        onSuccess={() => { setShowRegisterModal(false); navigate('/manufacturer/onboarding') }}
+      />
 
     </div>
   )

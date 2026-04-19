@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { motion, AnimatePresence } from 'motion/react'
 import { Eye, EyeOff, ShoppingCart, Factory, ChevronDown } from 'lucide-react'
@@ -11,6 +11,7 @@ type Role = 'buyer' | 'manufacturer'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { login } = useAuth()
 
   const [role, setRole] = useState<Role>('buyer')
@@ -22,7 +23,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [buyerCompany, setBuyerCompany] = useState('')
+  const [buyerCompany, setBuyerCompany] = useState(() => {
+    // pre-fill from URL ?company=... on first render
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('company') || ''
+    }
+    return ''
+  })
 
   // Modals
   const [showRegisterModal, setShowRegisterModal] = useState(false)
@@ -42,12 +49,18 @@ export default function LoginPage() {
     }
     handleHash()
     window.addEventListener('hashchange', handleHash)
+    // If company param present, switch to buyer role
+    const company = searchParams.get('company')
+    if (company) {
+      setRole('buyer')
+      setBuyerCompany(company)
+    }
     return () => window.removeEventListener('hashchange', handleHash)
   }, [])
 
-  // Reset fields when role changes
+  // Reset email/password when role changes (keep company name)
   useEffect(() => {
-    setEmail(''); setPassword(''); setError(''); setBuyerCompany('')
+    setEmail(''); setPassword(''); setError('')
   }, [role])
 
   const handleLogoClick = () => {
@@ -94,7 +107,7 @@ export default function LoginPage() {
       value: 'buyer',
       label: 'Buyer',
       icon: ShoppingCart,
-      subtitle: 'Source products from verified manufacturers',
+      subtitle: 'Access your buyer dashboard',
       img: 'https://customer-assets.emergentagent.com/job_multi-role-auth-3/artifacts/7z594tiw_image.png',
     },
     {
@@ -304,6 +317,13 @@ export default function LoginPage() {
                     transition={{ duration: 0.22 }}
                     style={{ overflow: 'hidden' }}
                   >
+                    {buyerCompany && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '11px', color: '#6366F1', fontWeight: 600, background: '#EEF2FF', padding: '2px 8px', borderRadius: '999px' }}>
+                          🏭 Sourcing from: {buyerCompany}
+                        </span>
+                      </div>
+                    )}
                     <input
                       type="text"
                       placeholder="Company Name (optional)"
