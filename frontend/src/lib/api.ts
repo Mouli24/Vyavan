@@ -132,6 +132,7 @@ export const api = {
     expectedDate: string;
     products?: { product: string; quantity: number }[];
     deliveryAddress?: Address;
+    payment_term?: string;
   }) => request<Order>('/orders', { method: 'POST', body: JSON.stringify(data) }),
 
   updateOrderStatus: (id: string, status: string) =>
@@ -454,6 +455,54 @@ export const api = {
 
   getOnboardingAdvice: () =>
     request<any>('/manufacturer/onboarding-assistant'),
+
+  // ── Credit & Payment Terms (New) ───────────────────────────────────────────
+  getCreditPaymentSettings: (mfrId: string) =>
+    request<PaymentSettings>(`/credit-terms/manufacturers/${mfrId}/payment-settings`),
+
+  updateCreditPaymentSettings: (mfrId: string, data: Partial<PaymentSettings>) =>
+    request<PaymentSettings>(`/credit-terms/manufacturers/${mfrId}/payment-settings`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  getBuyerPaymentTerms: (mfrId: string, buyerId: string) =>
+    request<BuyerTerms & { outstanding_balance: number }>(`/credit-terms/manufacturers/${mfrId}/buyers/${buyerId}/terms`),
+
+  updateBuyerPaymentTerms: (mfrId: string, buyerId: string, data: any) =>
+    request<BuyerTerms>(`/credit-terms/manufacturers/${mfrId}/buyers/${buyerId}/terms`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteBuyerPaymentTerms: (mfrId: string, buyerId: string) =>
+    request<any>(`/credit-terms/manufacturers/${mfrId}/buyers/${buyerId}/terms`, { method: 'DELETE' }),
+
+  getReceivables: (mfrId: string, params?: { status?: string; buyer_id?: string; sort?: string }) => {
+    const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined))).toString() : '';
+    return request<{ list: Receivable[]; summary: any }>(`/credit-terms/manufacturers/${mfrId}/receivables${qs}`);
+  },
+
+  markPaymentPaid: (recordId: string, data: any) =>
+    request<any>(`/credit-terms/payment-records/${recordId}/mark-paid`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  sendPaymentReminder: (recordId: string) =>
+    request<any>(`/credit-terms/payment-records/${recordId}/send-reminder`, { method: 'POST' }),
+  
+  getRemindersLog: (mfrId: string) =>
+    request<any[]>(`/credit-terms/manufacturers/${mfrId}/reminders-log`),
+
+  getCheckoutAvailableTerms: (params: { mfr_id: string; buyer_id: string; order_amount: number }) => {
+    const qs = '?' + new URLSearchParams({
+      manufacturer_id: params.mfr_id,
+      buyer_id: params.buyer_id,
+      order_amount: params.order_amount.toString()
+    }).toString();
+    return request<{ available_terms: PaymentTerm[]; restricted: boolean; reason: 'credit_limit' | 'overdue_flag' | null }>(`/credit-terms/checkout/available-terms${qs}`);
+  },
 };
 
 
@@ -578,11 +627,18 @@ export interface Deal {
   expiresAt?: string;
   acceptedAt?: string;
   rejectionReason?: string;
-  counterBy?: 'buyer' | 'manufacturer';
+  requestedTerm?: string;
   buyer?: string | User;
   manufacturer?: string | User;
   product?: string | Product;
-  negotiationHistory?: any[];
+  negotiationHistory?: {
+    round: number;
+    offeredBy: 'buyer' | 'manufacturer';
+    price: number;
+    term?: string;
+    message: string;
+    createdAt: string;
+  }[];
 }
 
 export interface Message {
@@ -656,4 +712,38 @@ export interface NegotiationRound {
   isLatest: boolean;
   isRead: boolean;
   createdAt: string;
+}
+
+export type PaymentTerm = 'advance_100' | 'split_50_50' | 'net_15' | 'net_30';
+export type PaymentStatus = 'pending' | 'partial' | 'paid' | 'overdue';
+
+export interface PaymentSettings {
+  id: string;
+  manufacturer_id: string;
+  allowed_terms: PaymentTerm[];
+  default_terms: PaymentTerm;
+}
+
+export interface BuyerTerms {
+  id: string;
+  manufacturer_id: string;
+  buyer_id: string;
+  allowed_terms: PaymentTerm[];
+  credit_limit: number;
+  is_flagged: boolean;
+  notes?: string;
+  buyer?: { id: string; user_id: string; name: string }; // Optional for display
+}
+
+export interface Receivable {
+  id: string;
+  order_id: string;
+  payment_term: PaymentTerm;
+  total_amount: number;
+  amount_paid: number;
+  amount_due: number;
+  due_date: string;
+  status: PaymentStatus;
+  days_overdue?: number;
+  buyer_name?: string;
 }

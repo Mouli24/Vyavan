@@ -33,6 +33,8 @@ import Onboarding             from './pages/manufacturer/Onboarding'
 import ManufacturerSettings   from './pages/manufacturer/ManufacturerSettings'
 import ScheduledCalls         from './pages/manufacturer/ScheduledCalls'
 import HolidaySettings        from './pages/manufacturer/HolidaySettings'
+import PaymentSettingsPage    from './pages/manufacturer/PaymentSettingsPage'
+import ReceivablesDashboard   from './pages/manufacturer/ReceivablesDashboard'
 
 // Admin pages
 import AdminDashboard         from './pages/admin/AdminDashboard'
@@ -126,6 +128,8 @@ export default function App() {
         <Route path="scheduled-calls" element={<ScheduledCalls />} />
         <Route path="holidays"        element={<HolidaySettings />} />
         <Route path="settings"        element={<ManufacturerSettings />} />
+        <Route path="settings/payments" element={<PaymentSettingsPage />} />
+        <Route path="receivables"     element={<ReceivablesDashboard />} />
       </Route>
 
       <Route path="/manufacturer/onboarding" element={

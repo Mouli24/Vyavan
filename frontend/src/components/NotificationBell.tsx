@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bell, Check, X, BellOff, Loader2 } from 'lucide-react';
 import { api, type Notification } from '@/lib/api';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'motion/react';
 
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -62,11 +63,19 @@ export default function NotificationBell() {
 
   return (
     <div ref={ref} className="relative">
-      <button
+      <motion.button
         onClick={() => { setOpen(o => !o); if (!open) fetchNotifications(); }}
-        className="relative p-2.5 rounded-full bg-white border border-sp-border shadow-sm text-sp-muted hover:text-sp-purple hover:bg-sp-purple-pale transition-all"
+        whileHover={{ scale: 1.12 }}
+        whileTap={{ scale: 0.92 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+        className="relative p-2.5 rounded-full bg-white border border-sp-border shadow-sm text-sp-muted hover:text-sp-purple hover:bg-sp-purple-pale transition-colors"
       >
-        <Bell size={20} />
+        <motion.div
+          animate={unreadCount > 0 ? { rotate: [0, -15, 15, -10, 10, 0] } : {}}
+          transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 4 }}
+        >
+          <Bell size={20} />
+        </motion.div>
         {unreadCount > 0 && (
           <span className="absolute top-1 right-1 flex h-4 w-4">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sp-purple opacity-75" />
@@ -75,10 +84,17 @@ export default function NotificationBell() {
             </span>
           </span>
         )}
-      </button>
+      </motion.button>
 
-      {open && (
-        <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-3xl shadow-2xl border border-sp-border overflow-hidden z-[200]">
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -8 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="absolute right-0 top-full mt-2 w-96 bg-white rounded-3xl shadow-2xl border border-sp-border overflow-hidden z-[200]"
+          >
           {/* Header */}
           <div className="px-6 py-4 flex items-center justify-between border-b border-sp-border">
             <div className="flex items-center gap-2">
@@ -133,19 +149,21 @@ export default function NotificationBell() {
                     </div>
                     <div className="flex flex-col gap-2">
                       {!notif.read && (
-                        <button
+                        <motion.button
+                          whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}
                           onClick={() => markRead(notif._id)}
                           className="p-1.5 hover:bg-sp-mint rounded-lg text-sp-muted hover:text-sp-success transition-all"
                         >
                           <Check size={14} />
-                        </button>
+                        </motion.button>
                       )}
-                      <button
+                      <motion.button
+                        whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}
                         onClick={() => removeNotification(notif._id)}
                         className="p-1.5 hover:bg-red-50 rounded-lg text-sp-muted hover:text-red-500 transition-all"
                       >
                         <X size={14} />
-                      </button>
+                      </motion.button>
                     </div>
                   </div>
                 ))}
@@ -160,8 +178,9 @@ export default function NotificationBell() {
               </button>
             </div>
           )}
-        </div>
-      )}
+        </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

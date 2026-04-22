@@ -82,7 +82,7 @@ router.get('/:id', protect, async (req, res) => {
 // POST /api/deals  — buyer initiates a deal
 router.post('/', protect, requireRole('buyer'), async (req, res) => {
   try {
-    const { manufacturer, product, quantity, requestedPrice, title, subtitle, message } = req.body;
+    const { manufacturer, product, quantity, requestedPrice, requestedTerm, title, subtitle, message } = req.body;
 
     const prodDoc = await mongoose.model('Product').findById(product);
     if (!prodDoc) return res.status(404).json({ message: 'Product not found' });
@@ -106,6 +106,7 @@ router.post('/', protect, requireRole('buyer'), async (req, res) => {
       requestedPrice,
       priceRaw: requestedPrice,
       price: `₹${requestedPrice.toLocaleString()}`,
+      requestedTerm: requestedTerm || 'advance_100',
       buyer: req.user._id,
       status,
       rejectionReason,
@@ -116,6 +117,7 @@ router.post('/', protect, requireRole('buyer'), async (req, res) => {
         round: 1,
         offeredBy: 'buyer',
         price: requestedPrice,
+        term: requestedTerm || 'advance_100',
         message: message || `Initial offer for ${quantity} units`
       }]
     });
@@ -146,7 +148,7 @@ router.post('/', protect, requireRole('buyer'), async (req, res) => {
 // PATCH /api/deals/:id  — handle counters/accept/reject
 router.patch('/:id', protect, async (req, res) => {
   try {
-    const { status, requestedPrice, message } = req.body;
+    const { status, requestedPrice, requestedTerm, message } = req.body;
     const deal = await Deal.findById(req.params.id);
     if (!deal) return res.status(404).json({ message: 'Deal not found' });
 
@@ -197,6 +199,7 @@ router.patch('/:id', protect, async (req, res) => {
             round: deal.round + 1,
             offeredBy: 'buyer',
             price: newPrice,
+            term: requestedTerm || deal.requestedTerm,
             message: message || 'Buyer sent a counter'
           });
           await deal.save();
@@ -218,6 +221,7 @@ router.patch('/:id', protect, async (req, res) => {
       deal.round += 1;
       deal.requestedPrice = newPrice;
       deal.price = `₹${deal.requestedPrice.toLocaleString()}`;
+      deal.requestedTerm = requestedTerm || deal.requestedTerm;
       deal.counterBy = isMfr ? 'buyer' : 'manufacturer';
       deal.expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // Reset for another 48h
       
@@ -225,6 +229,7 @@ router.patch('/:id', protect, async (req, res) => {
         round: deal.round,
         offeredBy: turn,
         price: deal.requestedPrice,
+        term: deal.requestedTerm,
         message: message || (isMfr ? 'Manufacturer sent a counter' : 'Buyer sent a counter')
       });
     }
@@ -239,7 +244,9 @@ router.patch('/:id', protect, async (req, res) => {
       user: recipient,
       type: typeMap[status] || 'negotiation_counter',
       title: `Negotiation ${status}`,
-      message: `Update on "${deal.title}" by ${req.user.name}.`,
+      message: status === 'Negotiating' 
+        ? `Counter-offer on "${deal.title}" for ₹${deal.requestedPrice.toLocaleString()} (${deal.requestedTerm?.replace(/_/g, ' ') || 'Advance'})` 
+        : `Update on "${deal.title}" by ${req.user.name}.`,
       link: isMfr ? '/buyer/dashboard' : '/manufacturer/negotiation',
       refModel: 'Deal',
       refId: deal._id,

@@ -20,6 +20,9 @@ const negotiationRoundSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  offeredTerm: {
+    type: String
+  },
   message: {
     type: String,
     required: true

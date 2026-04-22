@@ -97,7 +97,7 @@ export default function BuyerNegotiation() {
     }
   };
 
-  const handleDealAction = async (status: string, requestedPrice?: number) => {
+  const handleDealAction = async (status: string, requestedPrice?: number, requestedTerm?: string) => {
     if (!activeDeal) return;
     
     let message = '';
@@ -109,7 +109,7 @@ export default function BuyerNegotiation() {
 
     setUpdating(true);
     try {
-      const updated = await api.updateDeal(activeDeal._id, { status, requestedPrice, message });
+      const updated = await api.updateDeal(activeDeal._id, { status, requestedPrice, requestedTerm, message });
       setDeals(prev => prev.map(d => d._id === updated._id ? { ...d, ...updated } : d));
       setActiveDeal(updated);
     } catch (e) {
@@ -131,6 +131,7 @@ export default function BuyerNegotiation() {
         city: 'City',
         state: 'State',
         pincode: '000000',
+        payment_term: activeDeal.requestedTerm
       });
       alert('Success! Negotiation converted to order.');
       navigate('/buyer/orders');
@@ -141,7 +142,12 @@ export default function BuyerNegotiation() {
     }
   };
 
-  const handleInitiateDeal = async (requestedPrice: number, quantity: number, message: string) => {
+  const formatTerm = (term?: string) => {
+    if (!term) return '100% Advance';
+    return term.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+
+  const handleInitiateDeal = async (requestedPrice: number, requestedTerm: string, quantity: number, message: string) => {
     if (!newDealContext) return;
     setUpdating(true);
     try {
@@ -150,6 +156,7 @@ export default function BuyerNegotiation() {
         product: newDealContext._id,
         quantity,
         requestedPrice,
+        requestedTerm,
         title: `Negotiation for ${newDealContext.name}`,
         subtitle: `Initial offer for ${quantity} units`,
         message
@@ -257,6 +264,18 @@ export default function BuyerNegotiation() {
                     </div>
                  </div>
                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest pl-1">Payment Term</label>
+                    <select
+                      id="initTerm"
+                      className="w-full h-14 px-6 rounded-2xl border border-slate-100 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sp-purple/20 font-bold text-sm appearance-none cursor-pointer"
+                    >
+                      <option value="advance_100">100% Advance</option>
+                      <option value="split_50_50">50-50 Split</option>
+                      <option value="net_15">Net 15 (Credit)</option>
+                      <option value="net_30">Net 30 (Credit)</option>
+                    </select>
+                 </div>
+                 <div>
                     <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest pl-1">Optional Message</label>
                     <textarea 
                       id="initMsg"
@@ -272,8 +291,9 @@ export default function BuyerNegotiation() {
                    onClick={() => {
                      const qty = (document.getElementById('initQty') as HTMLInputElement).value;
                      const prc = (document.getElementById('initPrice') as HTMLInputElement).value;
+                     const term = (document.getElementById('initTerm') as HTMLSelectElement).value;
                      const msg = (document.getElementById('initMsg') as HTMLTextAreaElement).value;
-                     handleInitiateDeal(parseInt(prc), parseInt(qty), msg);
+                     handleInitiateDeal(parseInt(prc), term, parseInt(qty), msg);
                    }}
                    disabled={updating}
                    className="flex-1 h-14 rounded-2xl bg-sp-purple text-white font-black uppercase tracking-widest hover:bg-sp-purple-dark transition-all shadow-lg shadow-sp-purple/20 flex items-center justify-center"
@@ -383,28 +403,43 @@ export default function BuyerNegotiation() {
                     <div>
                       <p className="text-[10px] font-black text-sp-muted uppercase tracking-widest mb-1">Current Offer</p>
                       <h4 className="text-2xl font-black text-slate-800">{activeDeal.price} <span className="text-xs font-normal text-slate-400">per unit</span></h4>
+                      <p className="text-[10px] font-black text-sp-purple uppercase mt-1">
+                        Term: {formatTerm(activeDeal.requestedTerm)}
+                      </p>
                     </div>
                     {/* Only show counter if round < 5 AND it's buyer turn */}
                     {(activeDeal.round || 1) < (activeDeal.maxRounds || 5) && (activeDeal as any).counterBy === 'buyer' ? (
-                      <div className="flex items-center gap-2">
-                         <div className="relative">
-                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
-                           <input 
-                            type="number" 
-                            id="counterInput"
-                            placeholder="Counter Price"
-                            className="h-12 w-40 pl-8 pr-4 rounded-xl border border-slate-200 focus:outline-none focus:border-sp-purple font-bold text-sm"
-                           />
-                         </div>
-                         <button 
-                           onClick={() => {
-                             const val = (document.getElementById('counterInput') as HTMLInputElement)?.value;
-                             if (val) handleDealAction('Negotiating', parseInt(val));
-                           }}
-                           className="h-12 px-6 rounded-xl bg-sp-purple text-white font-black text-xs uppercase tracking-widest hover:bg-sp-purple-dark transition-all"
-                         >
-                           Counter
-                         </button>
+                      <div className="flex flex-col gap-2">
+                         <div className="flex items-center gap-2">
+                           <div className="relative">
+                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                             <input 
+                              type="number" 
+                              id="counterInput"
+                              placeholder="Counter Price"
+                              className="h-12 w-32 pl-8 pr-4 rounded-xl border border-slate-200 focus:outline-none focus:border-sp-purple font-bold text-sm"
+                             />
+                           </div>
+                           <select
+                             id="counterTerm"
+                             className="h-12 px-4 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-sp-purple font-black text-[10px] uppercase tracking-widest cursor-pointer appearance-none"
+                           >
+                             <option value="advance_100">100% Advance</option>
+                             <option value="split_50_50">50-50 Split</option>
+                             <option value="net_15">Net 15 (Credit)</option>
+                             <option value="net_30">Net 30 (Credit)</option>
+                           </select>
+                           <button 
+                             onClick={() => {
+                               const val = (document.getElementById('counterInput') as HTMLInputElement)?.value;
+                               const term = (document.getElementById('counterTerm') as HTMLSelectElement)?.value;
+                               if (val) handleDealAction('Negotiating', parseInt(val), term);
+                             }}
+                             className="h-12 px-4 rounded-xl bg-sp-purple text-white font-black text-xs uppercase tracking-widest hover:bg-sp-purple-dark transition-all"
+                           >
+                             Counter
+                           </button>
+                        </div>
                       </div>
                     ) : (
                       <p className="text-xs font-bold text-slate-400">
@@ -541,6 +576,9 @@ export default function BuyerNegotiation() {
                           </div>
                           <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
                             <p className="text-base font-black text-slate-900">₹{h.price?.toLocaleString()}</p>
+                            <p className="text-[10px] text-sp-purple font-bold uppercase tracking-widest mt-0.5">
+                              {formatTerm(h.term)}
+                            </p>
                             <p className="text-[10px] text-slate-500 mt-1 font-medium leading-tight line-clamp-2">By {h.offeredBy}: {h.message}</p>
                           </div>
                         </div>

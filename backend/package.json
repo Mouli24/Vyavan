@@ -6,9 +6,10 @@
   "type": "module",
   "scripts": {
     "start": "nodemon server.js",
-    "dev": "nodemon -e js,json,env server.js",
+    "dev": "tsx watch server.js",
     "seed": "node seed/seed.js",
-    "seed:test": "node seed/test_seed.js"
+    "seed:test": "node seed/test_seed.js",
+    "build:ts": "tsc"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",
@@ -27,6 +28,18 @@
     "pdfkit": "^0.18.0",
     "socket.io": "^4.8.3",
     "uuid": "^13.0.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@prisma/client": "^5.15.0",
+    "@types/node": "^20.11.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/nodemailer": "^8.0.0",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.5",
+    "prisma": "^5.15.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   }
 }

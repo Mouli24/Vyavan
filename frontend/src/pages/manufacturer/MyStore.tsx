@@ -1,35 +1,43 @@
 import {
-  Plus,
-  Edit3,
-  Star,
-  Image as ImageIcon,
-  Trash2,
-  MessageSquare,
-  Zap,
-  Store,
-  Package,
-  Truck,
-  ArrowRight,
-  Loader2,
-  Sparkles,
-  TrendingUp,
-  MapPin,
+  Plus, Edit3, Star, Image as ImageIcon, Trash2,
+  MessageSquare, Zap, Store, Package, Truck,
+  ArrowRight, Loader2, Sparkles, TrendingUp, MapPin,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import AddProductModal from '@/features/manufacturer/AddProductModal';
-import ProductLister from '@/features/manufacturer/ProductLister';
 import { api, Product } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      duration: 0.5,
+      ease: 'easeOut'
+    }
+  }
+};
+
 export default function MyStore() {
+  const navigate = useNavigate();
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const navigate = useNavigate();
   const [onboardingPlan, setOnboardingPlan] = useState<any>(null);
   const [loadingOnboarding, setLoadingOnboarding] = useState(true);
 
@@ -37,19 +45,15 @@ export default function MyStore() {
     setLoadingProducts(true);
     api.getMyProducts()
       .then(data => setProducts(Array.isArray(data) ? data : []))
-      .catch(err => {
-        console.error(err);
-        setProducts([]);
-      })
+      .catch(() => setProducts([]))
       .finally(() => setLoadingProducts(false));
   };
 
-  useEffect(() => { 
+  useEffect(() => {
     fetchProducts();
-    // Fetch AI Onboarding Plan
     api.getOnboardingAdvice()
       .then(plan => setOnboardingPlan(plan))
-      .catch(err => console.error('Failed to load AI Onboarding:', err))
+      .catch(() => {})
       .finally(() => setLoadingOnboarding(false));
   }, []);
 
@@ -79,16 +83,6 @@ export default function MyStore() {
   const handlePublished = () => {
     handleModalClose();
     fetchProducts();
-  };
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1, transition: { type: 'spring' as const, stiffness: 100, damping: 15 } }
   };
 
   return (
@@ -222,7 +216,7 @@ export default function MyStore() {
             <motion.div variants={itemVariants} className="bg-white rounded-[2rem] border border-[#E5E1DA] shadow-sm p-7">
               <p className="text-[10px] uppercase font-bold text-[#A89F91] tracking-widest mb-4">Inventory Depth</p>
               <div className="flex items-baseline gap-3 mb-2">
-                <span className="text-5xl font-bold text-[#1A1A1A] tracking-tight">124</span>
+                <span className="text-5xl font-bold text-[#1A1A1A] tracking-tight">{products.length}</span>
                 <span className="text-lg text-[#A89F91] font-medium">SKUs</span>
               </div>
               <p className="text-sm text-[#A89F91]">Active products across 5 categories</p>

@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { api, Address } from '@/lib/api'
-import { Mail, Shield, CheckCircle, Package, ArrowLeft, Loader2, CreditCard, MapPin, Navigation, Plus, Map, Calendar } from 'lucide-react'
+import { Mail, Shield, CheckCircle, Package, ArrowLeft, Loader2, CreditCard, MapPin, Navigation, Plus, Map, Calendar, Wallet } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useAuth } from '@/context/AuthContext'
+import PaymentTermsSelector from '@/features/payments/PaymentTermsSelector'
+import { PaymentTerm } from '@/lib/api'
 
 export default function BuyerCheckout() {
   const navigate = useNavigate()
@@ -37,7 +36,7 @@ export default function BuyerCheckout() {
   })
 
   // Other form states
-  const [paymentMethod, setPaymentMethod] = useState('bank_transfer')
+  const [selectedTerms, setSelectedTerms] = useState<Record<string, PaymentTerm>>({})
   const [otpSent, setOtpSent] = useState(false)
   const [otpEntered, setOtpEntered] = useState('')
 
@@ -198,7 +197,8 @@ export default function BuyerCheckout() {
             quantity: i.quantity
           })),
           expectedDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-          deliveryAddress: selectedAddress
+          deliveryAddress: selectedAddress,
+          payment_term: selectedTerms[mId]
         })
       }
 
@@ -387,22 +387,38 @@ export default function BuyerCheckout() {
 
           <div className="bg-white border border-[#EEE] rounded-[1.5rem] p-6 sm:p-8 shadow-sm">
             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-6">
-              <CreditCard className="text-[#C47A2B]" size={20} /> Payment Terms
+              <CreditCard className="text-[#C47A2B]" size={20} /> Payment & Credit Terms
             </h3>
-            <div className="flex flex-col gap-3">
-              {[
-                { id: 'bank_transfer', label: 'Bank Transfer (NEFT/RTGS/Wire)' },
-                { id: 'letter_of_credit', label: 'Letter of Credit (L/C)' },
-                { id: 'credit_card', label: 'Corporate Credit Card / Netbanking' }
-              ].map(opt => (
-                <label key={opt.id} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${paymentMethod === opt.id ? 'border-[#C47A2B] bg-[#FFF0E0]' : 'border-[#EEE] hover:border-[#F5C89A]'}`}>
-                  <input type="radio" name="payment" value={opt.id} checked={paymentMethod === opt.id} onChange={() => setPaymentMethod(opt.id)} className="w-4 h-4 text-[#C47A2B] focus:ring-[#C47A2B]" />
-                  <span className={`text-sm font-semibold ${paymentMethod === opt.id ? 'text-[#C47A2B]' : 'text-slate-600'}`}>{opt.label}</span>
-                </label>
-              ))}
+            
+            <div className="space-y-8">
+              {Object.keys(groupedCart).map((mId) => {
+                const mfrName = groupedCart[mId][0]?.product?.manufacturer?.company || 'Supplier'
+                const items = groupedCart[mId]
+                const subtotal = items.reduce((s: number, i: any) => s + (i.product?.price ?? 0) * i.quantity, 0)
+                const total = subtotal * 1.18
+
+                return (
+                  <div key={mId} className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-dashed">
+                       <span className="text-xs font-black uppercase text-slate-400">Order for:</span>
+                       <span className="text-xs font-bold text-[#C47A2B]">{mfrName}</span>
+                       <span className="ml-auto text-xs font-black text-slate-800">₹{total.toLocaleString('en-IN')}</span>
+                    </div>
+                    <PaymentTermsSelector 
+                      mfrId={mId}
+                      buyerId={user?._id || ''}
+                      orderAmount={total}
+                      onSelect={(term) => setSelectedTerms(prev => ({ ...prev, [mId]: term }))}
+                      selectedTerm={selectedTerms[mId]}
+                    />
+                  </div>
+                )
+              })}
             </div>
-            <p className="text-xs text-slate-400 mt-4 leading-relaxed">
-              * Note: For standard B2B orders, selecting 'Bank Transfer' will generate an invoice requiring payment before dispatch. For approved credit lines, orders are processed instantly.
+
+            <p className="text-[10px] text-slate-400 mt-8 leading-relaxed italic">
+              * Payment terms are subject to manufacturer approval and your current credit standing. 
+              Restricted terms will be disabled if credit limits are exceeded or overdue payments exist.
             </p>
           </div>
         </div>
@@ -439,9 +455,47 @@ export default function BuyerCheckout() {
                 <span>Estimated Tax (18% GST)</span>
                 <span>₹{(cartTotal * 0.18).toLocaleString('en-IN')}</span>
               </div>
+              
               <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-[#EEE]">
                 <span>Total Amount</span>
                 <span>₹{(cartTotal * 1.18).toLocaleString('en-IN')}</span>
+              </div>
+
+              {/* Amount Due Now Calculation */}
+              <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100 space-y-2 mt-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-purple-700">Amount Due Now</span>
+                  <span className="text-lg font-black text-purple-900">
+                    ₹{Object.keys(groupedCart).reduce((acc, mId) => {
+                      const items = groupedCart[mId]
+                      const total = items.reduce((s: number, i: any) => s + (i.product?.price ?? 0) * i.quantity, 0) * 1.18
+                      const term = selectedTerms[mId]
+                      if (term === 'advance_100') return acc + total
+                      if (term === 'split_50_50') return acc + (total * 0.5)
+                      return acc
+                    }, 0).toLocaleString('en-IN')}
+                  </span>
+                </div>
+                
+                <div className="text-[10px] text-purple-600 font-medium flex flex-col gap-1 italic border-t border-purple-100 pt-2 mt-1">
+                   {Object.keys(groupedCart).map(mId => {
+                     const term = selectedTerms[mId]
+                     const mfrName = groupedCart[mId][0]?.product?.manufacturer?.company || 'Supplier'
+                     if (!term) return null
+                     
+                     let dueDateStr = ''
+                     if (term === 'net_15') dueDateStr = `due by ${new Date(Date.now() + 15*24*60*60*1000).toLocaleDateString()}`
+                     if (term === 'net_30') dueDateStr = `due by ${new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString()}`
+                     if (term === 'split_50_50') dueDateStr = `balance due by ${new Date(Date.now() + 15*24*60*60*1000).toLocaleDateString()}`
+                     
+                     return (
+                       <div key={mId} className="flex justify-between">
+                         <span>{mfrName} ({term.replace(/_/g, ' ')})</span>
+                         <span>{dueDateStr}</span>
+                       </div>
+                     )
+                   })}
+                </div>
               </div>
             </div>
 

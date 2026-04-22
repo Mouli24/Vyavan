@@ -25,6 +25,10 @@ const negotiationSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  currentOfferTerm: {
+    type: String,
+    default: 'advance_100'
+  },
   status: {
     type: String,
     enum: ['Initiated', 'Active', 'Accepted', 'Rejected', 'Expired'],
