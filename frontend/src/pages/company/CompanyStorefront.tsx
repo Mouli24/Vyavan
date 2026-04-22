@@ -14,7 +14,7 @@ export default function CompanyStorefront() {
   const { user: authUser } = useAuth()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'products' | 'about' | 'certifications'>('products')
+  const [activeTab, setActiveTab] = useState<'products' | 'about' | 'certifications' | 'reviews'>('products')
   const [holidayInfo, setHolidayInfo] = useState<any>(null)
 
   const handleAction = (type: string, productId?: string) => {
@@ -223,7 +223,7 @@ export default function CompanyStorefront() {
 
         {/* Tabs */}
         <div className="flex gap-1 mb-6 border-b border-sp-border">
-          {(['products', 'about', 'certifications'] as const).map(tab => (
+          {(['products', 'reviews', 'about', 'certifications'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -283,7 +283,47 @@ export default function CompanyStorefront() {
           </div>
         )}
 
-        {/* Tab: About */}
+        {/* Tab: Reviews */}
+        {activeTab === 'reviews' && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            {/* Rating Summary Card */}
+            <div className="bg-white rounded-3xl border border-sp-border shadow-card p-8 grid md:grid-cols-3 gap-8">
+              <div className="text-center md:border-r border-sp-border flex flex-col justify-center">
+                <p className="text-6xl font-black text-sp-text">{profile?.stats?.avgRating?.toFixed(1) ?? '0.0'}</p>
+                <div className="flex justify-center gap-1 my-2">
+                  {[1, 2, 3, 4, 5].map(s => (
+                    <Star key={s} className={`w-5 h-5 ${s <= (profile?.stats?.avgRating ?? 0) ? 'text-amber-500 fill-current' : 'text-sp-border'}`} />
+                  ))}
+                </div>
+                <p className="text-sm text-sp-muted font-medium">Based on {profile?.stats?.totalReviews ?? 0} reviews</p>
+              </div>
+
+              <div className="md:col-span-2 space-y-4 py-2">
+                {[
+                  { label: 'Product Quality', value: profile?.stats?.avgQuality ?? 0 },
+                  { label: 'Delivery Timeline', value: profile?.stats?.avgDelivery ?? 0 },
+                  { label: 'Communication', value: profile?.stats?.avgCommunication ?? 0 },
+                ].map(param => (
+                  <div key={param.label}>
+                    <div className="flex justify-between text-xs font-bold text-sp-text mb-1.5 uppercase tracking-wider">
+                      <span>{param.label}</span>
+                      <span className="text-sp-purple">{param.value.toFixed(1)}/5.0</span>
+                    </div>
+                    <div className="h-2 bg-sp-bg rounded-full overflow-hidden">
+                      <div 
+                        className="h-full gradient-card-purple rounded-full transition-all duration-1000" 
+                        style={{ width: `${(param.value / 5) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Reviews List */}
+            <ReviewList manufacturerId={user._id} />
+          </div>
+        )}
         {activeTab === 'about' && (
           <div className="grid sm:grid-cols-2 gap-6">
             <div className="bg-white rounded-2xl border border-sp-border shadow-card p-6">
@@ -403,4 +443,98 @@ export default function CompanyStorefront() {
       </div>
     </div>
   )
+}
+
+function ReviewList({ manufacturerId }: { manufacturerId: string }) {
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.getReviews(manufacturerId)
+      .then(setReviews)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [manufacturerId]);
+
+  if (loading) return <div className="py-12 flex justify-center"><div className="w-6 h-6 border-2 border-sp-purple border-t-transparent rounded-full animate-spin" /></div>;
+
+  if (reviews.length === 0) return (
+    <div className="bg-white rounded-3xl border border-sp-border p-16 text-center">
+      <Star className="w-12 h-12 mx-auto mb-3 text-sp-border" />
+      <p className="font-medium text-sp-text">No reviews yet</p>
+      <p className="text-sm text-sp-muted">Be the first to share your experience after a delivered order.</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {reviews.map(review => (
+        <ReviewItem key={review._id} review={review} />
+      ))}
+    </div>
+  );
+}
+
+function ReviewItem({ review }: { review: any }) {
+  return (
+    <div className="bg-white rounded-3xl border border-sp-border p-6 shadow-sm">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 gradient-card-purple rounded-full flex items-center justify-center font-bold text-white uppercase">
+            {review.buyer?.name?.[0] ?? 'B'}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-sp-text">{review.buyer?.name ?? 'Verified Buyer'}</span>
+              <span className="flex items-center gap-1 text-[10px] bg-sp-mint text-sp-success px-2 py-0.5 rounded-full font-bold">
+                <CheckCircle className="w-2.5 h-2.5" /> Verified Purchase
+              </span>
+            </div>
+            <p className="text-[10px] text-sp-muted">{new Date(review.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          </div>
+        </div>
+        <div className="flex gap-0.5">
+          {[1, 2, 3, 4, 5].map(s => (
+            <Star key={s} className={`w-3.5 h-3.5 ${s <= review.ratings.overall ? 'text-amber-500 fill-current' : 'text-sp-border'}`} />
+          ))}
+        </div>
+      </div>
+
+      <div className="pl-13">
+        <p className="text-sm text-sp-text leading-relaxed mb-4">{review.comment || "No comment provided."}</p>
+        
+        {review.images?.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {review.images.map((img: string, i: number) => (
+              <img key={i} src={img} alt="Review" className="w-20 h-20 object-cover rounded-xl border border-sp-border" />
+            ))}
+          </div>
+        )}
+
+        {/* Breakdown Tooltip/Mini-stats */}
+        <div className="flex gap-4 mb-4">
+          {[
+            { label: 'Quality', val: review.ratings.quality },
+            { label: 'Delivery', val: review.ratings.delivery },
+            { label: 'Comm.', val: review.ratings.communication },
+          ].map(p => (
+            <div key={p.label} className="text-[10px] font-bold text-sp-muted uppercase tracking-tighter">
+              {p.label}: <span className="text-sp-purple">{p.val}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Manufacturer Reply */}
+        {review.manufacturerReply?.text && (
+          <div className="bg-sp-bg rounded-2xl p-4 border-l-4 border-sp-purple">
+            <div className="flex items-center gap-2 mb-1">
+              <Factory className="w-3.5 h-3.5 text-sp-purple" />
+              <span className="text-xs font-black text-sp-text uppercase tracking-wider">Manufacturer's Reply</span>
+            </div>
+            <p className="text-sm text-sp-text italic leading-relaxed">"{review.manufacturerReply.text}"</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

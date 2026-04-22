@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import {
   Calendar, Clock, Video, Phone, CheckCircle,
@@ -67,10 +67,10 @@ export default function ScheduleCall() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#FDF6EE' }}>
+    <div className="min-h-screen" style={{ background: '#F9FAFB' }}>
 
       {/* ── Sephio Navbar ── */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-[#F0E6D8] px-6 py-3">
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-sp-border px-6 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <h1 className="text-2xl font-black text-slate-900 cursor-pointer flex-shrink-0" onClick={() => navigate('/buyer/dashboard')}>
             Sephio
@@ -87,8 +87,8 @@ export default function ScheduleCall() {
                 onClick={() => navigate(item.to)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all border ${
                   item.active
-                    ? 'bg-[#FFF0E0] border-[#F5C89A] text-[#C47A2B]'
-                    : 'bg-white border-[#EEE] text-slate-600 hover:border-[#F5C89A] hover:text-[#C47A2B]'
+                    ? 'bg-[#F5F3FF] border-[#C4B5FD] text-[#7C3AED]'
+                    : 'bg-white border-sp-border text-slate-600 hover:border-[#C4B5FD] hover:text-[#7C3AED]'
                 }`}
               >
                 <item.icon size={15} />
@@ -97,13 +97,13 @@ export default function ScheduleCall() {
             ))}
           </nav>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <button className="relative flex items-center gap-2 px-4 py-2 rounded-full border border-[#EEE] bg-white text-slate-700 text-sm font-semibold hover:border-[#F5C89A] transition-all">
+            <button className="relative flex items-center gap-2 px-4 py-2 rounded-full border border-sp-border bg-white text-slate-700 text-sm font-semibold hover:border-[#C4B5FD] transition-all">
               <ShoppingCart size={16} />
               Cart
             </button>
             <button
               onClick={() => navigate('/login')}
-              className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#EEE] bg-white text-slate-700 text-sm font-semibold hover:border-[#F5C89A] transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-full border border-sp-border bg-white text-slate-700 text-sm font-semibold hover:border-[#C4B5FD] transition-all"
             >
               <User size={15} />
               {user ? user.name?.split(' ')[0] : 'My Account'}
@@ -124,7 +124,7 @@ export default function ScheduleCall() {
           <button
             onClick={() => setShowBookModal(true)}
             className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold text-white transition-all"
-            style={{ background: '#C47A2B' }}
+            style={{ background: '#7C3AED' }}
           >
             <Plus size={16} /> Book Call
           </button>
@@ -133,27 +133,27 @@ export default function ScheduleCall() {
         <div className="space-y-4">
           {loading ? (
             <div className="flex justify-center py-16">
-              <div className="w-8 h-8 border-2 border-[#C47A2B] border-t-transparent rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-[#7C3AED] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : calls.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-[#F0E6D8] p-16 text-center">
+            <div className="bg-white rounded-2xl border border-sp-border p-16 text-center">
               <Calendar className="w-12 h-12 mx-auto mb-3 text-slate-300" />
               <p className="font-bold text-slate-700 mb-1">No calls scheduled</p>
               <p className="text-sm text-slate-400 mb-6">Book a call with a manufacturer to discuss products & pricing</p>
               <button
                 onClick={() => setShowBookModal(true)}
                 className="px-5 py-2.5 rounded-full text-white font-bold text-sm"
-                style={{ background: '#C47A2B' }}
+                style={{ background: '#7C3AED' }}
               >
                 Book First Call
               </button>
             </div>
           ) : (
             calls.map(call => (
-              <div key={call._id} className="bg-white rounded-2xl border border-[#F0E6D8] shadow-sm p-5">
+              <div key={call._id} className="bg-white rounded-2xl border border-sp-border shadow-sm p-5">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-[#FFF0E0] rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Video className="w-5 h-5 text-[#C47A2B]" />
+                  <div className="w-10 h-10 bg-[#F5F3FF] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Video className="w-5 h-5 text-[#7C3AED]" />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
@@ -178,14 +178,14 @@ export default function ScheduleCall() {
                       </span>
                     </div>
                     {call.purpose && (
-                      <p className="text-xs text-slate-400 mt-2 bg-[#FDF6EE] rounded-lg p-2">{call.purpose}</p>
+                      <p className="text-xs text-slate-400 mt-2 bg-sp-bg rounded-lg p-2">{call.purpose}</p>
                     )}
                     {call.meetingLink && (
                       <a
                         href={call.meetingLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 bg-[#FFF0E0] text-[#C47A2B] text-xs font-bold rounded-lg hover:opacity-80 transition-all"
+                        className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 bg-[#F5F3FF] text-[#7C3AED] text-xs font-bold rounded-lg hover:opacity-80 transition-all"
                       >
                         <Video className="w-3 h-3" /> Join Meeting
                       </a>
@@ -296,3 +296,6 @@ export default function ScheduleCall() {
     </div>
   )
 }
+
+
+

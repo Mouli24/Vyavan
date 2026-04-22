@@ -50,7 +50,7 @@ export default function ReportModal({ isOpen, onClose }: any) {
         >
           <div className="p-8 pb-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+              <div className="w-12 h-12 bg-mfr-peach rounded-2xl flex items-center justify-center text-mfr-brown">
                 <FileDown size={24} />
               </div>
               <div>

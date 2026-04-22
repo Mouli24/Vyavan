@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import {
   Settings, Shield, Globe, Lock, Bell, CreditCard,
   Save, Loader2, ToggleLeft, ToggleRight, Zap,
@@ -13,8 +13,8 @@ export default function AdminSettings() {
   const [saved, setSaved] = useState(false)
 
   // General
-  const [platformName, setPlatformName] = useState('B2BHarat')
-  const [adminEmail, setAdminEmail] = useState('admin@b2bharat.com')
+  const [platformName, setPlatformName] = useState('Vyawan')
+  const [adminEmail, setAdminEmail] = useState('admin@Vyawan.com')
   const [maintenanceMode, setMaintenanceMode] = useState(false)
 
   // Commission rates per category
@@ -211,3 +211,4 @@ export default function AdminSettings() {
     </div>
   )
 }
+

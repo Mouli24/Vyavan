@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, Address } from '@/lib/api'
 import { Mail, Shield, CheckCircle, Package, ArrowLeft, Loader2, CreditCard, MapPin, Navigation, Plus, Map, Calendar } from 'lucide-react'
@@ -216,16 +216,16 @@ export default function BuyerCheckout() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FDF6EE] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#C47A2B]" />
+      <div className="min-h-screen bg-sp-bg flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#7C3AED]" />
       </div>
     )
   }
 
   if (step === 3) {
     return (
-      <div className="min-h-screen bg-[#FDF6EE] flex flex-col items-center justify-center p-6 text-center">
-        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-[2rem] shadow-xl p-10 max-w-md w-full border border-[#EEE]">
+      <div className="min-h-screen bg-sp-bg flex flex-col items-center justify-center p-6 text-center">
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-[2rem] shadow-xl p-10 max-w-md w-full border border-sp-border">
           <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-10 h-10 text-green-500" />
           </div>
@@ -234,7 +234,7 @@ export default function BuyerCheckout() {
             Your orders have been sent to the respective manufacturers. They will be reviewed and processed shortly.
             A confirmation email has been dispatched.
           </p>
-          <button onClick={() => navigate('/buyer/orders')} className="w-full py-4 rounded-xl bg-[#C47A2B] text-white font-bold hover:bg-[#A0621A] transition-colors">
+          <button onClick={() => navigate('/buyer/orders')} className="w-full py-4 rounded-xl bg-[#7C3AED] text-white font-bold hover:bg-[#6D28D9] transition-colors">
             Track Orders
           </button>
         </motion.div>
@@ -243,8 +243,8 @@ export default function BuyerCheckout() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDF6EE] font-['Inter']">
-      <header className="bg-white border-b border-[#F0E6D8] px-6 py-4 sticky top-0 z-10 text-center flex items-center justify-between">
+    <div className="min-h-screen bg-sp-bg font-['Inter']">
+      <header className="bg-white border-b border-sp-border px-6 py-4 sticky top-0 z-10 text-center flex items-center justify-between">
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-semibold">
           <ArrowLeft size={18} /> Back
         </button>
@@ -256,15 +256,15 @@ export default function BuyerCheckout() {
         
         {/* Left Col: Forms */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white border border-[#EEE] rounded-[1.5rem] p-6 sm:p-8 shadow-sm">
+          <div className="bg-white border border-sp-border rounded-[1.5rem] p-6 sm:p-8 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <MapPin className="text-[#C47A2B]" size={20} /> Delivery Address
+                <MapPin className="text-[#7C3AED]" size={20} /> Delivery Address
               </h3>
               {!showNewAddress && (
                 <button
                   onClick={() => setShowNewAddress(true)}
-                  className="text-[#C47A2B] text-sm font-bold flex items-center gap-1 hover:underline"
+                  className="text-[#7C3AED] text-sm font-bold flex items-center gap-1 hover:underline"
                 >
                   <Plus size={16} /> Add New Address
                 </button>
@@ -272,7 +272,7 @@ export default function BuyerCheckout() {
             </div>
 
             {showNewAddress ? (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-[#EEE]">
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-sp-border">
                 <div className="flex items-center justify-between mb-4">
                    <h4 className="font-bold text-slate-800">New Address</h4>
                    <button onClick={handleUseCurrentLocation} disabled={locating} className="flex items-center gap-1 text-sm bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full font-bold hover:bg-blue-100 transition-colors">
@@ -284,65 +284,65 @@ export default function BuyerCheckout() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">Full Name *</label>
-                    <input type="text" value={newAddressForm.fullName} onChange={e => setNewAddressForm({...newAddressForm, fullName: e.target.value})} className="w-full p-3 bg-white border border-[#EEE] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#F5C89A]"/>
+                    <input type="text" value={newAddressForm.fullName} onChange={e => setNewAddressForm({...newAddressForm, fullName: e.target.value})} className="w-full p-3 bg-white border border-sp-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#C4B5FD]"/>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">Phone Number *</label>
-                    <input type="text" maxLength={10} value={newAddressForm.phone} onChange={e => setNewAddressForm({...newAddressForm, phone: e.target.value.replace(/\D/g, '')})} className="w-full p-3 bg-white border border-[#EEE] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#F5C89A]"/>
+                    <input type="text" maxLength={10} value={newAddressForm.phone} onChange={e => setNewAddressForm({...newAddressForm, phone: e.target.value.replace(/\D/g, '')})} className="w-full p-3 bg-white border border-sp-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#C4B5FD]"/>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Company Name (Optional)</label>
-                  <input type="text" value={newAddressForm.companyName} onChange={e => setNewAddressForm({...newAddressForm, companyName: e.target.value})} className="w-full p-3 bg-white border border-[#EEE] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#F5C89A]"/>
+                  <input type="text" value={newAddressForm.companyName} onChange={e => setNewAddressForm({...newAddressForm, companyName: e.target.value})} className="w-full p-3 bg-white border border-sp-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#C4B5FD]"/>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Address Line 1 *</label>
-                  <input type="text" placeholder="Building, Street Name, Area" value={newAddressForm.addressLine1} onChange={e => setNewAddressForm({...newAddressForm, addressLine1: e.target.value})} className="w-full p-3 bg-white border border-[#EEE] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#F5C89A]"/>
+                  <input type="text" placeholder="Building, Street Name, Area" value={newAddressForm.addressLine1} onChange={e => setNewAddressForm({...newAddressForm, addressLine1: e.target.value})} className="w-full p-3 bg-white border border-sp-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#C4B5FD]"/>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Address Line 2</label>
-                  <input type="text" placeholder="Landmark, Locality (Optional)" value={newAddressForm.addressLine2} onChange={e => setNewAddressForm({...newAddressForm, addressLine2: e.target.value})} className="w-full p-3 bg-white border border-[#EEE] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#F5C89A]"/>
+                  <input type="text" placeholder="Landmark, Locality (Optional)" value={newAddressForm.addressLine2} onChange={e => setNewAddressForm({...newAddressForm, addressLine2: e.target.value})} className="w-full p-3 bg-white border border-sp-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#C4B5FD]"/>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">Pincode *</label>
-                    <input type="text" maxLength={6} placeholder="6 digits" value={newAddressForm.pincode} onChange={e => setNewAddressForm({...newAddressForm, pincode: e.target.value.replace(/\D/g, '')})} className="w-full p-3 bg-white border border-[#EEE] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#F5C89A]"/>
+                    <input type="text" maxLength={6} placeholder="6 digits" value={newAddressForm.pincode} onChange={e => setNewAddressForm({...newAddressForm, pincode: e.target.value.replace(/\D/g, '')})} className="w-full p-3 bg-white border border-sp-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#C4B5FD]"/>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">City *</label>
-                    <input type="text" value={newAddressForm.city} onChange={e => setNewAddressForm({...newAddressForm, city: e.target.value})} className="w-full p-3 bg-white border border-[#EEE] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#F5C89A]"/>
+                    <input type="text" value={newAddressForm.city} onChange={e => setNewAddressForm({...newAddressForm, city: e.target.value})} className="w-full p-3 bg-white border border-sp-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#C4B5FD]"/>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">State *</label>
-                    <input type="text" value={newAddressForm.state} onChange={e => setNewAddressForm({...newAddressForm, state: e.target.value})} className="w-full p-3 bg-white border border-[#EEE] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#F5C89A]"/>
+                    <input type="text" value={newAddressForm.state} onChange={e => setNewAddressForm({...newAddressForm, state: e.target.value})} className="w-full p-3 bg-white border border-sp-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#C4B5FD]"/>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">Country</label>
-                    <input type="text" disabled value={newAddressForm.country} className="w-full p-3 bg-slate-100 border border-[#EEE] rounded-xl text-sm text-slate-500"/>
+                    <input type="text" disabled value={newAddressForm.country} className="w-full p-3 bg-slate-100 border border-sp-border rounded-xl text-sm text-slate-500"/>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 pt-2 pb-4">
-                  <input type="checkbox" id="save" checked={saveToBook} onChange={e => setSaveToBook(e.target.checked)} className="w-4 h-4 text-[#C47A2B] rounded focus:ring-[#C47A2B]" />
+                  <input type="checkbox" id="save" checked={saveToBook} onChange={e => setSaveToBook(e.target.checked)} className="w-4 h-4 text-[#7C3AED] rounded focus:ring-[#7C3AED]" />
                   <label htmlFor="save" className="text-sm font-semibold text-slate-700">Save to Address Book for future use</label>
                 </div>
                 
                 {saveToBook && (
                   <div className="flex items-center gap-2 pb-4">
-                    <input type="checkbox" id="default" checked={newAddressForm.isDefault} onChange={e => setNewAddressForm({...newAddressForm, isDefault: e.target.checked})} className="w-4 h-4 text-[#C47A2B] rounded focus:ring-[#C47A2B]" />
+                    <input type="checkbox" id="default" checked={newAddressForm.isDefault} onChange={e => setNewAddressForm({...newAddressForm, isDefault: e.target.checked})} className="w-4 h-4 text-[#7C3AED] rounded focus:ring-[#7C3AED]" />
                     <label htmlFor="default" className="text-sm font-semibold text-slate-700">Make this my default address</label>
                   </div>
                 )}
 
                 <div className="flex gap-3">
-                  <button onClick={() => setShowNewAddress(false)} className="flex-1 py-3 bg-white border border-[#EEE] text-slate-600 font-bold rounded-xl hover:bg-slate-50">Cancel</button>
-                  <button disabled={processing} onClick={handleSaveNewAddress} className="flex-1 py-3 bg-[#C47A2B] text-white font-bold rounded-xl hover:bg-[#A0621A] flex items-center justify-center gap-2">
+                  <button onClick={() => setShowNewAddress(false)} className="flex-1 py-3 bg-white border border-sp-border text-slate-600 font-bold rounded-xl hover:bg-slate-50">Cancel</button>
+                  <button disabled={processing} onClick={handleSaveNewAddress} className="flex-1 py-3 bg-[#7C3AED] text-white font-bold rounded-xl hover:bg-[#6D28D9] flex items-center justify-center gap-2">
                     {processing && <Loader2 size={16} className="animate-spin" />} Use this Address
                   </button>
                 </div>
@@ -350,16 +350,16 @@ export default function BuyerCheckout() {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
                 {addresses.length === 0 ? (
-                   <div className="sm:col-span-2 text-center p-8 bg-slate-50 rounded-2xl border-2 border-dashed border-[#EEE]">
+                   <div className="sm:col-span-2 text-center p-8 bg-slate-50 rounded-2xl border-2 border-dashed border-sp-border">
                       <MapPin size={32} className="mx-auto text-slate-300 mb-2" />
                       <p className="text-slate-500 font-medium mb-3">No saved addresses found.</p>
-                      <button onClick={() => setShowNewAddress(true)} className="text-sm bg-white border border-[#EEE] px-4 py-2 rounded-full font-bold text-slate-700 shadow-sm hover:border-[#C47A2B]">Add Address Now</button>
+                      <button onClick={() => setShowNewAddress(true)} className="text-sm bg-white border border-sp-border px-4 py-2 rounded-full font-bold text-slate-700 shadow-sm hover:border-[#7C3AED]">Add Address Now</button>
                    </div>
                 ) : addresses.map(addr => (
                   <div 
                     key={addr._id} 
                     onClick={() => setSelectedAddress(addr)}
-                    className={`relative p-5 rounded-2xl border-2 cursor-pointer transition-all ${selectedAddress?._id === addr._id ? 'border-[#C47A2B] bg-[#FFF0E0]' : 'border-[#EEE] hover:border-[#F5C89A] bg-white'}`}
+                    className={`relative p-5 rounded-2xl border-2 cursor-pointer transition-all ${selectedAddress?._id === addr._id ? 'border-[#7C3AED] bg-[#F5F3FF]' : 'border-sp-border hover:border-[#C4B5FD] bg-white'}`}
                   >
                     {addr.isDefault && (
                       <span className="absolute top-3 right-3 bg-slate-100 text-slate-600 text-[10px] font-black uppercase px-2 py-1 rounded-md">Default</span>
@@ -375,7 +375,7 @@ export default function BuyerCheckout() {
                     </p>
                     
                     {selectedAddress?._id === addr._id && (
-                      <div className="absolute -top-2 -right-2 bg-[#C47A2B] w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                      <div className="absolute -top-2 -right-2 bg-[#7C3AED] w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
                         <CheckCircle size={14} className="text-white" />
                       </div>
                     )}
@@ -385,9 +385,9 @@ export default function BuyerCheckout() {
             )}
           </div>
 
-          <div className="bg-white border border-[#EEE] rounded-[1.5rem] p-6 sm:p-8 shadow-sm">
+          <div className="bg-white border border-sp-border rounded-[1.5rem] p-6 sm:p-8 shadow-sm">
             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-6">
-              <CreditCard className="text-[#C47A2B]" size={20} /> Payment Terms
+              <CreditCard className="text-[#7C3AED]" size={20} /> Payment Terms
             </h3>
             <div className="flex flex-col gap-3">
               {[
@@ -395,9 +395,9 @@ export default function BuyerCheckout() {
                 { id: 'letter_of_credit', label: 'Letter of Credit (L/C)' },
                 { id: 'credit_card', label: 'Corporate Credit Card / Netbanking' }
               ].map(opt => (
-                <label key={opt.id} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${paymentMethod === opt.id ? 'border-[#C47A2B] bg-[#FFF0E0]' : 'border-[#EEE] hover:border-[#F5C89A]'}`}>
-                  <input type="radio" name="payment" value={opt.id} checked={paymentMethod === opt.id} onChange={() => setPaymentMethod(opt.id)} className="w-4 h-4 text-[#C47A2B] focus:ring-[#C47A2B]" />
-                  <span className={`text-sm font-semibold ${paymentMethod === opt.id ? 'text-[#C47A2B]' : 'text-slate-600'}`}>{opt.label}</span>
+                <label key={opt.id} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${paymentMethod === opt.id ? 'border-[#7C3AED] bg-[#F5F3FF]' : 'border-sp-border hover:border-[#C4B5FD]'}`}>
+                  <input type="radio" name="payment" value={opt.id} checked={paymentMethod === opt.id} onChange={() => setPaymentMethod(opt.id)} className="w-4 h-4 text-[#7C3AED] focus:ring-[#7C3AED]" />
+                  <span className={`text-sm font-semibold ${paymentMethod === opt.id ? 'text-[#7C3AED]' : 'text-slate-600'}`}>{opt.label}</span>
                 </label>
               ))}
             </div>
@@ -409,13 +409,13 @@ export default function BuyerCheckout() {
 
         {/* Right Col: Summary & Actions */}
         <div className="space-y-6">
-          <div className="bg-white border border-[#EEE] rounded-[1.5rem] p-6 shadow-md sticky top-24">
-            <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-[#EEE] pb-4">Order Summary</h3>
+          <div className="bg-white border border-sp-border rounded-[1.5rem] p-6 shadow-md sticky top-24">
+            <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-sp-border pb-4">Order Summary</h3>
             
             <div className="space-y-4 mb-6 max-h-64 overflow-y-auto pr-2">
               {cart.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-slate-100 rounded-lg overflow-hidden border border-[#EEE] flex-shrink-0">
+                  <div className="w-12 h-12 bg-slate-100 rounded-lg overflow-hidden border border-sp-border flex-shrink-0">
                     {item.product?.image ? <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" /> : <Package className="w-6 h-6 m-auto text-slate-300 mt-3" />}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -430,7 +430,7 @@ export default function BuyerCheckout() {
               {cart.length === 0 && <p className="text-sm text-slate-400 py-4">Your cart is empty.</p>}
             </div>
 
-            <div className="border-t border-[#EEE] pt-4 space-y-3 mb-6">
+            <div className="border-t border-sp-border pt-4 space-y-3 mb-6">
               <div className="flex justify-between text-sm text-slate-500 font-medium">
                 <span>Subtotal</span>
                 <span>₹{cartTotal.toLocaleString('en-IN')}</span>
@@ -439,7 +439,7 @@ export default function BuyerCheckout() {
                 <span>Estimated Tax (18% GST)</span>
                 <span>₹{(cartTotal * 0.18).toLocaleString('en-IN')}</span>
               </div>
-              <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-[#EEE]">
+              <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-sp-border">
                 <span>Total Amount</span>
                 <span>₹{(cartTotal * 1.18).toLocaleString('en-IN')}</span>
               </div>
@@ -487,7 +487,7 @@ export default function BuyerCheckout() {
               className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 font-extrabold text-sm transition-all ${
                  cart.length === 0 || !selectedAddress 
                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                 : 'bg-[#C47A2B] hover:bg-[#A0621A] text-white shadow-xl hover:shadow-2xl hover:-translate-y-0.5'
+                 : 'bg-[#7C3AED] hover:bg-[#6D28D9] text-white shadow-xl hover:shadow-2xl hover:-translate-y-0.5'
               }`}
             >
               {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Shield className="w-4 h-4" />}
@@ -500,3 +500,5 @@ export default function BuyerCheckout() {
     </div>
   )
 }
+
+

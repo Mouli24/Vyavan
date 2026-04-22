@@ -91,11 +91,14 @@ const manufacturerProfileSchema = new mongoose.Schema({
 
   // Stats (cached)
   stats: {
-    totalOrders:   { type: Number, default: 0 },
-    totalRevenue:  { type: Number, default: 0 },
-    avgRating:     { type: Number, default: 0 },
-    totalReviews:  { type: Number, default: 0 },
-    responseRate:  { type: Number, default: 0 },
+    totalOrders:      { type: Number, default: 0 },
+    totalRevenue:     { type: Number, default: 0 },
+    avgRating:        { type: Number, default: 0 },
+    avgQuality:       { type: Number, default: 0 },
+    avgDelivery:      { type: Number, default: 0 },
+    avgCommunication: { type: Number, default: 0 },
+    totalReviews:     { type: Number, default: 0 },
+    responseRate:     { type: Number, default: 0 },
   },
 }, { timestamps: true });
 

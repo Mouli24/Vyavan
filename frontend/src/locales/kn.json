@@ -1,0 +1,23 @@
+{
+  "navigation": {
+    "overview": "ಅವಲೋಕನ",
+    "myStore": "ನನ್ನ ಅಂಗಡಿ",
+    "orders": "ಆದೇಶಗಳು",
+    "inventory": "ದಾಸ್ತಾನು",
+    "shipment": "ರವಾನೆ",
+    "negotiation": "ಸಮಾಲೋಚನೆ",
+    "payment": "ಪಾವತಿ",
+    "complaints": "ದೂರುಗಳು",
+    "onboarding": "ಆನ್‌ಬೋರ್ಡಿಂಗ್",
+    "settings": "ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
+    "logout": "ಲಾಗ್ ಔಟ್"
+  },
+  "common": {
+    "login": "ಲಾಗಿನ್",
+    "signup": "ಸೈನ್ ಅಪ್",
+    "loading": "ಲೋಡ್ ಆಗುತ್ತಿದೆ...",
+    "save": "ಉಳಿಸಿ",
+    "cancel": "ರದ್ದುಮಾಡಿ",
+    "chooseLanguage": "ನಿಮ್ಮ ಆದ್ಯತೆಯ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ"
+  }
+}

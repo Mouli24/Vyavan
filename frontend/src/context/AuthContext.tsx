@@ -5,6 +5,7 @@ interface AuthState {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<User>;
+  googleLogin: (token: string, role?: string) => Promise<User>;
   register: (data: RegisterPayload) => Promise<User>;
   logout: () => void;
   loading: boolean;
@@ -28,6 +29,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<User> => {
     const { token: t, user: u } = await api.login(email, password);
+    localStorage.setItem('token', t);
+    setToken(t);
+    setUser(u);
+    return u;
+  };
+
+  const googleLogin = async (googleToken: string, role?: string): Promise<User> => {
+    const { token: t, user: u } = await api.googleLogin(googleToken, role);
     localStorage.setItem('token', t);
     setToken(t);
     setUser(u);

@@ -26,10 +26,11 @@ cloudinary.config({
 let genAI;
 const getGenAI = () => {
   if (!genAI) {
-    genAI = new GoogleGenerativeAI((process.env.GEMINI_API_KEY || '').trim());
+    genAI = new GoogleGenerativeAI((process.env.GEMINI_API_KEY || '').trim(), { apiVersion: 'v1' });
   }
   return genAI;
 };
+
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -95,7 +96,7 @@ router.post('/analyze', protect, requireRole('manufacturer'), upload.single('ima
     }
 
     // 2. Prepare Gemini Prompt
-    const model = getGenAI().getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = `
       You are an expert B2B product specialist. Analyze this product image and generate a professional B2B listing in JSON format.
       
@@ -171,33 +172,112 @@ router.post('/analyze', protect, requireRole('manufacturer'), upload.single('ima
   }
 });
 
+router.post('/extract-multi', protect, requireRole('manufacturer'), upload.array('images', 2), async (req, res) => {
+  try {
+    const key = (process.env.GEMINI_API_KEY || '').trim();
+    if (!key) {
+      return res.status(500).json({ message: 'GEMINI_API_KEY not configured' });
+    }
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: 'Please upload at least one product photo.' });
+    }
+
+    // 1. Upload all images to Cloudinary
+    const uploadPromises = req.files.map(file => {
+      return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: 'product-lister' },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(file.buffer);
+      });
+    });
+
+    const cloudinaryResults = await Promise.all(uploadPromises);
+    const imageUrls = cloudinaryResults.map(r => r.secure_url);
+
+    // 2. Prepare Gemini Prompt for multi-image analysis
+    const model = getGenAI().getGenerativeModel({ model: "gemini-1.5-flash" });
+    const prompt = `
+      You are an expert B2B product specialist. I am providing you with ${req.files.length} images of a product (likely front and back).
+      Analyze these images and generate a professional B2B listing in JSON format.
+      
+      The output MUST be a valid JSON object with these fields:
+      - name: A professional, catchy product name (max 60 chars)
+      - category: One from [Textiles, Electronics, Machinery, FMCG, Automotive, Construction, Chemicals, Agriculture, Pharmaceuticals, Furniture, Leather Goods, Plastics, Metal Products, Paper Products].
+      - description: A detailed, persuasive description (3-4 paragraphs) focusing on quality, durability, and business value.
+      - specs: A flat object with at least 5 key specs (e.g., { "Material": "Grade A Steel", "Weight": "2.5kg", ... }).
+      - pricing_guess: A reasonable base price in INR (number only).
+      - moq_guess: A reasonable minimum order quantity (number only).
+      - payment_terms_guess: An array of 2-3 common payment terms like ["Advance Payment", "Net 30"].
+
+      Be precise. Use information from both images to fill details. If some info is missing, use your expert knowledge to provide a realistic industry-standard value.
+    `;
+
+    const imageParts = req.files.map((file, i) => fileToGenerativePart(file.buffer, file.mimetype));
+    
+    // 3. Call Gemini
+    const result = await model.generateContent([prompt, ...imageParts]);
+    const response = await result.response;
+    const text = response.text();
+    
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('AI could not generate a valid listing structure.');
+    }
+    
+    const analysis = JSON.parse(jsonMatch[0]);
+
+    res.json({
+      success: true,
+      imageUrls,
+      analysis
+    });
+
+  } catch (error) {
+    console.error('[EXTRACT_MULTI_ERROR]', error);
+    res.status(500).json({ 
+      message: error.message || 'AI extraction failed. Please try again or fill manually.' 
+    });
+  }
+});
+
 /**
  * @route   POST /api/product-lister/regenerate-field
- * @desc    Regenerate a specific field based on custom instructions
+ * @desc    Regenerate a specific field based on user instruction and context
  */
 router.post('/regenerate-field', protect, requireRole('manufacturer'), async (req, res) => {
   try {
-    const { field, context, instruction } = req.body;
+    const { field, instruction, context } = req.body;
+    if (!field || !instruction) {
+      return res.status(400).json({ message: 'Missing field or instruction' });
+    }
 
-    const model = getGenAI().getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = `
-      You are a product specialist. I have a listing for "${context.name}".
-      Specifically for the field "${field}", here is the current value: "${context.currentValue}".
+      You are an expert B2B product specialist. The user wants to regenerate the "${field}" of a product listing.
       
-      The user wants to change it with this instruction: "${instruction}".
-      
-      Return ONLY the improved text for the "${field}" field. Do not include any other text or explanation. 
-      If it is a list (like specs or features), return it in a format that can be parsed as a JSON fragment.
+      USER INSTRUCTION: "${instruction}"
+      CURRENT CONTEXT/VALUE: "${context || 'None'}"
+
+      Respond ONLY with the requested field's new content. No JSON, no explanations. Just the raw text.
     `;
 
     const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const improvedValue = response.text().trim();
+    const text = result.response.text().trim();
 
-    res.json({ success: true, improvedValue });
+    res.json({ success: true, value: text });
+
   } catch (error) {
-    res.status(500).json({ message: 'Regeneration failed.' });
+    console.error('[REGENERATE_FIELD_ERROR]', error);
+    res.status(500).json({ message: 'Failed to regenerate field' });
   }
 });
 
 export default router;
+
+

@@ -1,0 +1,23 @@
+{
+  "navigation": {
+    "overview": "மேலோட்டம்",
+    "myStore": "எனது கடை",
+    "orders": "ஆர்டர்கள்",
+    "inventory": "சரக்கு",
+    "shipment": "ஏற்றுமதி",
+    "negotiation": "பேச்சுவார்த்தை",
+    "payment": "கட்டணம்",
+    "complaints": "புகார்கள்",
+    "onboarding": "ஆன்போர்டிங்",
+    "settings": "அமைப்புகள்",
+    "logout": "வெளியேறு"
+  },
+  "common": {
+    "login": "உள்நுழை",
+    "signup": "பதிவுபெறு",
+    "loading": "ஏற்றுகிறது...",
+    "save": "சேமி",
+    "cancel": "ரத்துசெய்",
+    "chooseLanguage": "உங்கள் விருப்பமான மொழியைத் தேர்ந்தெடுக்கவும்"
+  }
+}

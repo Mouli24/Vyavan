@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Download, Wallet, RefreshCw, AlertCircle, TrendingUp, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '@/lib/api';
@@ -88,7 +88,7 @@ export default function Payment() {
       {/* Breadcrumb & Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1.5">
-          <div className="flex items-center gap-2 text-[11px] font-medium text-sp-muted">
+          <div className="flex items-center gap-2 text-[11px] font-medium text-mfr-muted">
             <span>Dashboard</span>
             <span className="text-sp-border">·</span>
             <span className="text-[#8B4513]">Payment</span>
@@ -236,3 +236,4 @@ export default function Payment() {
     </div>
   );
 }
+

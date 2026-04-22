@@ -42,6 +42,7 @@ export default function ManufacturerOrders() {
   const [activeTab, setActiveTab] = useState('all')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [processingId, setProcessingId] = useState<string | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [showModModal, setShowModModal] = useState(false)
   const [showDispatchModal, setShowDispatchModal] = useState(false)
@@ -61,6 +62,7 @@ export default function ManufacturerOrders() {
   }, [])
 
   const handleStatusChange = async (orderId: string, status: string, extra: any = {}) => {
+    setProcessingId(orderId)
     try {
       if (status === 'Confirmed') {
         await api.confirmOrder(orderId)
@@ -89,6 +91,8 @@ export default function ManufacturerOrders() {
       setShowDispatchModal(false)
     } catch (e: any) {
       alert(e.message || 'Failed to update status')
+    } finally {
+      setProcessingId(null)
     }
   }
 
@@ -291,16 +295,48 @@ export default function ManufacturerOrders() {
                   <div className="flex items-center justify-end gap-1.5">
                     {order.status === 'New' && (
                       <>
-                        <button onClick={() => handleStatusChange(order._id, 'Rejected')} className="px-3 py-1 rounded-full text-[10px] font-bold border border-red-200 text-red-600 hover:bg-red-50 transition-all">Reject</button>
-                        <button onClick={() => { setSelectedOrder(order); setShowModModal(true) }} className="px-3 py-1 rounded-full text-[10px] font-bold border border-[#E5D5C0] text-[#6B4E3D] hover:bg-[#F5E6D3] transition-all">Mod</button>
-                        <button onClick={() => handleStatusChange(order._id, 'Confirmed')} className="px-3 py-1 rounded-full text-[10px] font-bold bg-[#5D4037] hover:bg-[#4E342E] text-white transition-all">Accept</button>
+                        <button 
+                          disabled={!!processingId}
+                          onClick={() => handleStatusChange(order._id, 'Rejected')} 
+                          className="px-3 py-1 rounded-full text-[10px] font-bold border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 transition-all"
+                        >
+                          Reject
+                        </button>
+                        <button 
+                          disabled={!!processingId}
+                          onClick={() => { setSelectedOrder(order); setShowModModal(true) }} 
+                          className="px-3 py-1 rounded-full text-[10px] font-bold border border-[#E5D5C0] text-[#6B4E3D] hover:bg-[#F5E6D3] disabled:opacity-50 transition-all"
+                        >
+                          Mod
+                        </button>
+                        <button 
+                          disabled={!!processingId}
+                          onClick={() => handleStatusChange(order._id, 'Confirmed')} 
+                          className="px-3 py-1 rounded-full text-[10px] font-bold bg-[#5D4037] hover:bg-[#4E342E] text-white disabled:opacity-50 transition-all flex items-center gap-1"
+                        >
+                          {processingId === order._id ? <Loader2 size={10} className="animate-spin" /> : null}
+                          Accept
+                        </button>
                       </>
                     )}
                     {order.status === 'Confirmed' && (
-                      <button onClick={() => handleStatusChange(order._id, 'Packed')} className="px-3 py-1 rounded-full text-[10px] font-bold border border-[#E5D5C0] text-[#6B4E3D] hover:bg-[#F5E6D3] transition-all">Mark Packed</button>
+                      <button 
+                        disabled={!!processingId}
+                        onClick={() => handleStatusChange(order._id, 'Packed')} 
+                        className="px-3 py-1 rounded-full text-[10px] font-bold border border-[#E5D5C0] text-[#6B4E3D] hover:bg-[#F5E6D3] disabled:opacity-50 transition-all flex items-center gap-1"
+                      >
+                        {processingId === order._id ? <Loader2 size={10} className="animate-spin" /> : null}
+                        Mark Packed
+                      </button>
                     )}
                     {(order.status === 'Packed' || order.status === 'In Production') && (
-                      <button onClick={() => { setSelectedOrder(order); setShowDispatchModal(true) }} className="px-3 py-1 rounded-full text-[10px] font-bold bg-[#5D4037] hover:bg-[#4E342E] text-white transition-all">Dispatch</button>
+                      <button 
+                        disabled={!!processingId}
+                        onClick={() => { setSelectedOrder(order); setShowDispatchModal(true) }} 
+                        className="px-3 py-1 rounded-full text-[10px] font-bold bg-[#5D4037] hover:bg-[#4E342E] text-white disabled:opacity-50 transition-all"
+                      >
+                        Dispatch
+                      </button>
                     )}
                     <button onClick={() => { setSelectedOrder(order); setShowDetailsModal(true) }} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-[#F5E6D3] text-[#A89F91] hover:text-[#5D4037] transition-all">
                       <MoreHorizontal size={16} />

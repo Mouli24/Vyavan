@@ -139,8 +139,8 @@ router.get('/onboarding-assistant', protect, requireRole('manufacturer'), async 
       Shipment.countDocuments({ manufacturer: mfrId }),
     ]);
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY, { apiVersion: 'v1' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const contextData = {
       user: {

@@ -29,6 +29,12 @@ export const api = {
       body: JSON.stringify({ email, password }),
     }),
 
+  googleLogin: (token: string, role?: string) =>
+    request<{ token: string; user: User }>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ token, role }),
+    }),
+
   register: (data: RegisterPayload) =>
     request<{ token: string; user: User }>('/auth/register', {
       method: 'POST',
@@ -42,6 +48,12 @@ export const api = {
     }),
 
   me: () => request<User>('/auth/me'),
+
+  updateLanguage: (language: string) =>
+    request<User>('/auth/language', { 
+      method: 'PATCH', 
+      body: JSON.stringify({ language }) 
+    }),
 
   // ── Products ──────────────────────────────────────────────────────────────
   getProducts: (params?: { category?: string; manufacturer?: string }) => {
@@ -414,7 +426,59 @@ export const api = {
 
   getOnboardingAdvice: () =>
     request<any>('/manufacturer/onboarding-assistant'),
+
+  extractProductDetails: async (images: File[]) => {
+    const formData = new FormData();
+    images.forEach(img => formData.append('images', img));
+    
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${BASE}/product-lister/extract-multi`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(err.message ?? 'Extraction failed');
+    }
+    return res.json() as Promise<{
+      success: boolean;
+      imageUrls: string[];
+      analysis: {
+        name: string;
+        category: string;
+        description: string;
+        specs: Record<string, string>;
+        pricing_guess: number;
+        moq_guess: number;
+        payment_terms_guess: string[];
+      };
+    }>;
+  },
+
+  // ── Reviews ───────────────────────────────────────────────────────────────
+  getReviews: (manufacturerId: string) =>
+    request<Review[]>(`/reviews/manufacturer/${manufacturerId}`),
+
+  submitReview: (data: {
+    orderId: string;
+    ratings: { quality: number; delivery: number; communication: number };
+    comment?: string;
+    images?: string[];
+  }) => request<Review>('/reviews', { method: 'POST', body: JSON.stringify(data) }),
+
+  editReview: (id: string, data: {
+    ratings?: { quality: number; delivery: number; communication: number };
+    comment?: string;
+    images?: string[];
+  }) => request<Review>(`/reviews/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  replyToReview: (id: string, text: string) =>
+    request<Review>(`/reviews/${id}/reply`, { method: 'PATCH', body: JSON.stringify({ text }) }),
 };
+
 
 
 // ── Shared types ──────────────────────────────────────────────────────────────
@@ -615,5 +679,27 @@ export interface NegotiationRound {
   roundNumber: number;
   isLatest: boolean;
   isRead: boolean;
+  createdAt: string;
+}
+
+export interface Review {
+  _id: string;
+  order: string;
+  buyer: string | User;
+  manufacturer: string;
+  ratings: {
+    quality: number;
+    delivery: number;
+    communication: number;
+    overall: number;
+  };
+  comment?: string;
+  images?: string[];
+  manufacturerReply?: {
+    text: string;
+    repliedAt: string;
+  };
+  isEdited: boolean;
+  isFlagged: boolean;
   createdAt: string;
 }

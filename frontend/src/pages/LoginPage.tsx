@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react'
+﻿import React, { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { motion, AnimatePresence } from 'motion/react'
-import { Eye, EyeOff, ShoppingCart, Factory, ChevronDown } from 'lucide-react'
+import { Eye, EyeOff, ShoppingCart, Factory, ChevronDown, Mail } from 'lucide-react'
+import { useGoogleLogin } from '@react-oauth/google'
 import '@/styles/loginPage.css'
 import ManufacturerRegisterModal from '@/features/manufacturer/RegisterModal'
 import BuyerRegisterModal from '@/features/buyer/BuyerRegisterModal'
@@ -12,7 +13,7 @@ type Role = 'buyer' | 'manufacturer'
 export default function LoginPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { login } = useAuth()
+  const { login, googleLogin } = useAuth()
 
   const [role, setRole] = useState<Role>('buyer')
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -45,7 +46,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     const handleHash = () => {
-      if (window.location.hash === '#admin#mybusiness') setShowAdmin(true)
+      if (window.location.hash === '#admin#mybusiness') {
+        setShowAdmin(true)
+      }
     }
     handleHash()
     window.addEventListener('hashchange', handleHash)
@@ -56,7 +59,7 @@ export default function LoginPage() {
       setBuyerCompany(company)
     }
     return () => window.removeEventListener('hashchange', handleHash)
-  }, [])
+  }, [searchParams])
 
   // Reset email/password when role changes (keep company name)
   useEffect(() => {
@@ -87,6 +90,27 @@ export default function LoginPage() {
       setLoading(false)
     }
   }
+
+  const handleGoogleSuccess = async (tokenResponse: any) => {
+    setError(''); setLoading(true)
+    try {
+      const user = await googleLogin(tokenResponse.access_token, role)
+      if (user.role !== role) {
+        setError(`Google account is registered as a ${user.role}, not ${role}.`)
+        return
+      }
+      navigate(role === 'buyer' ? '/buyer/dashboard' : '/manufacturer/overview')
+    } catch (err: any) {
+      setError(err.message ?? 'Google Sign-in failed.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: handleGoogleSuccess,
+    onError: () => setError('Google Sign-in failed.'),
+  })
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -136,7 +160,7 @@ export default function LoginPage() {
         <div className="logo-section" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
           <img
             src="https://customer-assets.emergentagent.com/job_d333e98e-2138-4273-afc6-5e52eb4955aa/artifacts/3gk4c2ea_image.png"
-            alt="B2BHarat"
+            alt="Vyawan"
             className="platform-logo"
           />
         </div>
@@ -149,7 +173,8 @@ export default function LoginPage() {
 
         {/* ── COMBINED CARD ── */}
         <div className="cards-wrapper">
-          <div className="login-card" style={{ maxWidth: '440px', width: '100%' }}>
+          {!showAdmin && (
+            <div className="login-card" style={{ maxWidth: '440px', width: '100%' }}>
 
             {/* Illustration */}
             <div className="illustration-container">
@@ -348,8 +373,39 @@ export default function LoginPage() {
                   {role === 'buyer' ? 'Create your buyer account' : 'Create your business account'}
                 </span>
               </p>
+
+              {role === 'buyer' && (
+                <div className="google-login-section" style={{ marginTop: '1.5rem', borderTop: '1px solid #EEE', paddingTop: '1.5rem' }}>
+                   <button 
+                    type="button" 
+                    className="google-signin-btn" 
+                    onClick={() => handleGoogleLogin()}
+                    disabled={loading}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '12px',
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '12px',
+                      border: '1px solid #E2E8F0',
+                      background: '#FFF',
+                      color: '#475569',
+                      fontWeight: 600,
+                      fontSize: '0.9375rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <img src="https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png" alt="Google" style={{ width: '20px', height: '20px' }} />
+                    Continue with Google
+                  </button>
+                </div>
+              )}
             </form>
           </div>
+          )}
 
           {/* ── ADMIN CARD (hidden, 7-click secret) ── */}
           {showAdmin && (
@@ -422,3 +478,4 @@ export default function LoginPage() {
     </div>
   )
 }
+

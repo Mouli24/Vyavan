@@ -3,7 +3,7 @@
 .login-page {
   height: 100vh;
   overflow: hidden;
-  background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 25%, #F3E8FF 50%, #FCE7F3 75%, #FEF3C7 100%);
+  background: linear-gradient(160deg, #E8E4DC 0%, #D6CFC4 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -32,7 +32,7 @@
 .shape-1 {
   width: 300px;
   height: 300px;
-  background: linear-gradient(135deg, #818CF8, #6366F1);
+  background: linear-gradient(135deg, #C4A882, #A0845C);
   top: 10%;
   left: 5%;
   animation-delay: 0s;
@@ -41,7 +41,7 @@
 .shape-2 {
   width: 200px;
   height: 200px;
-  background: linear-gradient(135deg, #A78BFA, #8B5CF6);
+  background: linear-gradient(135deg, #D4B896, #B8956A);
   top: 60%;
   right: 10%;
   animation-delay: 5s;
@@ -50,7 +50,7 @@
 .shape-3 {
   width: 150px;
   height: 150px;
-  background: linear-gradient(135deg, #F472B6, #EC4899);
+  background: linear-gradient(135deg, #E8D5C0, #C4A882);
   bottom: 20%;
   left: 15%;
   animation-delay: 10s;
@@ -59,7 +59,7 @@
 .shape-4 {
   width: 250px;
   height: 250px;
-  background: linear-gradient(135deg, #FBBF24, #F59E0B);
+  background: linear-gradient(135deg, #D4C4B0, #B8A090);
   top: 30%;
   right: 20%;
   animation-delay: 7s;
@@ -102,7 +102,7 @@
 .platform-logo {
   max-width: 160px;
   height: auto;
-  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.1));
+  filter: drop-shadow(0 4px 16px rgba(44, 24, 16, 0.15));
 }
 
 .cards-wrapper {

@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import {
   X, Plus, Trash2, Check, ChevronLeft, ChevronRight,
-  Image as ImageIcon, ToggleLeft, ToggleRight, Eye, Loader2, GripHorizontal, ArrowLeftRight, Sparkles, AlertCircle
+  Image as ImageIcon, ToggleLeft, ToggleRight, Eye, Loader2, GripHorizontal, ArrowLeftRight, Sparkles, AlertCircle, Upload, Camera
 } from 'lucide-react'
 import { motion, AnimatePresence, Reorder } from 'motion/react'
 import { api, Product } from '@/lib/api'
@@ -77,10 +77,15 @@ export default function AddProductModal({ open, onClose, onPublished, editProduc
   const [form, setForm] = useState<FormState>(initialForm)
   const [publishing, setPublishing] = useState(false)
   const [published, setPublished] = useState(false)
+  
+  // New AI listing state
+  const [listingMode, setListingMode] = useState<'ai' | 'manual' | null>(isEdit ? 'manual' : null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiImages, setAiImages] = useState<{ front: File | null; back: File | null }>({ front: null, back: null })
 
   // Populate form when editing
-  useState(() => {
-    if (editProduct) {
+  React.useEffect(() => {
+    if (editProduct && open) {
       setForm({
         ...initialForm,
         name: editProduct.name ?? '',
@@ -92,10 +97,49 @@ export default function AddProductModal({ open, onClose, onPublished, editProduc
         moq: editProduct.moq ?? '',
         stock: editProduct.stock ?? '',
       })
-    } else {
+      setListingMode('manual')
+    } else if (open && !editProduct) {
       setForm(initialForm)
+      setListingMode(null)
+      setStep(0)
     }
-  })
+  }, [editProduct, open])
+
+  // ── AI Extraction ────────────────────────────────────────────────────────
+  const handleAiExtract = async () => {
+    if (!aiImages.front) return
+    setAiLoading(true)
+    try {
+      const imgs = [aiImages.front]
+      if (aiImages.back) imgs.push(aiImages.back)
+      
+      const res = await api.extractProductDetails(imgs)
+      if (res.success) {
+        const { analysis, imageUrls } = res
+        // Update form state with AI analysis
+        setForm(f => ({
+          ...f,
+          name: analysis.name || f.name,
+          category: CATEGORIES.includes(analysis.category) ? analysis.category : f.category,
+          description: analysis.description || f.description,
+          photos: [...imageUrls, ...f.photos],
+          basePrice: analysis.pricing_guess || f.basePrice,
+          moq: analysis.moq_guess || f.moq,
+          specs: analysis.specs ? Object.entries(analysis.specs).map(([key, value]) => ({ key: String(key), value: String(value) })) : f.specs,
+          paymentTerms: (analysis.payment_terms_guess && Array.isArray(analysis.payment_terms_guess)) 
+            ? analysis.payment_terms_guess.filter(t => PAYMENT_OPTIONS.includes(t)) 
+            : f.paymentTerms,
+        }))
+        setListingMode('manual') // Switch to manual to show the pre-filled fields
+        setStep(0) // Start at Step 1 (Basic Details) to review
+      }
+    } catch (err: any) {
+      console.error(err)
+      alert(`AI Extraction failed: ${err.message}. Please try again or fill manually.`)
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm(f => ({ ...f, [key]: value }))
@@ -121,14 +165,6 @@ export default function AddProductModal({ open, onClose, onPublished, editProduc
 
   function removePhoto(idx: number) {
     set('photos', form.photos.filter((_, i) => i !== idx))
-  }
-
-  function reorderPhotos(fromIndex: number, toIndex: number) {
-    if (toIndex < 0 || toIndex >= form.photos.length) return
-    const next = [...form.photos]
-    const [moved] = next.splice(fromIndex, 1)
-    next.splice(toIndex, 0, moved)
-    set('photos', next)
   }
 
   // ── Spec helpers ─────────────────────────────────────────────────────────
@@ -183,7 +219,6 @@ export default function AddProductModal({ open, onClose, onPublished, editProduc
         stock: Number(form.stock),
         image: form.photos[0] ?? '',
         isActive: !draft,
-        // @ts-ignore
         description: form.description,
         photos: form.photos,
         specs: specsObj,
@@ -214,6 +249,8 @@ export default function AddProductModal({ open, onClose, onPublished, editProduc
     setStep(0)
     setForm(initialForm)
     setPublished(false)
+    setListingMode(null)
+    setAiImages({ front: null, back: null })
     onClose()
   }
 
@@ -251,76 +288,130 @@ export default function AddProductModal({ open, onClose, onPublished, editProduc
               <h2 className="text-2xl font-serif font-bold text-slate-900">
                 {isEdit ? 'Edit Product' : 'Add New Product'}
               </h2>
-              <p className="text-sm text-slate-400 mt-1">Step {step + 1} of {STEPS.length} — {STEPS[step]}</p>
+              <p className="text-sm text-slate-400 mt-1">
+                {listingMode === null ? 'Choose how you want to start' : `Step ${step + 1} of ${STEPS.length} — ${STEPS[step]}`}
+              </p>
             </div>
 
-            {/* Step indicator */}
-            <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-2">
-              {STEPS.map((label, i) => (
-                <div key={i} className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => i < step && setStep(i)}
-                    className="flex flex-col items-center gap-1.5 group"
-                  >
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${
-                      i === step
-                        ? 'bg-[#5D4037] border-[#5D4037] text-white'
-                        : i < step
-                        ? 'bg-[#5D4037] border-[#5D4037] text-white'
-                        : 'bg-white border-slate-300 text-slate-400'
-                    }`}>
-                      {i < step ? <Check size={16} /> : i + 1}
-                    </div>
-                    <span className={`text-[10px] font-medium whitespace-nowrap ${
-                      i === step ? 'text-[#5D4037]' : i < step ? 'text-[#5D4037]/70' : 'text-slate-400'
-                    }`}>{label}</span>
-                  </button>
-                  {i < STEPS.length - 1 && (
-                    <div className={`w-6 h-0.5 mb-4 rounded-full transition-colors ${i < step ? 'bg-[#5D4037]' : 'bg-slate-200'}`} />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Step content */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-              >
-                {step === 0 && <Step1 form={form} set={set} />}
-                {step === 1 && <Step2 form={form} set={set} addPhoto={addPhoto} removePhoto={removePhoto} reorderPhotos={(p) => set('photos', p)} />}
-                {step === 2 && <Step3 form={form} updateSpec={updateSpec} addSpec={addSpec} removeSpec={removeSpec} />}
-                {step === 3 && <Step4 form={form} set={set} updateSlab={updateSlab} addSlab={addSlab} removeSlab={removeSlab} />}
-                {step === 4 && <Step5 form={form} set={set} />}
-                {step === 5 && <Step6 form={form} set={set} toggleTerm={toggleTerm} />}
-                {step === 6 && (
-                  <Step7
-                    form={form}
-                    publishing={publishing}
-                    published={published}
-                    onDraft={() => handlePublish(true)}
-                    onPublish={() => handlePublish(false)}
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
-
-            {/* Navigation */}
-            {!published && (
-              <div className="flex items-center justify-between mt-10 pt-6 border-t border-slate-100">
+            {/* Mode selection or Steps */}
+            {listingMode === null ? (
+              <div className="grid grid-cols-2 gap-6 my-12">
                 <button
-                  onClick={() => setStep(s => s - 1)}
-                  disabled={step === 0}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  onClick={() => setListingMode('ai')}
+                  className="flex flex-col items-center gap-6 p-8 rounded-[32px] border-2 border-dashed border-indigo-200 bg-indigo-50/30 hover:bg-indigo-50 hover:border-indigo-400 transition-all group"
                 >
-                  <ChevronLeft size={18} /> Previous
+                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                    <Sparkles size={40} className="text-white" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">Magic AI Wizard</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed">
+                      Upload front & back photos. Our AI will automatically detect details, specs & categories for you.
+                    </p>
+                  </div>
                 </button>
 
-                {step < STEPS.length - 1 ? (
+                <button
+                  onClick={() => setListingMode('manual')}
+                  className="flex flex-col items-center gap-6 p-8 rounded-[32px] border-2 border-slate-100 bg-slate-50/50 hover:bg-white hover:border-[#5D4037]/30 hover:shadow-xl transition-all group"
+                >
+                  <div className="w-20 h-20 rounded-3xl bg-slate-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                    <Plus size={40} className="text-slate-400" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">Manual Entry</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed">
+                      The traditional way. Fill in every detail manually step-by-step with full control over the listing.
+                    </p>
+                  </div>
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Step indicator */}
+                <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-2">
+                  {STEPS.map((label, i) => (
+                    <div key={i} className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => i < step && setStep(i)}
+                        className="flex flex-col items-center gap-1.5 group"
+                      >
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${
+                          i === step
+                            ? 'bg-[#5D4037] border-[#5D4037] text-white'
+                            : i < step
+                            ? 'bg-[#5D4037] border-[#5D4037] text-white'
+                            : 'bg-white border-slate-300 text-slate-400'
+                        }`}>
+                          {i < step ? <Check size={16} /> : i + 1}
+                        </div>
+                        <span className={`text-[10px] font-medium whitespace-nowrap ${
+                          i === step ? 'text-[#5D4037]' : i < step ? 'text-[#5D4037]/70' : 'text-slate-400'
+                        }`}>{label}</span>
+                      </button>
+                      {i < STEPS.length - 1 && (
+                        <div className={`w-6 h-0.5 mb-4 rounded-full transition-colors ${i < step ? 'bg-[#5D4037]' : 'bg-slate-200'}`} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Step content */}
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={step}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {step === 0 && (
+                      listingMode === 'ai' ? (
+                        <AiExtractionStep 
+                          images={aiImages} 
+                          setImages={setAiImages} 
+                          onExtract={handleAiExtract} 
+                          loading={aiLoading} 
+                        />
+                      ) : (
+                        <Step1 form={form} set={set} />
+                      )
+                    )}
+                    {step === 1 && <Step2 form={form} set={set} addPhoto={addPhoto} removePhoto={removePhoto} reorderPhotos={(p: any) => set('photos', p)} />}
+                    {step === 2 && <Step3 form={form} updateSpec={updateSpec} addSpec={addSpec} removeSpec={removeSpec} />}
+                    {step === 3 && <Step4 form={form} set={set} updateSlab={updateSlab} addSlab={addSlab} removeSlab={removeSlab} />}
+                    {step === 4 && <Step5 form={form} set={set} />}
+                    {step === 5 && <Step6 form={form} set={set} toggleTerm={toggleTerm} />}
+                    {step === 6 && (
+                      <Step7
+                        form={form}
+                        publishing={publishing}
+                        published={published}
+                        onDraft={() => handlePublish(true)}
+                        onPublish={() => handlePublish(false)}
+                      />
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </>
+            )}
+
+            {/* Navigation */}
+            {listingMode !== null && !published && (
+              <div className="flex items-center justify-between mt-10 pt-6 border-t border-slate-100">
+                <button
+                  onClick={() => {
+                    if (step === 0 && listingMode !== 'manual') setListingMode(null)
+                    else if (step === 0 && isEdit) handleClose()
+                    else if (step === 0) setListingMode(null)
+                    else setStep(s => s - 1)
+                  }}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all"
+                >
+                  <ChevronLeft size={18} /> {step === 0 ? 'Change Mode' : 'Previous'}
+                </button>
+
+                {step < STEPS.length - 1 && (listingMode === 'manual' || step > 0) ? (
                   <button
                     onClick={() => setStep(s => s + 1)}
                     disabled={!canProceed()}
@@ -335,6 +426,105 @@ export default function AddProductModal({ open, onClose, onPublished, editProduc
         </motion.div>
       </motion.div>
     </AnimatePresence>
+  )
+}
+
+// ── AI Extraction Step ────────────────────────────────────────────────────────
+function AiExtractionStep({ images, setImages, onExtract, loading }: any) {
+  const frontInputRef = useRef<HTMLInputElement>(null)
+  const backInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFile = (side: 'front' | 'back', file: File | null) => {
+    if (file && !file.type.startsWith('image/')) return
+    setImages((prev: any) => ({ ...prev, [side]: file }))
+  }
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="bg-indigo-50 border border-indigo-100 rounded-3xl p-6 flex items-start gap-4">
+        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
+          <Sparkles size={20} className="text-indigo-600" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-slate-800 mb-1">How it works</p>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Upload clear photos of your product's front and back sides. Our AI will analyze the texture, labels, and features to write a professional B2B listing for you.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-6">
+        {/* Front side */}
+        <div 
+          onClick={() => frontInputRef.current?.click()}
+          className={`relative aspect-square rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-all cursor-pointer overflow-hidden ${
+            images.front ? 'border-indigo-400 bg-indigo-50/30' : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50'
+          }`}
+        >
+          <input type="file" ref={frontInputRef} className="hidden" accept="image/*" onChange={e => handleFile('front', e.target.files?.[0] || null)} />
+          {images.front ? (
+            <>
+              <img src={URL.createObjectURL(images.front)} className="w-full h-full object-cover" alt="Front" />
+              <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Camera size={32} className="text-white" />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm">
+                <Upload size={24} className="text-slate-400" />
+              </div>
+              <p className="text-sm font-bold text-slate-700">Front Side</p>
+              <p className="text-[10px] text-slate-400">Click to upload photo</p>
+            </>
+          )}
+        </div>
+
+        {/* Back side */}
+        <div 
+          onClick={() => backInputRef.current?.click()}
+          className={`relative aspect-square rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-all cursor-pointer overflow-hidden ${
+            images.back ? 'border-indigo-400 bg-indigo-50/30' : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50'
+          }`}
+        >
+          <input type="file" ref={backInputRef} className="hidden" accept="image/*" onChange={e => handleFile('back', e.target.files?.[0] || null)} />
+          {images.back ? (
+            <>
+              <img src={URL.createObjectURL(images.back)} className="w-full h-full object-cover" alt="Back" />
+              <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Camera size={32} className="text-white" />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm">
+                <Upload size={24} className="text-slate-400" />
+              </div>
+              <p className="text-sm font-bold text-slate-700">Back Side</p>
+              <p className="text-[10px] text-slate-400">Optional but recommended</p>
+            </>
+          )}
+        </div>
+      </div>
+
+      <button
+        onClick={onExtract}
+        disabled={!images.front || loading}
+        className="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-sm shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-3"
+      >
+        {loading ? (
+          <>
+            <Loader2 size={18} className="animate-spin" />
+            Analyzing Product Magic...
+          </>
+        ) : (
+          <>
+            <Sparkles size={18} />
+            Generate Listing Details
+          </>
+        )}
+      </button>
+    </div>
   )
 }
 
@@ -442,6 +632,14 @@ function Step2({
     if (e.target.files) processFiles(e.target.files);
     e.target.value = ''; // Reset input
   };
+
+  function reorder(fromIndex: number, toIndex: number) {
+    if (toIndex < 0 || toIndex >= form.photos.length) return
+    const next = [...form.photos]
+    const [moved] = next.splice(fromIndex, 1)
+    next.splice(toIndex, 0, moved)
+    reorderPhotos(next)
+  }
 
   return (
     <div 
@@ -568,7 +766,7 @@ function Step2({
         </div>
       )}
 
-      {/* AI Enhancer Report Modal */}
+      {/* AI Enhancer Report Modal (rest of the component follows...) */}
       <AnimatePresence>
         {aiReport && (
           <motion.div
@@ -665,7 +863,6 @@ function Step2({
         )}
       </AnimatePresence>
 
-      {/* Lightbox Preview Modal */}
       <AnimatePresence>
         {previewPhoto && (
           <motion.div
@@ -849,54 +1046,6 @@ function Step4({
           ))}
         </div>
       </div>
-
-      {/* Sample toggle */}
-      <div className="flex items-center justify-between p-4 rounded-2xl bg-[#F5E6D3]/30 border border-slate-100">
-        <div>
-          <p className="text-sm font-bold text-slate-700">Offer Sample</p>
-          <p className="text-xs text-slate-400 mt-0.5">Allow buyers to order a sample before bulk purchase</p>
-        </div>
-        <button
-          onClick={() => set('sampleEnabled', !form.sampleEnabled)}
-          className="text-[#5D4037] transition-colors"
-        >
-          {form.sampleEnabled ? <ToggleRight size={36} /> : <ToggleLeft size={36} className="text-slate-300" />}
-        </button>
-      </div>
-
-      {form.sampleEnabled && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          className="grid grid-cols-2 gap-4"
-        >
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Sample Price (₹)</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">₹</span>
-              <input
-                type="number"
-                min={0}
-                value={form.samplePrice}
-                onChange={e => set('samplePrice', e.target.value === '' ? '' : Number(e.target.value))}
-                placeholder="0.00"
-                className="w-full pl-8 pr-4 py-3 rounded-2xl border border-slate-200 bg-[#F5E6D3]/30 focus:outline-none focus:ring-2 focus:ring-[#5D4037]/30 text-slate-800 text-sm"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Max Sample Units</label>
-            <select
-              value={form.sampleMaxUnits}
-              onChange={e => set('sampleMaxUnits', Number(e.target.value))}
-              className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-[#F5E6D3]/30 focus:outline-none focus:ring-2 focus:ring-[#5D4037]/30 text-slate-800 text-sm"
-            >
-              {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-        </motion.div>
-      )}
     </div>
   )
 }
@@ -905,93 +1054,88 @@ function Step4({
 function Step5({ form, set }: { form: FormState; set: <K extends keyof FormState>(k: K, v: FormState[K]) => void }) {
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <label className="block text-sm font-bold text-slate-700 mb-2">
-          Current Available Stock <span className="text-red-400">*</span>
-        </label>
-        <input
-          type="number"
-          min={0}
-          value={form.stock}
-          onChange={e => set('stock', e.target.value === '' ? '' : Number(e.target.value))}
-          placeholder="e.g. 5000"
-          className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-[#F5E6D3]/30 focus:outline-none focus:ring-2 focus:ring-[#5D4037]/30 text-slate-800 text-sm"
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-bold text-slate-700 mb-2">Current Stock Level</label>
+          <input
+            type="number"
+            min={0}
+            value={form.stock}
+            onChange={e => set('stock', e.target.value === '' ? '' : Number(e.target.value))}
+            placeholder="e.g. 500"
+            className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-[#F5E6D3]/30 focus:outline-none focus:ring-2 focus:ring-[#5D4037]/30 text-slate-800 text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-slate-700 mb-2">Low Stock Alert at</label>
+          <input
+            type="number"
+            min={0}
+            value={form.lowStockAlert}
+            onChange={e => set('lowStockAlert', e.target.value === '' ? '' : Number(e.target.value))}
+            placeholder="e.g. 50"
+            className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-[#F5E6D3]/30 focus:outline-none focus:ring-2 focus:ring-[#5D4037]/30 text-slate-800 text-sm"
+          />
+        </div>
       </div>
-
-      <div>
-        <label className="block text-sm font-bold text-slate-700 mb-2">Low Stock Alert Threshold</label>
-        <input
-          type="number"
-          min={0}
-          value={form.lowStockAlert}
-          onChange={e => set('lowStockAlert', e.target.value === '' ? '' : Number(e.target.value))}
-          placeholder="Alert when below X units"
-          className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-[#F5E6D3]/30 focus:outline-none focus:ring-2 focus:ring-[#5D4037]/30 text-slate-800 placeholder:text-slate-400 text-sm"
-        />
-        <p className="text-xs text-slate-400 mt-2">You'll be notified when stock drops below this number</p>
+      
+      <div className="bg-orange-50 border border-orange-100 rounded-3xl p-6 flex items-start gap-4">
+        <AlertCircle size={20} className="text-orange-500 flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-orange-800 leading-relaxed">
+          Setting a low stock alert will notify you when your inventory drops below the threshold, helping you avoid out-of-stock situations.
+        </p>
       </div>
     </div>
   )
 }
 
 // ── Step 6: Payment Terms ─────────────────────────────────────────────────────
-function Step6({
-  form, set, toggleTerm
-}: {
-  form: FormState
-  set: <K extends keyof FormState>(k: K, v: FormState[K]) => void
-  toggleTerm: (t: string) => void
-}) {
+function Step6({ form, set, toggleTerm }: { form: FormState; set: <K extends keyof FormState>(k: K, v: FormState[K]) => void; toggleTerm: (t: string) => void }) {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <label className="block text-sm font-bold text-slate-700 mb-3">
-          Accepted Payment Terms <span className="text-red-400">*</span>
-        </label>
-        <div className="grid grid-cols-2 gap-3">
+        <label className="block text-sm font-bold text-slate-700 mb-4">Accepted Payment Terms</label>
+        <div className="flex flex-wrap gap-2">
           {PAYMENT_OPTIONS.map(term => (
             <button
               key={term}
               onClick={() => toggleTerm(term)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-2xl border-2 text-sm font-medium text-left transition-all ${
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all border-2 ${
                 form.paymentTerms.includes(term)
-                  ? 'border-[#5D4037] bg-[#F5E6D3]/50 text-[#5D4037]'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                  ? 'bg-[#5D4037] border-[#5D4037] text-white shadow-md'
+                  : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
               }`}
             >
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                form.paymentTerms.includes(term) ? 'border-[#5D4037] bg-[#5D4037]' : 'border-slate-300'
-              }`}>
-                {form.paymentTerms.includes(term) && <Check size={12} className="text-white" />}
+              <div className="flex items-center gap-2">
+                {form.paymentTerms.includes(term) && <Check size={14} />}
+                {term}
               </div>
-              {term}
             </button>
           ))}
         </div>
       </div>
 
       {form.paymentTerms.length > 0 && (
-        <div>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <label className="block text-sm font-bold text-slate-700 mb-2">Default Payment Term</label>
           <select
             value={form.defaultTerm}
             onChange={e => set('defaultTerm', e.target.value)}
             className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-[#F5E6D3]/30 focus:outline-none focus:ring-2 focus:ring-[#5D4037]/30 text-slate-800 text-sm"
           >
-            <option value="">Select default term</option>
+            <option value="">Select default</option>
             {form.paymentTerms.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
-        </div>
+        </motion.div>
       )}
 
       <div>
-        <label className="block text-sm font-bold text-slate-700 mb-2">Additional Notes <span className="text-slate-400 font-normal">(optional)</span></label>
+        <label className="block text-sm font-bold text-slate-700 mb-2">Additional Payment Notes (Optional)</label>
         <textarea
           rows={3}
           value={form.paymentNotes}
           onChange={e => set('paymentNotes', e.target.value)}
-          placeholder="Any special payment conditions or instructions..."
+          placeholder="e.g. 100% advance for first-time buyers"
           className="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-[#F5E6D3]/30 focus:outline-none focus:ring-2 focus:ring-[#5D4037]/30 text-slate-800 placeholder:text-slate-400 text-sm resize-none"
         />
       </div>
@@ -1011,124 +1155,88 @@ function Step7({
 }) {
   if (published) {
     return (
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="flex flex-col items-center justify-center py-12 gap-4"
-      >
-        <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
-          <Check size={36} className="text-green-600" />
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
+          <Check size={40} className="text-green-600" />
         </div>
-        <h3 className="text-2xl font-serif font-bold text-slate-900">
-          {publishing ? 'Saving...' : 'Product Published!'}
-        </h3>
-        <p className="text-slate-500 text-sm text-center max-w-xs">
-          Your product is now live and visible to buyers on the marketplace.
+        <h3 className="text-2xl font-bold text-slate-900 mb-2">Product Published!</h3>
+        <p className="text-slate-500 max-w-sm mb-8">
+          Your product is now live on the marketplace and available for buyers to discover.
         </p>
-      </motion.div>
+      </div>
     )
   }
 
-  const filledSpecs = form.specs.filter(s => s.key.trim() && s.value.trim())
-
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-2 mb-1">
-        <Eye size={18} className="text-[#5D4037]" />
-        <h3 className="text-sm font-bold text-slate-700">Buyer Preview</h3>
-      </div>
-
-      {/* Preview card */}
-      <div className="rounded-[24px] border border-slate-200 overflow-hidden bg-white shadow-sm">
-        {/* Photo strip */}
-        <div className="h-48 bg-slate-100 relative overflow-hidden">
-          {form.photos[0] ? (
-            <img src={form.photos[0]} alt="Main" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-300">
-              <ImageIcon size={48} />
-            </div>
-          )}
-          {form.category && (
-            <span className="absolute top-4 left-4 px-3 py-1 bg-[#5D4037] text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
-              {form.category}
-            </span>
-          )}
-        </div>
-
-        <div className="p-6">
-          <h4 className="text-xl font-serif font-bold text-slate-900 mb-1">
-            {form.name || <span className="text-slate-300">Product Name</span>}
-          </h4>
-
-          {form.description && (
-            <p className="text-sm text-slate-500 mb-4 line-clamp-2">{form.description}</p>
-          )}
-
-          <div className="flex items-baseline gap-3 mb-4">
-            <span className="text-2xl font-serif font-bold text-slate-900">
-              {form.basePrice !== '' ? `₹${Number(form.basePrice).toLocaleString('en-IN')}` : '₹—'}
-            </span>
-            <span className="text-xs text-slate-400 font-medium">per unit</span>
-            {form.moq !== '' && (
-              <span className="ml-auto text-xs font-bold text-[#5D4037] bg-[#F5E6D3] px-3 py-1 rounded-full">
-                MOQ: {form.moq} units
-              </span>
+    <div className="flex flex-col gap-8">
+      <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
+        <div className="flex gap-6">
+          <div className="w-40 h-40 rounded-2xl bg-white border border-slate-200 overflow-hidden flex-shrink-0">
+            {form.photos[0] ? (
+              <img src={form.photos[0]} className="w-full h-full object-cover" alt="Main" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-slate-300">
+                <ImageIcon size={40} />
+              </div>
             )}
           </div>
-
-          {filledSpecs.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {filledSpecs.slice(0, 6).map((s, i) => (
-                <span key={i} className="px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full font-medium">
-                  {s.key}: {s.value}
-                </span>
-              ))}
-              {filledSpecs.length > 6 && (
-                <span className="px-3 py-1 bg-slate-100 text-slate-400 text-xs rounded-full">
-                  +{filledSpecs.length - 6} more
-                </span>
-              )}
+          <div className="flex-1">
+            <Badge variant="outline" className="mb-2 bg-[#F5E6D3] text-[#5D4037] border-none font-bold uppercase tracking-widest text-[9px] px-3 py-1">
+              {form.category || 'NO CATEGORY'}
+            </Badge>
+            <h3 className="text-xl font-bold text-slate-900 mb-1">{form.name || 'Untitled Product'}</h3>
+            <p className="text-sm text-slate-500 line-clamp-2 mb-4 leading-relaxed">{form.description || 'No description provided.'}</p>
+            
+            <div className="flex items-end gap-1">
+               <span className="text-2xl font-black text-slate-900">₹{form.basePrice || '0.00'}</span>
+               <span className="text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wide">/ unit</span>
             </div>
-          )}
+          </div>
+        </div>
 
-          {form.paymentTerms.length > 0 && (
-            <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-100">
-              {form.paymentTerms.map(t => (
-                <span key={t} className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider ${
-                  t === form.defaultTerm
-                    ? 'bg-[#5D4037] text-white'
-                    : 'bg-[#F5E6D3] text-[#5D4037]'
-                }`}>
-                  {t}
-                </span>
-              ))}
-            </div>
-          )}
+        <Separator className="my-6 bg-slate-200/50" />
+
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-white/50 p-3 rounded-2xl border border-slate-100">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">MOQ</p>
+            <p className="text-sm font-bold text-slate-800">{form.moq || 'None'} Units</p>
+          </div>
+          <div className="bg-white/50 p-3 rounded-2xl border border-slate-100">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Current Stock</p>
+            <p className="text-sm font-bold text-slate-800">{form.stock || '0'} Units</p>
+          </div>
+          <div className="bg-white/50 p-3 rounded-2xl border border-slate-100">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Terms</p>
+            <p className="text-sm font-bold text-slate-800">{form.defaultTerm || 'Standard'}</p>
+          </div>
         </div>
       </div>
 
-      {/* Publish actions */}
-      <div className="flex gap-3 pt-2">
+      <div className="flex gap-4">
         <button
           onClick={onDraft}
           disabled={publishing}
-          className="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 disabled:opacity-50 transition-all"
+          className="flex-1 py-4 px-6 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all disabled:opacity-50"
         >
-          {publishing ? <Loader2 size={16} className="animate-spin mx-auto" /> : 'Save as Draft'}
+          Save as Draft
         </button>
         <button
           onClick={onPublish}
           disabled={publishing}
-          className="flex-1 py-3 rounded-2xl bg-[#5D4037] text-white font-bold text-sm hover:bg-[#5D4037]/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+          className="flex-[2] py-4 px-6 rounded-2xl bg-[#5D4037] text-white font-bold text-sm hover:bg-[#4E342E] shadow-lg shadow-[#5D4037]/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          {publishing ? (
-            <><Loader2 size={16} className="animate-spin" /> Publishing...</>
-          ) : (
-            'Publish Now'
-          )}
+          {publishing ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
+          Confirm & Publish Product
         </button>
       </div>
     </div>
   )
+}
+
+// ── Reused Components ─────────────────────────────────────────────────────────
+function Badge({ children, variant = 'default', className = '' }: any) {
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${className}`}>{children}</span>
+}
+function Separator({ className = '' }: { className?: string }) {
+  return <div className={`h-px w-full bg-slate-200 ${className}`} />
 }

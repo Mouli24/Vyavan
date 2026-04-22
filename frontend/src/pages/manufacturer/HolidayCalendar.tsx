@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   CalendarDays, ToggleLeft, ToggleRight, Plus, Trash2,
   Save, Loader2, MessageSquare, ArrowRight, CheckCircle2,
@@ -136,7 +136,7 @@ export default function HolidayCalendar() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">
-        <Loader2 className="w-8 h-8 animate-spin text-sp-purple" />
+        <Loader2 className="w-8 h-8 animate-spin text-mfr-brown" />
       </div>
     );
   }
@@ -198,15 +198,15 @@ export default function HolidayCalendar() {
       </AnimatePresence>
 
       {/* ── Holiday Toggle ── */}
-      <div className="bg-white rounded-[2rem] border border-sp-border p-8 shadow-card">
+      <div className="bg-white rounded-[2rem] border border-mfr-border p-8 shadow-card">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-md transition-all ${settings.isOnHoliday ? 'bg-red-500' : 'bg-emerald-500'}`}>
               <CalendarDays size={22} className="text-white" />
             </div>
             <div>
-              <p className="font-black text-sp-text text-lg">Holiday Mode</p>
-              <p className="text-sm text-sp-muted font-medium">
+              <p className="font-black text-mfr-dark text-lg">Holiday Mode</p>
+              <p className="text-sm text-mfr-muted font-medium">
                 {settings.isOnHoliday
                   ? 'You are currently on holiday. Buyers receive your auto-response.'
                   : 'You are available. Toggle to activate holiday mode.'}
@@ -241,14 +241,14 @@ export default function HolidayCalendar() {
       </div>
 
       {/* ── Weekly Off Days ── */}
-      <div className="bg-white rounded-[2rem] border border-sp-border p-8 shadow-card">
+      <div className="bg-white rounded-[2rem] border border-mfr-border p-8 shadow-card">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-sp-purple-pale flex items-center justify-center">
-            <CalendarDays size={18} className="text-sp-purple" />
+          <div className="w-10 h-10 rounded-xl bg-mfr-brown-pale flex items-center justify-center">
+            <CalendarDays size={18} className="text-mfr-brown" />
           </div>
           <div>
-            <h3 className="font-black text-sp-text">Weekly Recurring Off Days</h3>
-            <p className="text-xs text-sp-muted font-medium">Select which days of the week your factory is closed every week</p>
+            <h3 className="font-black text-mfr-dark">Weekly Recurring Off Days</h3>
+            <p className="text-xs text-mfr-muted font-medium">Select which days of the week your factory is closed every week</p>
           </div>
         </div>
 
@@ -261,8 +261,8 @@ export default function HolidayCalendar() {
                 onClick={() => toggleWeeklyDay(day.value)}
                 className={`w-16 h-16 rounded-2xl font-black text-sm transition-all hover:scale-105 active:scale-95 border-2 ${
                   active
-                    ? 'bg-sp-purple text-white border-sp-purple shadow-lg shadow-sp-purple/20'
-                    : 'bg-sp-bg text-sp-muted border-transparent hover:border-sp-purple/30'
+                    ? 'bg-mfr-brown text-white border-mfr-border shadow-lg shadow-mfr-brown/20'
+                    : 'bg-mfr-bg text-mfr-muted border-transparent hover:border-mfr-border/30'
                 }`}
               >
                 {day.label}
@@ -272,51 +272,51 @@ export default function HolidayCalendar() {
         </div>
 
         {settings.weeklyOffDays.length > 0 && (
-          <p className="mt-4 text-xs font-bold text-sp-muted">
+          <p className="mt-4 text-xs font-bold text-mfr-muted">
             Off every: {settings.weeklyOffDays.sort().map(d => DAYS.find(x => x.value === d)?.label).join(', ')}
           </p>
         )}
       </div>
 
       {/* ── Specific Holiday Dates ── */}
-      <div className="bg-white rounded-[2rem] border border-sp-border p-8 shadow-card">
+      <div className="bg-white rounded-[2rem] border border-mfr-border p-8 shadow-card">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
             <CalendarDays size={18} className="text-amber-600" />
           </div>
           <div>
-            <h3 className="font-black text-sp-text">Specific Holiday Dates</h3>
-            <p className="text-xs text-sp-muted font-medium">Add Diwali, factory maintenance, or any specific closure dates</p>
+            <h3 className="font-black text-mfr-dark">Specific Holiday Dates</h3>
+            <p className="text-xs text-mfr-muted font-medium">Add Diwali, factory maintenance, or any specific closure dates</p>
           </div>
         </div>
 
         {/* Add date input */}
         <div className="flex gap-3 mb-6">
           <div className="flex-1 space-y-1">
-            <label className="text-[10px] font-black text-sp-muted uppercase tracking-widest pl-1">Date</label>
+            <label className="text-[10px] font-black text-mfr-muted uppercase tracking-widest pl-1">Date</label>
             <input
               type="date"
               value={newDate}
               onChange={e => setNewDate(e.target.value)}
               min={new Date().toISOString().split('T')[0]}
-              className="w-full h-12 rounded-2xl border border-sp-border bg-sp-bg/30 px-4 text-sm font-bold text-sp-text focus:outline-none focus:border-sp-purple focus:bg-white transition-all"
+              className="w-full h-12 rounded-2xl border border-mfr-border bg-mfr-bg/30 px-4 text-sm font-bold text-mfr-dark focus:outline-none focus:border-mfr-border focus:bg-white transition-all"
             />
           </div>
           <div className="flex-1 space-y-1">
-            <label className="text-[10px] font-black text-sp-muted uppercase tracking-widest pl-1">Label (optional)</label>
+            <label className="text-[10px] font-black text-mfr-muted uppercase tracking-widest pl-1">Label (optional)</label>
             <input
               type="text"
               value={newLabel}
               onChange={e => setNewLabel(e.target.value)}
               placeholder="e.g. Diwali, Maintenance..."
-              className="w-full h-12 rounded-2xl border border-sp-border bg-sp-bg/30 px-4 text-sm font-bold text-sp-text placeholder:text-sp-muted focus:outline-none focus:border-sp-purple focus:bg-white transition-all"
+              className="w-full h-12 rounded-2xl border border-mfr-border bg-mfr-bg/30 px-4 text-sm font-bold text-mfr-dark placeholder:text-mfr-muted focus:outline-none focus:border-mfr-border focus:bg-white transition-all"
             />
           </div>
           <div className="flex items-end">
             <button
               onClick={addHoliday}
               disabled={!newDate}
-              className="h-12 px-5 rounded-2xl bg-sp-purple text-white font-black text-sm flex items-center gap-2 hover:bg-sp-purple-dark disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:scale-[1.02] active:scale-95"
+              className="h-12 px-5 rounded-2xl bg-mfr-brown text-white font-black text-sm flex items-center gap-2 hover:bg-mfr-brown-dark disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:scale-[1.02] active:scale-95"
             >
               <Plus size={16} /> Add
             </button>
@@ -325,9 +325,9 @@ export default function HolidayCalendar() {
 
         {/* Holiday list */}
         {settings.holidays.length === 0 ? (
-          <div className="rounded-2xl bg-sp-bg/50 border border-dashed border-sp-border py-8 text-center">
-            <CalendarDays size={28} className="mx-auto text-sp-muted opacity-40 mb-2" />
-            <p className="text-sm font-bold text-sp-muted">No specific dates added yet</p>
+          <div className="rounded-2xl bg-mfr-bg/50 border border-dashed border-mfr-border py-8 text-center">
+            <CalendarDays size={28} className="mx-auto text-mfr-muted opacity-40 mb-2" />
+            <p className="text-sm font-bold text-mfr-muted">No specific dates added yet</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -365,34 +365,34 @@ export default function HolidayCalendar() {
       </div>
 
       {/* ── Back In Office Date ── */}
-      <div className="bg-white rounded-[2rem] border border-sp-border p-8 shadow-card">
+      <div className="bg-white rounded-[2rem] border border-mfr-border p-8 shadow-card">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-            <ArrowRight size={18} className="text-blue-600" />
+            <ArrowRight size={18} className="text-mfr-brown" />
           </div>
           <div>
-            <h3 className="font-black text-sp-text">Back In Office Date</h3>
-            <p className="text-xs text-sp-muted font-medium">Buyers will see this as your expected return date</p>
+            <h3 className="font-black text-mfr-dark">Back In Office Date</h3>
+            <p className="text-xs text-mfr-muted font-medium">Buyers will see this as your expected return date</p>
           </div>
         </div>
         <input
           type="date"
           value={settings.backInOfficeDate}
           onChange={e => setSettings(s => ({ ...s, backInOfficeDate: e.target.value }))}
-          className="h-12 rounded-2xl border border-sp-border bg-sp-bg/30 px-4 text-sm font-bold text-sp-text focus:outline-none focus:border-sp-purple focus:bg-white transition-all w-full max-w-xs"
+          className="h-12 rounded-2xl border border-mfr-border bg-mfr-bg/30 px-4 text-sm font-bold text-mfr-dark focus:outline-none focus:border-mfr-border focus:bg-white transition-all w-full max-w-xs"
         />
       </div>
 
       {/* ── Auto Response Message ── */}
-      <div className="bg-white rounded-[2rem] border border-sp-border p-8 shadow-card">
+      <div className="bg-white rounded-[2rem] border border-mfr-border p-8 shadow-card">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-            <MessageSquare size={18} className="text-green-600" />
+            <MessageSquare size={18} className="text-mfr-brown" />
           </div>
           <div>
-            <h3 className="font-black text-sp-text">Auto-Response Message</h3>
-            <p className="text-xs text-sp-muted font-medium">
-              Sent automatically to buyers when they contact you during holidays. Use <code className="bg-sp-bg px-1 rounded text-sp-purple">[date]</code> to insert your Back In Office date.
+            <h3 className="font-black text-mfr-dark">Auto-Response Message</h3>
+            <p className="text-xs text-mfr-muted font-medium">
+              Sent automatically to buyers when they contact you during holidays. Use <code className="bg-mfr-bg px-1 rounded text-mfr-brown">[date]</code> to insert your Back In Office date.
             </p>
           </div>
         </div>
@@ -401,14 +401,14 @@ export default function HolidayCalendar() {
           value={settings.autoResponse}
           onChange={e => setSettings(s => ({ ...s, autoResponse: e.target.value }))}
           rows={3}
-          className="w-full rounded-2xl border border-sp-border bg-sp-bg/20 p-5 text-sm font-bold text-sp-text focus:outline-none focus:border-sp-purple focus:bg-white transition-all resize-none"
+          className="w-full rounded-2xl border border-mfr-border bg-mfr-bg/20 p-5 text-sm font-bold text-mfr-dark focus:outline-none focus:border-mfr-border focus:bg-white transition-all resize-none"
         />
 
         {/* Preview */}
         <div className="mt-4 rounded-2xl bg-slate-50 border border-slate-100 p-5">
-          <p className="text-[10px] font-black text-sp-muted uppercase tracking-widest mb-2">Preview</p>
+          <p className="text-[10px] font-black text-mfr-muted uppercase tracking-widest mb-2">Preview</p>
           <div className="flex gap-3 items-start">
-            <div className="w-8 h-8 rounded-full bg-sp-purple flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-mfr-brown flex items-center justify-center flex-shrink-0">
               <MessageSquare size={13} className="text-white" />
             </div>
             <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border border-slate-100 max-w-sm">
@@ -423,7 +423,7 @@ export default function HolidayCalendar() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 px-8 h-12 rounded-[1.5rem] bg-sp-purple text-white font-black text-sm uppercase tracking-wider shadow-xl shadow-sp-purple/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-60"
+          className="flex items-center gap-2 px-8 h-12 rounded-[1.5rem] bg-mfr-brown text-white font-black text-sm uppercase tracking-wider shadow-xl shadow-mfr-brown/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-60"
         >
           {saving ? (
             <><Loader2 size={16} className="animate-spin" /> Saving…</>
@@ -437,3 +437,4 @@ export default function HolidayCalendar() {
     </div>
   );
 }
+

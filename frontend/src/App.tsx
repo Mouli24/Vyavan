@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import './i18n' // Import i18n configuration
 
 // Pages
 import HomePage               from './pages/HomePage'
@@ -33,6 +34,7 @@ import Onboarding             from './pages/manufacturer/Onboarding'
 import ManufacturerSettings   from './pages/manufacturer/ManufacturerSettings'
 import ScheduledCalls         from './pages/manufacturer/ScheduledCalls'
 import HolidaySettings        from './pages/manufacturer/HolidaySettings'
+import ManufacturerReviews     from './pages/manufacturer/ManufacturerReviews'
 
 // Admin pages
 import AdminDashboard         from './pages/admin/AdminDashboard'
@@ -80,81 +82,84 @@ function ProtectedRoute({
 
 export default function App() {
   return (
-    <Routes>
-      {/* ── Public routes ── */}
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<LoginPage />} />
+    <>
+      <Routes>
+        {/* ── Public routes ── */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
 
-      {/* ── Public company storefront ── */}
-      <Route path="/company/:id" element={<CompanyStorefront />} />
+        {/* ── Public company storefront ── */}
+        <Route path="/company/:id" element={<CompanyStorefront />} />
 
-      {/* ── Buyer routes ── */}
-      <Route path="/buyer" element={
-        <ProtectedRoute allowedRole="buyer">
-          <BuyerLayout />
-        </ProtectedRoute>
-      }>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard"   element={<BuyerDashboard />} />
-        <Route path="browse"      element={<BuyerBrowse />} />
-        <Route path="orders"      element={<BuyerOrders />} />
-        <Route path="shipments"   element={<BuyerShipments />} />
-        <Route path="complaints"  element={<BuyerComplaints />} />
-        <Route path="schedule"    element={<ScheduleCall />} />
-        <Route path="checkout"    element={<BuyerCheckout />} />
-        <Route path="negotiation" element={<BuyerNegotiation />} />
-      </Route>
+        {/* ── Buyer routes ── */}
+        <Route path="/buyer" element={
+          <ProtectedRoute allowedRole="buyer">
+            <BuyerLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard"   element={<BuyerDashboard />} />
+          <Route path="browse"      element={<BuyerBrowse />} />
+          <Route path="orders"      element={<BuyerOrders />} />
+          <Route path="shipments"   element={<BuyerShipments />} />
+          <Route path="complaints"  element={<BuyerComplaints />} />
+          <Route path="schedule"    element={<ScheduleCall />} />
+          <Route path="checkout"    element={<BuyerCheckout />} />
+          <Route path="negotiation" element={<BuyerNegotiation />} />
+        </Route>
 
-      {/* Search accessible without login */}
-      <Route path="/browse" element={<BuyerBrowse />} />
+        {/* Search accessible without login */}
+        <Route path="/browse" element={<BuyerBrowse />} />
 
-      {/* ── Manufacturer routes ── */}
-      <Route path="/manufacturer" element={
-        <ProtectedRoute allowedRole="manufacturer">
-          <ManufacturerLayout />
-        </ProtectedRoute>
-      }>
-        <Route index element={<Navigate to="overview" replace />} />
-        <Route path="overview"     element={<Overview />} />
-        <Route path="store"        element={<MyStore />} />
-        <Route path="orders"       element={<ManufacturerOrders />} />
-        <Route path="inventory"    element={<Inventory />} />
-        <Route path="shipment"     element={<Shipment />} />
-        <Route path="negotiation"  element={<Negotiation />} />
-        <Route path="payment"      element={<Payment />} />
-        <Route path="complaints"   element={<Complaints />} />
-        <Route path="scheduled-calls" element={<ScheduledCalls />} />
-        <Route path="holidays"        element={<HolidaySettings />} />
-        <Route path="settings"        element={<ManufacturerSettings />} />
-      </Route>
+        {/* ── Manufacturer routes ── */}
+        <Route path="/manufacturer" element={
+          <ProtectedRoute allowedRole="manufacturer">
+            <ManufacturerLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview"     element={<Overview />} />
+          <Route path="store"        element={<MyStore />} />
+          <Route path="orders"       element={<ManufacturerOrders />} />
+          <Route path="inventory"    element={<Inventory />} />
+          <Route path="shipment"     element={<Shipment />} />
+          <Route path="negotiation"  element={<Negotiation />} />
+          <Route path="payment"      element={<Payment />} />
+          <Route path="complaints"   element={<Complaints />} />
+          <Route path="scheduled-calls" element={<ScheduledCalls />} />
+          <Route path="holidays"        element={<HolidaySettings />} />
+          <Route path="settings"        element={<ManufacturerSettings />} />
+          <Route path="reviews"         element={<ManufacturerReviews />} />
+        </Route>
 
-      <Route path="/manufacturer/onboarding" element={
-        <ProtectedRoute allowedRole="manufacturer">
-          <Onboarding />
-        </ProtectedRoute>
-      } />
+        <Route path="/manufacturer/onboarding" element={
+          <ProtectedRoute allowedRole="manufacturer">
+            <Onboarding />
+          </ProtectedRoute>
+        } />
 
-      {/* ── Admin routes ── */}
-      <Route path="/admin" element={
-        <ProtectedRoute allowedRole="admin">
-          <AdminLayout />
-        </ProtectedRoute>
-      }>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard"      element={<AdminDashboard />} />
-        <Route path="manufacturers"  element={<AdminManufacturers />} />
-        <Route path="verification"   element={<AdminVerification />} />
-        <Route path="buyers"         element={<AdminBuyers />} />
-        <Route path="orders"         element={<AdminOrders />} />
-        <Route path="complaints"     element={<AdminComplaints />} />
-        <Route path="payments"       element={<AdminPayments />} />
-        <Route path="analytics"      element={<AdminAnalytics />} />
-        <Route path="content"        element={<AdminContent />} />
-        <Route path="settings"       element={<AdminSettings />} />
-      </Route>
+        {/* ── Admin routes ── */}
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard"      element={<AdminDashboard />} />
+          <Route path="manufacturers"  element={<AdminManufacturers />} />
+          <Route path="verification"   element={<AdminVerification />} />
+          <Route path="buyers"         element={<AdminBuyers />} />
+          <Route path="orders"         element={<AdminOrders />} />
+          <Route path="complaints"     element={<AdminComplaints />} />
+          <Route path="payments"       element={<AdminPayments />} />
+          <Route path="analytics"      element={<AdminAnalytics />} />
+          <Route path="content"        element={<AdminContent />} />
+          <Route path="settings"       element={<AdminSettings />} />
+        </Route>
 
-      {/* ── Catch-all ── */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* ── Catch-all ── */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   )
 }

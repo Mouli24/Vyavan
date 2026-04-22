@@ -40,6 +40,17 @@ const userSchema = new mongoose.Schema({
     country: { type: String, default: 'India' },
     isDefault: { type: Boolean, default: false }
   }],
+
+  // Multi-language support
+  language: { 
+    type: String, 
+    enum: ['en', 'hi', 'te', 'ta', 'kn'], 
+    default: 'en' 
+  },
+  languagePreferenceSet: { 
+    type: Boolean, 
+    default: false 
+  },
 }, { timestamps: true });
 
 // Hash password before save

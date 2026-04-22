@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import {
   CalendarClock, Clock, User, Phone, Video,
   CheckCircle2, XCircle, RefreshCw, Loader2,
@@ -16,10 +16,10 @@ import { useAuth } from '@/context/AuthContext'
 // ── Status config ──────────────────────────────────────────────────────────
 const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string; label: string }> = {
   pending:    { bg: 'bg-amber-50',   text: 'text-amber-600',  dot: 'bg-amber-500',  label: 'Pending' },
-  confirmed:  { bg: 'bg-green-50',   text: 'text-green-600',  dot: 'bg-green-500',  label: 'Confirmed' },
+  confirmed:  { bg: 'bg-green-50',   text: 'text-mfr-brown',  dot: 'bg-green-500',  label: 'Confirmed' },
   cancelled:  { bg: 'bg-red-50',     text: 'text-red-500',    dot: 'bg-red-400',    label: 'Cancelled' },
   completed:  { bg: 'bg-slate-100',  text: 'text-slate-500',  dot: 'bg-slate-400',  label: 'Completed' },
-  rescheduled:{ bg: 'bg-blue-50',    text: 'text-blue-600',   dot: 'bg-blue-500',   label: 'Rescheduled' },
+  rescheduled:{ bg: 'bg-mfr-peach',    text: 'text-mfr-brown',   dot: 'bg-mfr-brown',   label: 'Rescheduled' },
 }
 
 function fmt(dateStr: string) {
@@ -82,38 +82,6 @@ export default function ScheduledCalls() {
   return (
     <div className="flex-1 p-8 overflow-y-auto">
 
-      {/* ── Topbar ── */}
-      <header className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Dashboard</span>
-          <span className="text-muted-foreground">/</span>
-          <span className="font-semibold">Scheduled Calls</span>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-secondary">
-            <Globe size={20} className="text-muted-foreground" />
-          </Button>
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-secondary">
-            <Bell size={20} className="text-muted-foreground" />
-          </Button>
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-secondary">
-            <HelpCircle size={20} className="text-muted-foreground" />
-          </Button>
-          <Separator orientation="vertical" className="h-8" />
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-bold">{user?.name || 'User'}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{user?.company || 'Manufacturer'}</p>
-            </div>
-            <Avatar className="h-10 w-10 border-2 border-primary/10">
-              <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user?.name || 'User'}`} />
-              <AvatarFallback>{user?.name?.[0] || 'U'}</AvatarFallback>
-            </Avatar>
-          </div>
-        </div>
-      </header>
-
       {/* ── Hero ── */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-slate-900 tracking-tight mb-1">Scheduled Calls</h1>
@@ -136,11 +104,11 @@ export default function ScheduledCalls() {
 
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          className="bg-[#E3F2FD] rounded-[1.5rem] p-6"
+          className="bg-gradient-to-br from-[#F5E6D3] to-[#F9F1E7] rounded-[1.5rem] p-6 border-none"
         >
           <div className="flex items-center gap-2 mb-3">
-            <Clock size={18} className="text-blue-600" />
-            <span className="text-[10px] uppercase tracking-widest font-bold text-blue-600">Today</span>
+            <Clock size={18} className="text-[#5D4037]" />
+            <span className="text-[10px] uppercase tracking-widest font-bold text-[#5D4037]">Today</span>
           </div>
           <p className="text-4xl font-bold text-slate-900">{todayCount}</p>
           <p className="text-xs text-muted-foreground mt-1">calls today</p>
@@ -148,11 +116,11 @@ export default function ScheduledCalls() {
 
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="bg-[#F3E5F5] rounded-[1.5rem] p-6"
+          className="bg-gradient-to-br from-[#F5E6D3] to-[#F9F1E7] rounded-[1.5rem] p-6 border-none"
         >
           <div className="flex items-center gap-2 mb-3">
-            <CheckCircle2 size={18} className="text-purple-600" />
-            <span className="text-[10px] uppercase tracking-widest font-bold text-purple-600">Total</span>
+            <CheckCircle2 size={18} className="text-[#5D4037]" />
+            <span className="text-[10px] uppercase tracking-widest font-bold text-[#5D4037]">Total</span>
           </div>
           <p className="text-4xl font-bold text-slate-900">{calls.length}</p>
           <p className="text-xs text-muted-foreground mt-1">all time</p>
@@ -231,7 +199,7 @@ export default function ScheduledCalls() {
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <Avatar className="h-10 w-10 border-2 border-white shadow-sm flex-shrink-0">
                       <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${buyerName}`} />
-                      <AvatarFallback className="bg-blue-100 text-blue-600 text-xs font-bold">{buyerInitials}</AvatarFallback>
+                      <AvatarFallback className="bg-mfr-peach text-mfr-brown text-xs font-bold">{buyerInitials}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
                       <p className="font-bold text-slate-800 text-sm truncate">{buyerName}</p>
@@ -265,7 +233,7 @@ export default function ScheduledCalls() {
                       href={call.meetingLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-xs font-bold hover:bg-blue-100 transition-colors flex-shrink-0"
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-mfr-peach text-mfr-brown text-xs font-bold hover:bg-mfr-peach-mid transition-colors flex-shrink-0"
                     >
                       <Video size={14} /> Join
                     </a>
@@ -277,7 +245,7 @@ export default function ScheduledCalls() {
                       <button
                         onClick={() => handleConfirm(call._id)}
                         disabled={actionLoading === call._id + '-confirm'}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-green-50 text-green-600 text-xs font-bold hover:bg-green-100 disabled:opacity-50 transition-colors"
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-green-50 text-mfr-brown text-xs font-bold hover:bg-green-100 disabled:opacity-50 transition-colors"
                       >
                         {actionLoading === call._id + '-confirm'
                           ? <Loader2 size={13} className="animate-spin" />
@@ -321,3 +289,4 @@ export default function ScheduledCalls() {
     </div>
   )
 }
+

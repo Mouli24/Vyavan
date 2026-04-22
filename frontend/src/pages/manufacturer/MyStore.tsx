@@ -1,16 +1,161 @@
-import {
+﻿import {
   Plus, Edit3, Star, Image as ImageIcon, Trash2,
   MessageSquare, Zap, Store, Package, Truck,
   ArrowRight, Loader2, Sparkles, Bell, MapPin,
+  X, Calendar, Tag, Percent, Clock,
 } from 'lucide-react'
-import { useState, useEffect } from 'react'
-import { motion } from 'motion/react'
+import React, { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 import AddProductModal from '@/features/manufacturer/AddProductModal'
 import { api, Product } from '@/lib/api'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
+
+// ── Campaign types ────────────────────────────────────────────────────────────
+interface Campaign {
+  id: string
+  name: string
+  description: string
+  discountType: 'percent' | 'flat'
+  discountValue: number
+  startDate: string
+  endDate: string
+  status: 'live' | 'scheduled' | 'ended'
+  manufacturerId: string
+  manufacturerName: string
+}
+
+const CAMPAIGNS_KEY = 'vyawan_campaigns'
+
+function loadCampaigns(): Campaign[] {
+  try { return JSON.parse(localStorage.getItem(CAMPAIGNS_KEY) || '[]') } catch { return [] }
+}
+function saveCampaigns(c: Campaign[]) {
+  localStorage.setItem(CAMPAIGNS_KEY, JSON.stringify(c))
+}
+function computeStatus(c: Campaign): Campaign['status'] {
+  const now = new Date()
+  const start = new Date(c.startDate)
+  const end = new Date(c.endDate)
+  if (now < start) return 'scheduled'
+  if (now > end) return 'ended'
+  return 'live'
+}
+
+// ── Add Campaign Modal ────────────────────────────────────────────────────────
+function AddCampaignModal({ open, onClose, onSave, manufacturerId, manufacturerName }: {
+  open: boolean; onClose: () => void
+  onSave: (c: Campaign) => void
+  manufacturerId: string; manufacturerName: string
+}) {
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [discountType, setDiscountType] = useState<'percent' | 'flat'>('percent')
+  const [discountValue, setDiscountValue] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+
+  const reset = () => { setName(''); setDescription(''); setDiscountType('percent'); setDiscountValue(''); setStartDate(''); setEndDate('') }
+
+  const handleSave = () => {
+    if (!name || !discountValue || !startDate || !endDate) return
+    const c: Campaign = {
+      id: Date.now().toString(),
+      name, description,
+      discountType, discountValue: Number(discountValue),
+      startDate, endDate,
+      status: 'scheduled',
+      manufacturerId, manufacturerName,
+    }
+    c.status = computeStatus(c)
+    onSave(c)
+    reset()
+    onClose()
+  }
+
+  if (!open) return null
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}>
+      <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.2 }}
+        className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: '#FCE7D6' }}>
+              <Tag size={16} style={{ color: '#5D4037' }} />
+            </div>
+            <h2 className="text-base font-bold text-slate-900">Create Campaign</h2>
+          </div>
+          <button onClick={() => { reset(); onClose() }} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Form */}
+        <div className="px-6 py-5 space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Campaign Name *</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Monsoon Bulk Sale"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#6B4E3D] transition-all" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Description</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2}
+              placeholder="What's this sale about?"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#6B4E3D] transition-all resize-none" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Discount Type *</label>
+              <select value={discountType} onChange={e => setDiscountType(e.target.value as any)}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#6B4E3D] transition-all">
+                <option value="percent">Percentage (%)</option>
+                <option value="flat">Flat Amount (₹)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+                Value * {discountType === 'percent' ? '(%)' : '(₹)'}
+              </label>
+              <input type="number" value={discountValue} onChange={e => setDiscountValue(e.target.value)}
+                placeholder={discountType === 'percent' ? '10' : '500'} min={1}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#6B4E3D] transition-all" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Start Date *</label>
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#6B4E3D] transition-all" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">End Date *</label>
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} min={startDate}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#6B4E3D] transition-all" />
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-slate-100 flex gap-3">
+          <button onClick={() => { reset(); onClose() }}
+            className="flex-1 py-2.5 rounded-xl text-sm font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
+            Cancel
+          </button>
+          <button onClick={handleSave} disabled={!name || !discountValue || !startDate || !endDate}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
+            style={{ background: '#5D4037' }}>
+            Launch Campaign
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
 
 export default function MyStore() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [showAddProduct, setShowAddProduct] = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
   const [products, setProducts] = useState<Product[]>([])
@@ -18,6 +163,8 @@ export default function MyStore() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [onboardingPlan, setOnboardingPlan] = useState<any>(null)
   const [loadingOnboarding, setLoadingOnboarding] = useState(true)
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [showAddCampaign, setShowAddCampaign] = useState(false)
 
   const fetchProducts = () => {
     setLoadingProducts(true)
@@ -33,6 +180,11 @@ export default function MyStore() {
       .then(plan => setOnboardingPlan(plan))
       .catch(() => {})
       .finally(() => setLoadingOnboarding(false))
+    // Load campaigns from localStorage, filter by this manufacturer
+    const all = loadCampaigns()
+    const mine = all.filter(c => c.manufacturerId === (user?._id || 'local'))
+      .map(c => ({ ...c, status: computeStatus(c) }))
+    setCampaigns(mine)
   }, [])
 
   const handleEdit = (product: Product) => { setEditProduct(product); setShowAddProduct(true) }
@@ -45,6 +197,19 @@ export default function MyStore() {
   }
   const handleModalClose = () => { setShowAddProduct(false); setEditProduct(null) }
   const handlePublished = () => { handleModalClose(); fetchProducts() }
+
+  const handleAddCampaign = (c: Campaign) => {
+    const all = loadCampaigns()
+    const updated = [...all, c]
+    saveCampaigns(updated)
+    setCampaigns(prev => [...prev, c])
+  }
+
+  const handleDeleteCampaign = (id: string) => {
+    const all = loadCampaigns().filter(c => c.id !== id)
+    saveCampaigns(all)
+    setCampaigns(prev => prev.filter(c => c.id !== id))
+  }
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ background: '#FAF8F5' }}>
@@ -253,48 +418,100 @@ export default function MyStore() {
 
             {/* Active Campaigns */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-card p-5">
-              <h3 className="text-sm font-bold text-slate-900 mb-4">Active Campaigns</h3>
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-100 relative overflow-hidden">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: '#FCE7D6', color: '#5D4037' }}>
-                    <Bell size={16} />
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-slate-900">Active Campaigns</h3>
+                <button onClick={() => setShowAddCampaign(true)}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-white transition-all hover:opacity-90"
+                  style={{ background: '#5D4037' }} title="Add Campaign">
+                  <Plus size={14} />
+                </button>
+              </div>
+              <div className="flex flex-col gap-2.5">
+                {campaigns.length === 0 ? (
+                  <div className="text-center py-6">
+                    <Tag size={24} className="mx-auto mb-2 text-slate-300" />
+                    <p className="text-xs text-slate-400">No campaigns yet</p>
+                    <button onClick={() => setShowAddCampaign(true)}
+                      className="mt-2 text-xs font-semibold" style={{ color: '#5D4037' }}>
+                      + Create your first sale
+                    </button>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-semibold text-slate-800">Monsoon Bulk Sale</h4>
-                    <p className="text-[10px] text-slate-400">Ends in 4 days</p>
+                ) : campaigns.map(c => (
+                  <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 group">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: c.status === 'live' ? '#FCE7D6' : '#F5F2ED', color: c.status === 'live' ? '#5D4037' : '#A89F91' }}>
+                      {c.discountType === 'percent' ? <Percent size={15} /> : <Tag size={15} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-semibold text-slate-800 truncate">{c.name}</h4>
+                      <p className="text-[10px] text-slate-400">
+                        {c.discountType === 'percent' ? `${c.discountValue}% off` : `₹${c.discountValue} off`}
+                        {' · '}
+                        {new Date(c.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 text-[9px] font-bold rounded uppercase"
+                        style={{
+                          background: c.status === 'live' ? '#ECFDF5' : c.status === 'scheduled' ? '#FFF7ED' : '#F5F2ED',
+                          color: c.status === 'live' ? '#059669' : c.status === 'scheduled' ? '#D97706' : '#A89F91',
+                        }}>
+                        {c.status}
+                      </span>
+                      <button onClick={() => handleDeleteCampaign(c.id)}
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded text-slate-300 hover:text-red-400 transition-all">
+                        <X size={12} />
+                      </button>
+                    </div>
                   </div>
-                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-bold rounded uppercase flex-shrink-0">Live</span>
-                </div>
-                <div className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-100 opacity-60">
-                  <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center flex-shrink-0">
-                    <Zap size={16} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-semibold text-slate-500">Early Bird 2025</h4>
-                    <p className="text-[10px] text-slate-400">Starts next month</p>
-                  </div>
-                  <span className="px-2 py-0.5 bg-slate-100 text-slate-400 text-[9px] font-bold rounded uppercase flex-shrink-0">Scheduled</span>
-                </div>
+                ))}
               </div>
             </div>
 
             {/* Delivery Hubs */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-card p-5">
-              <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <MapPin size={14} style={{ color: '#5D4037' }} /> Delivery Hubs
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {['Maharashtra', 'Gujarat', 'Tamil Nadu', 'Karnataka', '+8 more'].map((hub, idx) => (
-                  <span key={idx}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors ${
-                      hub.startsWith('+') ? 'text-slate-400 hover:text-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}>
-                    {hub}
-                  </span>
-                ))}
-              </div>
-            </div>
+            {(() => {
+              const ALL_HUBS = [
+                'Maharashtra', 'Gujarat', 'Tamil Nadu', 'Karnataka', 'Delhi',
+                'Uttar Pradesh', 'Rajasthan', 'West Bengal', 'Telangana', 'Andhra Pradesh',
+                'Madhya Pradesh', 'Kerala', 'Punjab', 'Haryana', 'Bihar',
+                'Odisha', 'Jharkhand', 'Chhattisgarh', 'Assam', 'Himachal Pradesh',
+                'Uttarakhand', 'Goa', 'Jammu & Kashmir', 'Manipur', 'Meghalaya',
+                'Tripura', 'Nagaland', 'Mizoram', 'Arunachal Pradesh', 'Sikkim',
+              ]
+              const [expanded, setExpanded] = React.useState(false)
+              const visible = expanded ? ALL_HUBS : ALL_HUBS.slice(0, 6)
+              const remaining = ALL_HUBS.length - 6
+              return (
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-card p-5">
+                  <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <MapPin size={14} style={{ color: '#5D4037' }} /> Delivery Hubs
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {visible.map(hub => (
+                      <button key={hub}
+                        onClick={() => navigate(`/buyer/browse?location=${encodeURIComponent(hub)}`)}
+                        className="px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer transition-colors">
+                        {hub}
+                      </button>
+                    ))}
+                    {!expanded && (
+                      <button onClick={() => setExpanded(true)}
+                        className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors"
+                        style={{ color: '#5D4037', background: '#FCE7D6' }}>
+                        +{remaining} more
+                      </button>
+                    )}
+                    {expanded && (
+                      <button onClick={() => setExpanded(false)}
+                        className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors"
+                        style={{ color: '#5D4037', background: '#FCE7D6' }}>
+                        Show less
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* Logistics */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-card p-5">
@@ -328,6 +545,14 @@ export default function MyStore() {
         onPublished={handlePublished}
         editProduct={editProduct}
       />
+      <AddCampaignModal
+        open={showAddCampaign}
+        onClose={() => setShowAddCampaign(false)}
+        onSave={handleAddCampaign}
+        manufacturerId={user?._id || 'local'}
+        manufacturerName={user?.company || user?.name || 'Manufacturer'}
+      />
     </div>
   )
 }
+
