@@ -13,57 +13,103 @@ const adminOnly = [protect, requireRole('admin')];
 // ── Dashboard Stats ────────────────────────────────────────────────────────
 router.get('/stats', adminOnly, async (req, res) => {
   try {
+    const now = new Date();
+    const startOfToday = new Date(new Date().setHours(0, 0, 0, 0));
+    const startOf7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastHour     = new Date(Date.now() - 60 * 60 * 1000);
+
     const [
-      totalManufacturers,
-      pendingManufacturers,
-      approvedManufacturers,
-      totalBuyers,
-      totalOrders,
-      pendingComplaints,
-      totalProducts,
+      mfrStats,
+      buyerStats,
+      orderStats,
+      gmvMonthAgg,
+      disputesCount,
+      registrationsToday,
+      ordersLastHour,
+      flagsToday,
     ] = await Promise.all([
-      User.countDocuments({ role: 'manufacturer' }),
-      User.countDocuments({ role: 'manufacturer', manufacturerStatus: 'pending' }),
-      User.countDocuments({ role: 'manufacturer', manufacturerStatus: 'approved' }),
-      User.countDocuments({ role: 'buyer' }),
-      Order.countDocuments({}),
-      Complaint.countDocuments({ status: { $in: ['PENDING', 'ESCALATED'] } }),
-      Product.countDocuments({ isActive: true }),
-    ]);
-
-    // Revenue (sum of all order values)
-    const revenueAgg = await Order.aggregate([
-      { $group: { _id: null, total: { $sum: '$valueRaw' } } }
-    ]);
-    const totalRevenue = revenueAgg[0]?.total ?? 0;
-
-    // Monthly order stats (last 6 months)
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    const monthlyOrders = await Order.aggregate([
-      { $match: { createdAt: { $gte: sixMonthsAgo } } },
-      {
-        $group: {
-          _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } },
-          count: { $sum: 1 },
-          revenue: { $sum: '$valueRaw' },
+      // Manufacturers status breakdown
+      User.aggregate([
+        { $match: { role: 'manufacturer' } },
+        { $group: { _id: '$manufacturerStatus', count: { $sum: 1 } } }
+      ]),
+      // Buyers status breakdown
+      User.aggregate([
+        { $match: { role: 'buyer' } },
+        { 
+          $group: { 
+            _id: null, 
+            total: { $sum: 1 },
+            active: { $sum: { $cond: [{ $eq: ['$isActive', true] }, 1, 0] } },
+            pending: { $sum: { $cond: [{ $eq: ['$isVerified', false] }, 1, 0] } },
+          } 
         }
-      },
-      { $sort: { _id: 1 } }
+      ]),
+      // Orders counts by time
+      Promise.all([
+        Order.countDocuments({ createdAt: { $gte: startOfToday } }),
+        Order.countDocuments({ createdAt: { $gte: startOf7Days } }),
+        Order.countDocuments({ createdAt: { $gte: startOfMonth } }),
+      ]),
+      // GMV this month
+      Order.aggregate([
+        { $match: { createdAt: { $gte: startOfMonth }, status: { $ne: 'Cancelled' } } },
+        { $group: { _id: null, total: { $sum: '$valueRaw' } } }
+      ]),
+      // Disputes (Open)
+      Complaint.countDocuments({ status: { $in: ['PENDING', 'ESCALATED'] } }),
+      // LIVE FEED: Registrations Today
+      User.find({ createdAt: { $gte: startOfToday } })
+        .select('name role company createdAt')
+        .sort({ createdAt: -1 })
+        .limit(5),
+      // LIVE FEED: Orders last 1 hour
+      Order.find({ createdAt: { $gte: lastHour } })
+        .populate('buyer.ref', 'name')
+        .select('orderId value createdAt')
+        .sort({ createdAt: -1 })
+        .limit(5),
+      // LIVE FEED: Flags (Escalated Complaints)
+      Complaint.find({ status: 'ESCALATED', updatedAt: { $gte: startOfToday } })
+        .select('title company status updatedAt')
+        .sort({ updatedAt: -1 })
+        .limit(5),
     ]);
+
+    // Format Manufacturer stats
+    const mfrs = { total: 0, pending: 0, approved: 0, suspended: 0 };
+    mfrStats.forEach(s => {
+      mfrs.total += s.count;
+      if (s._id === 'pending') mfrs.pending = s.count;
+      if (s._id === 'approved') mfrs.approved = s.count;
+      if (s._id === 'suspended') mfrs.suspended = s.count;
+    });
+
+    const gmvMonth = gmvMonthAgg[0]?.total ?? 0;
+    const commission = Math.floor(gmvMonth * 0.05); // 5% flat
 
     res.json({
-      totalManufacturers,
-      pendingManufacturers,
-      approvedManufacturers,
-      totalBuyers,
-      totalOrders,
-      pendingComplaints,
-      totalProducts,
-      totalRevenue,
-      monthlyOrders,
+      manufacturers: mfrs,
+      buyers: buyerStats[0] || { total: 0, active: 0, pending: 0, flagged: 0 },
+      orders: {
+        today: orderStats[0],
+        week: orderStats[1],
+        month: orderStats[2]
+      },
+      gmvMonth,
+      commission,
+      disputes: disputesCount,
+      verifications: mfrs.pending,
+      alerts: disputesCount, // Suspicious = Open disputes/escalations
+      liveFeed: {
+        registrations: registrationsToday,
+        orders: ordersLastHour,
+        flags: flagsToday
+      }
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -71,17 +117,42 @@ router.get('/stats', adminOnly, async (req, res) => {
 // ── Manufacturers ──────────────────────────────────────────────────────────
 router.get('/manufacturers', adminOnly, async (req, res) => {
   try {
-    const { status = 'all', page = 1, limit = 20 } = req.query;
-    const filter = { role: 'manufacturer' };
-    if (status !== 'all') filter.manufacturerStatus = status;
+    const { status = 'all', page = 1, limit = 20, name, city, state, plan, sector } = req.query;
+    
+    // User Filter
+    const userFilter = { role: 'manufacturer' };
+    if (status !== 'all') userFilter.manufacturerStatus = status;
+    if (name) {
+      userFilter.$or = [
+        { name: { $regex: name, $options: 'i' } },
+        { company: { $regex: name, $options: 'i' } },
+        { email: { $regex: name, $options: 'i' } }
+      ];
+    }
+    
+    // Pre-filtering profiles based on params to optionally restrict users
+    let profileQueryFilter = null;
+    if (city || state || plan || sector) {
+      profileQueryFilter = {};
+      if (city) profileQueryFilter['address.city'] = { $regex: city, $options: 'i' };
+      if (state) profileQueryFilter['address.state'] = { $regex: state, $options: 'i' };
+      if (plan) profileQueryFilter.planType = plan;
+      if (sector) profileQueryFilter.sector = { $regex: sector, $options: 'i' };
+    }
+
+    if (profileQueryFilter) {
+      const matchingProfiles = await ManufacturerProfile.find(profileQueryFilter).select('user');
+      const matchingUserIds = matchingProfiles.map(p => p.user);
+      userFilter._id = { $in: matchingUserIds };
+    }
 
     const [manufacturers, total] = await Promise.all([
-      User.find(filter)
-        .select('-password')
+      User.find(userFilter)
+        .select('-password -loginHistory') // Omit sensitive logs on list fetch
         .sort({ createdAt: -1 })
         .skip((+page - 1) * +limit)
         .limit(+limit),
-      User.countDocuments(filter),
+      User.countDocuments(userFilter),
     ]);
 
     // Get profiles for each manufacturer
@@ -110,18 +181,27 @@ router.patch('/manufacturers/:id/approve', adminOnly, async (req, res) => {
     );
     if (!user) return res.status(404).json({ message: 'Manufacturer not found' });
 
-    // Update profile status too
+    // Update profile status and generate activation code
+    const activationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
     await ManufacturerProfile.findOneAndUpdate(
       { user: req.params.id },
-      { status: 'approved', approvedAt: new Date(), approvedBy: req.user._id },
+      { 
+        status: 'approved', 
+        isVerified: true,
+        isActivated: false,
+        activationCode,
+        approvedAt: new Date(), 
+        approvedBy: req.user._id 
+      },
     );
 
-    // Send notification
+    // Send notification with code (Simulation of Email)
     await Notification.create({
       user: req.params.id,
       type: 'manufacturer_approved',
-      title: 'Account Approved!',
-      message: 'Congratulations! Your manufacturer account has been approved. You can now start listing products.',
+      title: 'Account Approved! Action Required',
+      message: `Congratulations! Your account is approved. Use this Activation Code to unlock your dashboard: ${activationCode}`,
       link: '/manufacturer/overview',
     });
 
@@ -161,6 +241,37 @@ router.patch('/manufacturers/:id/reject', adminOnly, async (req, res) => {
   }
 });
 
+// ── Request More Documents ──────────────────────────────────────────────────
+router.patch('/manufacturers/:id/request-docs', adminOnly, async (req, res) => {
+  try {
+    const { note } = req.body;
+    if (!note) return res.status(400).json({ message: 'Note is required' });
+
+    const profile = await ManufacturerProfile.findOneAndUpdate(
+      { user: req.params.id },
+      { 
+        verificationNote: note,
+        status: 'pending' // stays pending but with a note
+      },
+      { new: true }
+    );
+
+    if (!profile) return res.status(404).json({ message: 'Manufacturer not found' });
+
+    await Notification.create({
+      user: req.params.id,
+      type: 'action_required',
+      title: 'Additional Documents Requested',
+      message: `Admin has requested updates: ${note}`,
+      link: '/manufacturer/onboarding',
+    });
+
+    res.json({ message: 'Request sent', profile });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // ── Suspend Manufacturer ────────────────────────────────────────────────────
 router.patch('/manufacturers/:id/suspend', adminOnly, async (req, res) => {
   try {
@@ -171,6 +282,124 @@ router.patch('/manufacturers/:id/suspend', adminOnly, async (req, res) => {
     );
     if (!user) return res.status(404).json({ message: 'Manufacturer not found' });
     res.json({ message: 'Manufacturer suspended', user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── Manufacturer Profile Detail Aggregation ─────────────────────────────────
+router.get('/manufacturers/:id/profile', adminOnly, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user || user.role !== 'manufacturer') {
+      return res.status(404).json({ message: 'Manufacturer not found' });
+    }
+
+    const [profile, productsCount, orders] = await Promise.all([
+      ManufacturerProfile.findOne({ user: req.params.id }),
+      Product.countDocuments({ manufacturer: req.params.id }),
+      Order.find({ manufacturer: req.params.id }).select('valueRaw status')
+    ]);
+
+    const totalOrders = orders.length;
+    const totalRevenue = orders.reduce((sum, o) => sum + (o.status !== 'Cancelled' ? o.valueRaw : 0), 0);
+
+    // Complaint rate calculation
+    const complaints = await Complaint.countDocuments({ manufacturer: req.params.id });
+    const complaintRate = totalOrders > 0 ? ((complaints / totalOrders) * 100).toFixed(1) : 0;
+
+    res.json({
+      user,
+      profile,
+      stats: {
+        totalProducts: productsCount,
+        totalOrders,
+        totalRevenue,
+        complaintRate,
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── Manufacturer -> Buyer Map ───────────────────────────────────────────────
+router.get('/manufacturers/:id/buyers', adminOnly, async (req, res) => {
+  try {
+    const buyersAgg = await Order.aggregate([
+      { $match: { manufacturer: new mongoose.Types.ObjectId(req.params.id), status: { $ne: 'Cancelled' } } },
+      { 
+        $group: { 
+          _id: '$buyer.ref',
+          orderCount: { $sum: 1 },
+          totalValue: { $sum: '$valueRaw' },
+          lastOrder: { $max: '$createdAt' }
+        } 
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'buyerInfo'
+        }
+      },
+      { $unwind: '$buyerInfo' },
+      { 
+        $project: {
+          _id: 1,
+          name: '$buyerInfo.name',
+          company: '$buyerInfo.company',
+          email: '$buyerInfo.email',
+          orderCount: 1,
+          totalValue: 1,
+          lastOrder: 1
+        }
+      },
+      { $sort: { totalValue: -1 } }
+    ]);
+
+    res.json({ buyers: buyersAgg });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── Change Manufacturer Plan ────────────────────────────────────────────────
+router.patch('/manufacturers/:id/plan', adminOnly, async (req, res) => {
+  try {
+    const { plan } = req.body;
+    if (!['Free', 'Basic', 'Premium'].includes(plan)) {
+      return res.status(400).json({ message: 'Invalid plan type' });
+    }
+
+    const profile = await ManufacturerProfile.findOneAndUpdate(
+      { user: req.params.id },
+      { planType: plan },
+      { new: true }
+    );
+
+    if (!profile) return res.status(404).json({ message: 'Profile not found' });
+    res.json({ message: 'Plan updated successfully', profile });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── Force Password Reset ────────────────────────────────────────────────────
+router.post('/manufacturers/:id/reset-password', adminOnly, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { mustResetPassword: true },
+      { new: true }
+    );
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Optional: Log out user globally if using session store or update JWT tracking
+    // Send email notification for password reset
+
+    res.json({ message: 'User flagged for password reset' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

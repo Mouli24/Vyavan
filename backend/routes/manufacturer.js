@@ -16,7 +16,8 @@ router.post('/profile', protect, requireRole('manufacturer'), async (req, res) =
   try {
     const {
       companyName, tradeName, description, mainCategory, subCategory, capacity,
-      gstNumber, panNumber, msmeNumber, bizDocUrl, gstCertUrl,
+      factoryCapacity, contactPerson, geoLocation,
+      gstNumber, panNumber, msmeNumber, udyamNumber, cinNumber, bizDocUrl, gstCertUrl, certificationDocs,
       address, bank, logoUrl, bannerUrl, factoryPhotos, certifications
     } = req.body;
 
@@ -29,13 +30,19 @@ router.post('/profile', protect, requireRole('manufacturer'), async (req, res) =
     if (gstNumber) profile.gstNumber = gstNumber;
     if (panNumber) profile.panNumber = panNumber;
     if (msmeNumber) profile.msmeNumber = msmeNumber;
+    if (udyamNumber) profile.udyamNumber = udyamNumber;
     if (tradeName) profile.tradeName = tradeName;
     if (description) profile.description = description;
     if (mainCategory) profile.mainCategory = mainCategory;
     if (subCategory) profile.subCategory = subCategory;
     if (capacity) profile.capacity = capacity;
+    if (factoryCapacity) profile.factoryCapacity = factoryCapacity;
+    if (contactPerson) profile.contactPerson = contactPerson;
+    if (geoLocation) profile.geoLocation = geoLocation;
     if (bizDocUrl) profile.bizDocUrl = bizDocUrl;
     if (gstCertUrl) profile.gstCertUrl = gstCertUrl;
+    if (certificationDocs) profile.certificationDocs = certificationDocs;
+    if (cinNumber) profile.cinNumber = cinNumber;
     
     // Address mapping
     if (address) {
@@ -70,6 +77,36 @@ router.post('/profile', protect, requireRole('manufacturer'), async (req, res) =
 
     await profile.save();
     res.status(201).json(profile);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// POST /api/manufacturer/activate — Enter 6-digit code to unlock dashboard
+router.post('/activate', protect, requireRole('manufacturer'), async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ message: 'Activation code is required' });
+
+    const profile = await ManufacturerProfile.findOne({ user: req.user._id });
+    if (!profile) return res.status(404).json({ message: 'Profile not found' });
+
+    if (profile.status !== 'approved') {
+      return res.status(400).json({ message: 'Your account is not yet approved by admin.' });
+    }
+
+    if (profile.isActivated) {
+      return res.json({ message: 'Dashboard already activated', profile });
+    }
+
+    if (profile.activationCode !== code) {
+      return res.status(400).json({ message: 'Invalid activation code. Please check your email.' });
+    }
+
+    profile.isActivated = true;
+    await profile.save();
+
+    res.json({ message: 'Dashboard activated successfully!', profile });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
@@ -60,15 +60,26 @@ interface OnboardingForm {
   ifscCode: string
   bankName: string
   branch: string
+  // New Fields
+  udyamNumber: string
+  contactName: string
+  contactDesignation: string
+  contactPhone: string
+  capacityUnits: string
+  capacityPeriod: string
+  lat: string
+  lng: string
 }
 
 const INITIAL: OnboardingForm = {
   yearEstablished: '', employeeCount: '', annualTurnover: '', exportMarkets: '',
   street: '', city: '', state: '', pincode: '', country: 'India',
-  gstNumber: '', panNumber: '', msmeNumber: '', cinNumber: '',
+  gstNumber: '', panNumber: '', msmeNumber: '', udyamNumber: '', cinNumber: '',
   categories: [], certifications: [],
   logo: '', profileBanner: '', factoryImages: [],
   accountName: '', accountNumber: '', ifscCode: '', bankName: '', branch: '',
+  contactName: '', contactDesignation: '', contactPhone: '',
+  capacityUnits: '', capacityPeriod: 'month', lat: '', lng: '',
 }
 
 export default function ManufacturerOnboarding() {
@@ -135,6 +146,20 @@ export default function ManufacturerOnboarding() {
           ifscCode: form.ifscCode,
           bankName: form.bankName,
           branch: form.branch,
+        },
+        udyamNumber: form.udyamNumber,
+        contactPerson: {
+          name: form.contactName,
+          designation: form.contactDesignation,
+          phone: form.contactPhone,
+        },
+        factoryCapacity: {
+          units: form.capacityUnits ? +form.capacityUnits : 0,
+          period: form.capacityPeriod,
+        },
+        geoLocation: {
+          lat: form.lat ? +form.lat : undefined,
+          lng: form.lng ? +form.lng : undefined,
         },
       })
       setSubmitted(true)
@@ -217,7 +242,7 @@ export default function ManufacturerOnboarding() {
           <div className="flex items-center gap-2 bg-sp-peach rounded-xl p-4 mb-6 text-left">
             <Clock className="w-5 h-5 text-amber-600 flex-shrink-0" />
             <p className="text-sm text-amber-700">
-              You'll receive a notification once your account is approved.
+              You'll receive a <strong>confirmation code via email</strong> once your account is approved. You must enter this code to activate your dashboard.
             </p>
           </div>
           <button
@@ -294,9 +319,44 @@ export default function ManufacturerOnboarding() {
                   </select>
                 </FormField>
                 <FormField label="Export Markets (optional)">
-                  <input type="text" placeholder="USA, UAE, UK (comma separated)" className={inputCls}
+                   <input type="text" placeholder="USA, UAE, UK (comma separated)" className={inputCls}
                     value={form.exportMarkets} onChange={e => update('exportMarkets', e.target.value)} />
                 </FormField>
+              </div>
+
+              <div className="pt-4 border-t border-sp-border mt-4">
+                <p className="text-xs font-bold text-sp-muted uppercase tracking-wider mb-4">Primary Contact Person</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField label="Contact Person Name" required>
+                    <input type="text" placeholder="John Doe" className={inputCls}
+                      value={form.contactName} onChange={e => update('contactName', e.target.value)} />
+                  </FormField>
+                  <FormField label="Designation" required>
+                    <input type="text" placeholder="Sales Manager / COO" className={inputCls}
+                      value={form.contactDesignation} onChange={e => update('contactDesignation', e.target.value)} />
+                  </FormField>
+                  <FormField label="Phone Number" required>
+                    <input type="tel" placeholder="+91 XXXXX XXXXX" className={inputCls}
+                      value={form.contactPhone} onChange={e => update('contactPhone', e.target.value)} />
+                  </FormField>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-sp-border mt-4">
+                <p className="text-xs font-bold text-sp-muted uppercase tracking-wider mb-4">Production Capacity</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField label="Units per Month" required>
+                    <input type="number" placeholder="5000" className={inputCls}
+                      value={form.capacityUnits} onChange={e => update('capacityUnits', e.target.value)} />
+                  </FormField>
+                  <FormField label="Unit Type">
+                    <select className={inputCls} value={form.capacityPeriod} onChange={e => update('capacityPeriod', e.target.value)}>
+                      <option value="month">per Month</option>
+                      <option value="week">per Week</option>
+                      <option value="year">per Year</option>
+                    </select>
+                  </FormField>
+                </div>
               </div>
             </div>
           )}
@@ -327,6 +387,20 @@ export default function ManufacturerOnboarding() {
                     value={form.country} onChange={e => update('country', e.target.value)} />
                 </FormField>
               </div>
+
+              <div className="pt-4 border-t border-sp-border mt-4">
+                <p className="text-xs font-bold text-sp-muted uppercase tracking-wider mb-4">Geo-Location (Optional)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField label="Latitude">
+                    <input type="text" placeholder="19.0760" className={inputCls}
+                      value={form.lat} onChange={e => update('lat', e.target.value)} />
+                  </FormField>
+                  <FormField label="Longitude">
+                    <input type="text" placeholder="72.8777" className={inputCls}
+                      value={form.lng} onChange={e => update('lng', e.target.value)} />
+                  </FormField>
+                </div>
+              </div>
             </div>
           )}
 
@@ -354,6 +428,10 @@ export default function ManufacturerOnboarding() {
                 <FormField label="MSME Number (optional)">
                   <input type="text" placeholder="MSME-XXXXXXXX" className={inputCls}
                     value={form.msmeNumber} onChange={e => update('msmeNumber', e.target.value)} />
+                </FormField>
+                <FormField label="Udyam Registration Number" required>
+                  <input type="text" placeholder="UDYAM-XX-00-0000000" className={inputCls}
+                    value={form.udyamNumber} onChange={e => update('udyamNumber', e.target.value)} />
                 </FormField>
                 <FormField label="CIN Number (optional)">
                   <input type="text" placeholder="L17110MH1973PLC019786" className={inputCls}

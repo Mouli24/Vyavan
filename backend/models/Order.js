@@ -45,6 +45,8 @@ const orderSchema = new mongoose.Schema({
   review: { type: mongoose.Schema.Types.ObjectId, ref: 'Review' },
   deliveredAt: { type: Date },
   reviewReminderSent: { type: Boolean, default: false },
+  appliedRewardValue: { type: Number, default: 0 },
+  appliedGroupId: { type: mongoose.Schema.Types.ObjectId, ref: 'BuyerGroup' },
 }, { timestamps: true });
 
 export default mongoose.model('Order', orderSchema);

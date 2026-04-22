@@ -104,6 +104,8 @@ export const api = {
     expectedDate: string;
     products?: { product: string; quantity: number }[];
     deliveryAddress?: Address;
+    appliedRewardValue?: number;
+    appliedGroupId?: string;
   }) => request<Order>('/orders', { method: 'POST', body: JSON.stringify(data) }),
 
   updateOrderStatus: (id: string, status: string) =>
@@ -256,16 +258,34 @@ export const api = {
 
   getAdminAnalytics: () => request<any>('/admin/analytics'),
 
-  getAdminManufacturers: (params?: { status?: string; page?: number; limit?: number }) => {
-    const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([,v]) => v !== undefined).map(([k,v]) => [k, String(v)]))).toString() : '';
+  getAdminManufacturers: (params?: { status?: string; page?: number; limit?: number; name?: string; city?: string; state?: string; plan?: string; sector?: string }) => {
+    const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([,v]) => v !== undefined && v !== '').map(([k,v]) => [k, String(v)]))).toString() : '';
     return request<{ data: any[]; total: number; page: number }>(`/admin/manufacturers${qs}`);
   },
+
+  getAdminManufacturerProfile: (id: string) =>
+    request<{ user: any; profile: any; stats: any }>(`/admin/manufacturers/${id}/profile`),
+
+  getAdminManufacturerBuyers: (id: string) =>
+    request<{ buyers: any[] }>(`/admin/manufacturers/${id}/buyers`),
+
+  changeManufacturerPlan: (id: string, plan: string) =>
+    request<any>(`/admin/manufacturers/${id}/plan`, { method: 'PATCH', body: JSON.stringify({ plan }) }),
+
+  resetManufacturerPassword: (id: string) =>
+    request<any>(`/admin/manufacturers/${id}/reset-password`, { method: 'POST' }),
+
+  suspendManufacturer: (id: string) =>
+    request<any>(`/admin/manufacturers/${id}/suspend`, { method: 'PATCH' }),
 
   approveManufacturer: (id: string) =>
     request<any>(`/admin/manufacturers/${id}/approve`, { method: 'PATCH' }),
 
   rejectManufacturer: (id: string, reason?: string) =>
     request<any>(`/admin/manufacturers/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
+
+  requestMoreDocs: (id: string, note: string) =>
+    request<any>(`/admin/manufacturers/${id}/request-docs`, { method: 'PATCH', body: JSON.stringify({ note }) }),
 
   getAdminComplaints: (params?: { status?: string; limit?: number }) => {
     const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([,v]) => v !== undefined).map(([k,v]) => [k, String(v)]))).toString() : '';
@@ -477,6 +497,29 @@ export const api = {
 
   replyToReview: (id: string, text: string) =>
     request<Review>(`/reviews/${id}/reply`, { method: 'PATCH', body: JSON.stringify({ text }) }),
+
+  // ── groups ───────────────────────────────────────────────────────────────
+  getBuyerPool: () => request<BuyerPoolMember[]>('/groups/pool'),
+  
+  getGroups: () => request<BuyerGroup[]>('/groups'),
+  
+  createGroup: (data: Partial<BuyerGroup>) => 
+    request<BuyerGroup>('/groups', { method: 'POST', body: JSON.stringify(data) }),
+    
+  addMembersToGroup: (groupId: string, buyerIds: string[]) =>
+    request<{ message: string }>('/groups/members/add', { method: 'POST', body: JSON.stringify({ groupId, buyerIds }) }),
+    
+  removeMemberFromGroup: (buyerId: string) =>
+    request<{ message: string }>('/groups/members/remove', { method: 'DELETE', body: JSON.stringify({ buyerId }) }),
+    
+  checkGroupReward: (manufacturerId: string) =>
+    request<{ hasReward: boolean, groupId?: string, groupName?: string, rewardType?: string, rewardValue?: number }>(`/groups/check/${manufacturerId}`),
+    
+  getMyRewards: () => 
+    request<any[]>('/groups/my-rewards'),
+
+  activateManufacturer: (code: string) =>
+    request<any>('/manufacturer/activate', { method: 'POST', body: JSON.stringify({ code }) }),
 };
 
 
@@ -491,6 +534,7 @@ export interface User {
   location?: string;
   avatar?: string;
   manufacturerStatus?: 'pending' | 'approved' | 'rejected' | 'suspended';
+  isActivated?: boolean;
   isActive?: boolean;
   addresses?: Address[];
 }
@@ -702,4 +746,26 @@ export interface Review {
   isEdited: boolean;
   isFlagged: boolean;
   createdAt: string;
+}
+
+export interface BuyerGroup {
+  _id: string;
+  name: string;
+  description?: string;
+  rewardType: 'percentage_discount' | 'flat_discount' | 'free_shipping' | 'priority_badge';
+  rewardValue: number;
+  isActive: boolean;
+  memberCount?: number;
+}
+
+export interface BuyerPoolMember {
+  _id: string;
+  name: string;
+  email: string;
+  lastLogin?: string;
+  accountAgeMonths: number;
+  totalOrders: number;
+  totalSpent: number;
+  lastOrderDate?: string;
+  currentGroup?: { id: string, name: string } | null;
 }

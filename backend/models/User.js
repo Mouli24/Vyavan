@@ -22,6 +22,12 @@ const userSchema = new mongoose.Schema({
   isActive:    { type: Boolean, default: true },
   lastLogin:   { type: Date },
   loginCount:  { type: Number, default: 0 },
+  mustResetPassword: { type: Boolean, default: false },
+  loginHistory: [{
+    ip: String,
+    browser: String,
+    timestamp: { type: Date, default: Date.now }
+  }],
 
   // Buyer verification
   isVerified:  { type: Boolean, default: false },

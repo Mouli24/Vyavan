@@ -35,6 +35,8 @@ import ManufacturerSettings   from './pages/manufacturer/ManufacturerSettings'
 import ScheduledCalls         from './pages/manufacturer/ScheduledCalls'
 import HolidaySettings        from './pages/manufacturer/HolidaySettings'
 import ManufacturerReviews     from './pages/manufacturer/ManufacturerReviews'
+import ManufacturerGroups      from './pages/manufacturer/ManufacturerGroups'
+import BuyerPool                from './pages/manufacturer/BuyerPool'
 
 // Admin pages
 import AdminDashboard         from './pages/admin/AdminDashboard'
@@ -47,6 +49,8 @@ import AdminOrders            from './pages/admin/AdminOrders'
 import AdminSettings          from './pages/admin/AdminSettings'
 import AdminPayments          from './pages/admin/AdminPayments'
 import AdminContent           from './pages/admin/AdminContent'
+import AdminComingSoon        from './pages/admin/AdminComingSoon'
+import AdminManufacturerDetail from './pages/admin/AdminManufacturerDetail'
 
 // Public pages
 import CompanyStorefront      from './pages/company/CompanyStorefront'
@@ -130,6 +134,8 @@ export default function App() {
           <Route path="holidays"        element={<HolidaySettings />} />
           <Route path="settings"        element={<ManufacturerSettings />} />
           <Route path="reviews"         element={<ManufacturerReviews />} />
+          <Route path="groups"          element={<ManufacturerGroups />} />
+          <Route path="groups/pool"     element={<BuyerPool />} />
         </Route>
 
         <Route path="/manufacturer/onboarding" element={
@@ -147,6 +153,7 @@ export default function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard"      element={<AdminDashboard />} />
           <Route path="manufacturers"  element={<AdminManufacturers />} />
+          <Route path="manufacturers/:id" element={<AdminManufacturerDetail />} />
           <Route path="verification"   element={<AdminVerification />} />
           <Route path="buyers"         element={<AdminBuyers />} />
           <Route path="orders"         element={<AdminOrders />} />
@@ -155,6 +162,16 @@ export default function App() {
           <Route path="analytics"      element={<AdminAnalytics />} />
           <Route path="content"        element={<AdminContent />} />
           <Route path="settings"       element={<AdminSettings />} />
+
+          {/* Placeholders for new modules */}
+          <Route path="monitoring/*"   element={<AdminComingSoon />} />
+          <Route path="orders/stuck"   element={<AdminComingSoon />} />
+          <Route path="disputes/*"     element={<AdminComingSoon />} />
+          <Route path="finance/*"      element={<AdminComingSoon />} />
+          <Route path="analytics/*"    element={<AdminComingSoon />} />
+          <Route path="plans"          element={<AdminComingSoon />} />
+          <Route path="communicate/*"  element={<AdminComingSoon />} />
+          <Route path="settings/*"     element={<AdminComingSoon />} />
         </Route>
 
         {/* ── Catch-all ── */}

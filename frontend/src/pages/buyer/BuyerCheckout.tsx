@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, Address } from '@/lib/api'
 import { Mail, Shield, CheckCircle, Package, ArrowLeft, Loader2, CreditCard, MapPin, Navigation, Plus, Map, Calendar } from 'lucide-react'
@@ -14,6 +14,7 @@ export default function BuyerCheckout() {
   const [processing, setProcessing] = useState(false)
   const [step, setStep] = useState(1)
   const [mfrHolidays, setMfrHolidays] = useState<Record<string, any>>({})
+  const [groupRewards, setGroupRewards] = useState<Record<string, any>>({})
 
   // Address States
   const [addresses, setAddresses] = useState<Address[]>([])
@@ -61,6 +62,13 @@ export default function BuyerCheckout() {
             .then(info => {
               if (info.isOnHoliday) {
                 setMfrHolidays(prev => ({ ...prev, [id as string]: info }))
+              }
+            }).catch(() => {})
+          
+          api.checkGroupReward(id as string)
+            .then(res => {
+              if (res.hasReward) {
+                setGroupRewards(prev => ({ ...prev, [id as string]: res }))
               }
             }).catch(() => {})
         })
@@ -186,13 +194,26 @@ export default function BuyerCheckout() {
       for (const mId in groupedCart) {
         const items = groupedCart[mId]
         const subtotal = items.reduce((s: number, i: any) => s + (i.product?.price ?? 0) * i.quantity, 0)
-        const total = subtotal * 1.18
+        
+        const reward = groupRewards[mId]
+        let rewardAmount = 0
+        if (reward) {
+          if (reward.rewardType === 'percentage_discount') {
+            rewardAmount = subtotal * (reward.rewardValue / 100)
+          } else if (reward.rewardType === 'flat_discount') {
+            rewardAmount = Math.min(reward.rewardValue, subtotal)
+          }
+        }
+
+        const total = (subtotal - rewardAmount) * 1.18
         
         await api.placeOrder({
           manufacturer: mId,
           items: items.map((i: any) => `${i.product.name} (x${i.quantity})`).join(', '),
           value: `₹${total.toLocaleString('en-IN')}`,
           valueRaw: total,
+          appliedRewardValue: rewardAmount,
+          appliedGroupId: reward?.groupId,
           products: items.map((i: any) => ({
             product: i.product._id,
             quantity: i.quantity
@@ -430,20 +451,58 @@ export default function BuyerCheckout() {
               {cart.length === 0 && <p className="text-sm text-slate-400 py-4">Your cart is empty.</p>}
             </div>
 
-            <div className="border-t border-sp-border pt-4 space-y-3 mb-6">
               <div className="flex justify-between text-sm text-slate-500 font-medium">
                 <span>Subtotal</span>
                 <span>₹{cartTotal.toLocaleString('en-IN')}</span>
               </div>
+              
+              {Object.entries(groupRewards).map(([mId, reward]: [string, any]) => {
+                const mItems = cart.filter(i => i.product?.manufacturer?._id === mId)
+                const mSubtotal = mItems.reduce((s, i) => s + (i.product?.price ?? 0) * i.quantity, 0)
+                let mDiscount = 0
+                if (reward.rewardType === 'percentage_discount') mDiscount = mSubtotal * (reward.rewardValue / 100)
+                else if (reward.rewardType === 'flat_discount') mDiscount = Math.min(reward.rewardValue, mSubtotal)
+                
+                if (mDiscount === 0 && reward.rewardType !== 'free_shipping') return null
+
+                return (
+                  <div key={mId} className="flex justify-between text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
+                    <span className="flex items-center gap-1">
+                      <Star size={10} className="fill-current" /> {reward.groupName}
+                    </span>
+                    <span>
+                      {reward.rewardType === 'free_shipping' ? 'Free Shipping' : `- ₹${mDiscount.toLocaleString('en-IN')}`}
+                    </span>
+                  </div>
+                )
+              })}
+
               <div className="flex justify-between text-sm text-slate-500 font-medium">
                 <span>Estimated Tax (18% GST)</span>
-                <span>₹{(cartTotal * 0.18).toLocaleString('en-IN')}</span>
+                {(() => {
+                  const totalDiscount = Object.entries(groupRewards).reduce((acc, [mId, reward]: [string, any]) => {
+                    const mItems = cart.filter(i => i.product?.manufacturer?._id === mId)
+                    const mSubtotal = mItems.reduce((s, i) => s + (i.product?.price ?? 0) * i.quantity, 0)
+                    if (reward.rewardType === 'percentage_discount') return acc + (mSubtotal * (reward.rewardValue / 100))
+                    if (reward.rewardType === 'flat_discount') return acc + Math.min(reward.rewardValue, mSubtotal)
+                    return acc
+                  }, 0)
+                  return <span>₹{((cartTotal - totalDiscount) * 0.18).toLocaleString('en-IN')}</span>
+                })()}
               </div>
               <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-sp-border">
                 <span>Total Amount</span>
-                <span>₹{(cartTotal * 1.18).toLocaleString('en-IN')}</span>
+                {(() => {
+                  const totalDiscount = Object.entries(groupRewards).reduce((acc, [mId, reward]: [string, any]) => {
+                    const mItems = cart.filter(i => i.product?.manufacturer?._id === mId)
+                    const mSubtotal = mItems.reduce((s, i) => s + (i.product?.price ?? 0) * i.quantity, 0)
+                    if (reward.rewardType === 'percentage_discount') return acc + (mSubtotal * (reward.rewardValue / 100))
+                    if (reward.rewardType === 'flat_discount') return acc + Math.min(reward.rewardValue, mSubtotal)
+                    return acc
+                  }, 0)
+                  return <span>₹{((cartTotal - totalDiscount) * 1.18).toLocaleString('en-IN')}</span>
+                })()}
               </div>
-            </div>
 
             {/* Mock OTP Area */}
             <AnimatePresence>

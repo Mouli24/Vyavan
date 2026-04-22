@@ -9,8 +9,10 @@ import { VyawanIcon } from '../VyawanLogo'
 import {
   LayoutDashboard, Store, Truck, MessageSquare, CreditCard,
   AlertCircle, Settings, HelpCircle, Zap, LogOut, ClipboardList,
-  ShoppingCart, Boxes, CalendarClock, CalendarDays, Menu, X, Star
+  ShoppingCart, Boxes, CalendarClock, CalendarDays, Menu, X, Star, Users, Lock, KeyRound
 } from 'lucide-react'
+import { api } from '@/lib/api'
+import { toast } from 'sonner'
 
 const getNavItems = (t: any) => [
   { icon: <LayoutDashboard size={16} />, label: t('navigation.overview'),            to: '/manufacturer/overview' },
@@ -24,6 +26,7 @@ const getNavItems = (t: any) => [
   { icon: <CalendarClock size={16} />,   label: t('navigation.scheduledCalls', 'Scheduled Calls'),     to: '/manufacturer/scheduled-calls' },
   { icon: <CalendarDays size={16} />,    label: t('navigation.holidays', 'Holiday & Availability'), to: '/manufacturer/holidays' },
   { icon: <Star size={16} />,            label: 'Reviews',                           to: '/manufacturer/reviews' },
+  { icon: <Users size={16} />,           label: 'Buyer Groups',                      to: '/manufacturer/groups' },
   { icon: <ClipboardList size={16} />,   label: t('navigation.onboarding'),          to: '/manufacturer/onboarding' },
 ]
 
@@ -115,6 +118,32 @@ export default function ManufacturerLayout() {
     </>
   )
 
+  // ── Activation Handler ─────────────────────────────────────────────────────
+  const [activationCode, setActivationCode] = useState('')
+  const [activating, setActivating] = useState(false)
+
+  const handleActivate = async () => {
+    if (activationCode.length !== 6) {
+      toast.error('Please enter a 6-digit code')
+      return
+    }
+    setActivating(true)
+    try {
+      await api.activateManufacturer(activationCode)
+      toast.success('Dashboard activated! Welcome.')
+      // Refresh the user/profile to clear the gate
+      window.location.reload() 
+    } catch (e: any) {
+      toast.error(e.message || 'Activation failed')
+    } finally {
+      setActivating(false)
+    }
+  }
+
+  const isApprovedButNotActivated = user?.role === 'manufacturer' && 
+                                    user?.manufacturerStatus === 'approved' && 
+                                    user?.isActivated === false
+
   return (
     <div className="flex h-screen overflow-hidden bg-white">
 
@@ -152,8 +181,49 @@ export default function ManufacturerLayout() {
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto bg-sp-bg/20">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto bg-sp-bg/20 relative">
+          {isApprovedButNotActivated ? (
+            <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-md flex items-center justify-center p-6">
+              <div className="bg-white rounded-3xl border border-mfr-border shadow-2xl p-8 max-w-sm w-full text-center">
+                <div className="w-16 h-16 bg-mfr-brown-pale rounded-full flex items-center justify-center mx-auto mb-6">
+                  <KeyRound className="w-8 h-8 text-mfr-brown" />
+                </div>
+                <h3 className="text-xl font-bold text-mfr-dark mb-2">Activate Your Dashboard</h3>
+                <p className="text-sm text-mfr-muted mb-6 leading-relaxed">
+                  Your account is approved! Enter the <strong>6-digit activation code</strong> sent to your registered email to unlock your dashboard.
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-mfr-muted" />
+                    <input
+                      type="text"
+                      maxLength={6}
+                      placeholder="Enter 6-digit code"
+                      className="w-full pl-12 pr-4 py-3 bg-mfr-bg border border-mfr-border rounded-xl text-center text-lg font-bold tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-mfr-brown/20 focus:border-mfr-brown"
+                      value={activationCode}
+                      onChange={e => setActivationCode(e.target.value.replace(/\D/g, ''))}
+                    />
+                  </div>
+                  
+                  <button
+                    onClick={handleActivate}
+                    disabled={activating || activationCode.length !== 6}
+                    className="w-full py-3.5 bg-mfr-brown hover:bg-mfr-brown-hover text-white font-bold rounded-xl shadow-lg hover:opacity-90 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
+                  >
+                    {activating ? 'Activating...' : 'Activate Dashboard'}
+                    <Zap className="w-4 h-4" />
+                  </button>
+                  
+                  <p className="text-xs text-mfr-muted">
+                    Didn't receive the code? Check your spam folder or contact support.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Outlet />
+          )}
         </main>
       </div>
     </div>

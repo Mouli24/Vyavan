@@ -129,6 +129,16 @@ export default function Inventory() {
     }, 800)
   }
 
+  const handleToggleStock = async (row: StockRow) => {
+    try {
+      const newStock = row.available > 0 ? 0 : row.reorderLevel * 2; // Simple reset to healthy if OOS
+      await api.updateProduct(row.product._id, { stock: newStock });
+      fetchProducts();
+    } catch (e) {
+      alert('Failed to update stock status');
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
@@ -271,6 +281,18 @@ export default function Inventory() {
                   <Badge className={`rounded-full px-3 py-1 text-[10px] font-bold w-fit ${STATUS_STYLE[row.status]}`}>
                     {row.status}
                   </Badge>
+
+                  {/* Actions (New) */}
+                  <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleToggleStock(row)}
+                      className={`text-[10px] font-black uppercase tracking-tight rounded-xl ${row.available > 0 ? 'text-red-500 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
+                    >
+                      {row.available > 0 ? 'Mark OOS' : 'Restock'}
+                    </Button>
+                  </div>
                 </motion.div>
               ))}
             </AnimatePresence>

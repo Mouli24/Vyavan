@@ -1,11 +1,11 @@
-﻿import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ShoppingCart, Truck, Handshake, ScanLine,
   Search, ChevronDown, Loader2,
   Share2, AtSign, Camera, ShoppingBag,
   User, Package, X, Check, BellOff,
-  PhoneCall, MessageCircle, Home, Tag,
+  PhoneCall, MessageCircle, Home, Tag, Factory, Trophy, ShieldCheck
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { api, Product, Notification as NotifType } from '@/lib/api'
@@ -68,6 +68,7 @@ export default function BuyerDashboard() {
   const [cartOpen, setCartOpen] = useState(false)
   const [email, setEmail] = useState('')
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [rewards, setRewards] = useState<any[]>([])
 
   useEffect(() => {
     // Fetch Products
@@ -84,6 +85,8 @@ export default function BuyerDashboard() {
         }
       })
       .catch(console.error)
+
+    api.getMyRewards().then(setRewards).catch(console.error)
   }, [])
 
   const addToCart = async (product: Product) => {
@@ -280,6 +283,47 @@ export default function BuyerDashboard() {
           )
         })()}
 
+        {/* ── Premium Rewards (New) ── */}
+        {rewards.length > 0 && (
+          <div className="animate-in fade-in slide-in-from-left-5 duration-700">
+            <h3 className="text-base font-black text-slate-900 mb-4 flex items-center gap-2 uppercase tracking-widest">
+              <Trophy size={16} className="text-amber-500" /> Your Premium Perks
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {rewards.map((reward, idx) => (
+                <motion.div 
+                  key={idx}
+                  whileHover={{ scale: 1.02 }}
+                  className="bg-white border-2 border-[#FCE7D6] rounded-3xl p-5 shadow-sm relative overflow-hidden group"
+                >
+                  <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <Factory size={100} />
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-[#EDE8DF] flex items-center justify-center text-[#5D4037] shadow-inner">
+                      <Star size={20} className="fill-current" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-black text-[#8B7355] uppercase tracking-widest leading-none mb-1">
+                        {reward.manufacturer?.company || 'Manufacturer'}
+                      </p>
+                      <h4 className="text-lg font-black text-slate-900 leading-tight truncate">{reward.groupName}</h4>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-dashed border-[#F9D5B8] flex items-center justify-between">
+                     <span className="text-xs font-bold text-slate-500">Active Reward:</span>
+                     <span className="bg-[#7C3AED] text-white text-[10px] font-black px-3 py-1 rounded-full uppercase shadow-lg shadow-purple-500/20">
+                        {reward.rewardType === 'percentage_discount' ? `${reward.rewardValue}% OFF` :
+                         reward.rewardType === 'flat_discount' ? `₹${reward.rewardValue} OFF` :
+                         reward.rewardType === 'free_shipping' ? 'FREE SHIPPING' : 'PRIORITY'}
+                     </span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Featured Products ── */}
         <div className="mt-12">
           {/* Title row */}
@@ -357,7 +401,7 @@ export default function BuyerDashboard() {
                     className="bg-white rounded-[1.5rem] overflow-hidden border border-sp-border hover:shadow-lg hover:-translate-y-1 transition-all group cursor-pointer"
                   >
                     {/* Image */}
-                    <div className="aspect-[4/3] bg-slate-50 overflow-hidden">
+                    <div className="aspect-[4/3] bg-slate-50 overflow-hidden relative">
                       {product.image ? (
                         <img
                           src={product.image}
@@ -369,11 +413,28 @@ export default function BuyerDashboard() {
                           <Package size={40} />
                         </div>
                       )}
+                      
+                      {/* OOS Overlay (New) */}
+                      {(product.stock ?? 0) <= 0 && (
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
+                          <span className="bg-red-500 text-white text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-lg shadow-xl translate-y-1">
+                            Out of Stock
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Info */}
                     <div className="p-4">
-                      <p className={`text-xs font-bold mb-1 ${catColor}`}>{cat}</p>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className={`text-[10px] font-extrabold uppercase tracking-widest ${catColor}`}>{cat}</p>
+                        {(product.manufacturer as any)?.manufacturerStatus === 'approved' && (
+                          <div className="flex items-center gap-1 bg-sp-mint/30 px-1.5 py-0.5 rounded-full" title="Verified Manufacturer">
+                            <ShieldCheck className="w-3 h-3 text-sp-success" />
+                            <span className="text-[9px] font-bold text-sp-success uppercase">Verified</span>
+                          </div>
+                        )}
+                      </div>
                       <h4 className="font-bold text-slate-800 text-sm leading-tight mb-2 line-clamp-2">{product.name}</h4>
                       <p className="text-base font-black text-slate-900 mb-3">
                         ₹{(product.price ?? 0).toLocaleString('en-IN')}
@@ -382,10 +443,11 @@ export default function BuyerDashboard() {
                       <div className="grid grid-cols-2 gap-2 mt-3">
                         <button
                           onClick={(e) => { e.stopPropagation(); addToCart(product) }}
-                          className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all ${btnBg} border border-transparent`}
+                          disabled={(product.stock ?? 0) <= 0}
+                          className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all ${btnBg} border border-transparent disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed`}
                         >
                           <ShoppingCart size={14} />
-                          {inCart ? `In Cart (${inCart.qty})` : 'Add'}
+                          {(product.stock ?? 0) <= 0 ? 'Sold Out' : inCart ? `In Cart (${inCart.qty})` : 'Add'}
                         </button>
                         <button
                           onClick={(e) => {

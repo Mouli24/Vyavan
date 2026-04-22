@@ -13,7 +13,8 @@ router.get('/', async (req, res) => {
     const filter = { isActive: true };
     if (category) filter.category = category;
     if (manufacturer) filter.manufacturer = manufacturer;
-    const products = await Product.find(filter).populate('manufacturer', 'name company location');
+    const products = await Product.find(filter)
+      .populate('manufacturer', 'name company location manufacturerStatus');
     res.json(products);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -33,7 +34,8 @@ router.get('/mine', protect, requireRole('manufacturer'), async (req, res) => {
 // GET /api/products/:id
 router.get('/:id', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate('manufacturer', 'name company location');
+    const product = await Product.findById(req.params.id)
+      .populate('manufacturer', 'name company location manufacturerStatus');
     if (!product) return res.status(404).json({ message: 'Product not found' });
     res.json(product);
   } catch (err) {
