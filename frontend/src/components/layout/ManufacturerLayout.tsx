@@ -1,34 +1,44 @@
 import { useState } from 'react'
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { useTranslation } from 'react-i18next'
 import NotificationBell from '../NotificationBell'
+import LanguageToggle from '../LanguageToggle'
 import { VerticalDock } from '../Dock'
+import { VyawanIcon } from '../VyawanLogo'
 import {
   LayoutDashboard, Store, Truck, MessageSquare, CreditCard,
   AlertCircle, Settings, HelpCircle, Zap, LogOut, ClipboardList,
-  ShoppingCart, Boxes, CalendarClock, CalendarDays, Menu, X, Wallet
+  ShoppingCart, Boxes, CalendarClock, CalendarDays, Menu, X, Wallet, Star, Users, Lock, KeyRound
 } from 'lucide-react'
+import { api } from '@/lib/api'
+import { toast } from 'sonner'
 
-const NAV_ITEMS = [
-  { icon: <LayoutDashboard size={16} />, label: 'Overview',            to: '/manufacturer/overview' },
-  { icon: <Store size={16} />,           label: 'My Store',            to: '/manufacturer/store' },
-  { icon: <ShoppingCart size={16} />,    label: 'Orders',              to: '/manufacturer/orders' },
-  { icon: <Wallet size={16} />,          label: 'Receivables',         to: '/manufacturer/receivables' },
-  { icon: <Boxes size={16} />,           label: 'Inventory',           to: '/manufacturer/inventory' },
-  { icon: <Truck size={16} />,           label: 'Shipment',            to: '/manufacturer/shipment' },
-  { icon: <MessageSquare size={16} />,   label: 'Negotiation',         to: '/manufacturer/negotiation' },
-  { icon: <CreditCard size={16} />,      label: 'Payment',             to: '/manufacturer/payment' },
-  { icon: <AlertCircle size={16} />,     label: 'Complaints',          to: '/manufacturer/complaints' },
-  { icon: <CalendarClock size={16} />,   label: 'Scheduled Calls',     to: '/manufacturer/scheduled-calls' },
-  { icon: <CalendarDays size={16} />,    label: 'Holiday & Availability', to: '/manufacturer/holidays' },
-  { icon: <ClipboardList size={16} />,   label: 'Onboarding',          to: '/manufacturer/onboarding' },
+const getNavItems = (t: any) => [
+  { icon: <LayoutDashboard size={16} />, label: t('navigation.overview'),            to: '/manufacturer/overview' },
+  { icon: <Store size={16} />,           label: t('navigation.myStore'),            to: '/manufacturer/store' },
+  { icon: <ShoppingCart size={16} />,    label: t('navigation.orders'),              to: '/manufacturer/orders' },
+  { icon: <Wallet size={16} />,          label: t('navigation.receivables', 'Receivables'), to: '/manufacturer/receivables' },
+  { icon: <Boxes size={16} />,           label: t('navigation.inventory'),           to: '/manufacturer/inventory' },
+  { icon: <Truck size={16} />,           label: t('navigation.shipment'),            to: '/manufacturer/shipment' },
+  { icon: <MessageSquare size={16} />,   label: t('navigation.negotiation'),         to: '/manufacturer/negotiation' },
+  { icon: <CreditCard size={16} />,      label: t('navigation.payment'),             to: '/manufacturer/payment' },
+  { icon: <AlertCircle size={16} />,     label: t('navigation.complaints'),          to: '/manufacturer/complaints' },
+  { icon: <CalendarClock size={16} />,   label: t('navigation.scheduledCalls', 'Scheduled Calls'),     to: '/manufacturer/scheduled-calls' },
+  { icon: <CalendarDays size={16} />,    label: t('navigation.holidays', 'Holiday & Availability'), to: '/manufacturer/holidays' },
+  { icon: <Star size={16} />,            label: t('navigation.reviews', 'Reviews'),                           to: '/manufacturer/reviews' },
+  { icon: <Users size={16} />,           label: t('navigation.groups', 'Buyer Groups'),                      to: '/manufacturer/groups' },
+  { icon: <ClipboardList size={16} />,   label: t('navigation.onboarding'),          to: '/manufacturer/onboarding' },
 ]
 
 export default function ManufacturerLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuth()
+  const { t } = useTranslation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const NAV_ITEMS = getNavItems(t)
 
   // Build dock items for primary nav
   const navDockItems = NAV_ITEMS.map(item => ({
@@ -42,7 +52,7 @@ export default function ManufacturerLayout() {
   const bottomDockItems = [
     {
       icon: <Settings size={16} />,
-      label: 'General Settings',
+      label: t('navigation.settings', 'General Settings'),
       onClick: () => { navigate('/manufacturer/settings'); setSidebarOpen(false) },
       isActive: location.pathname === '/manufacturer/settings',
     },
@@ -59,7 +69,7 @@ export default function ManufacturerLayout() {
     },
     {
       icon: <LogOut size={16} />,
-      label: 'Logout',
+      label: t('navigation.logout'),
       onClick: () => { logout(); navigate('/') },
       className: 'hover:!bg-red-50 hover:!text-red-600',
     },
@@ -69,12 +79,12 @@ export default function ManufacturerLayout() {
     <>
       {/* Logo */}
       <div className="mb-6 px-2 flex items-center gap-3">
-        <div className="w-9 h-9 gradient-card-purple rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
-          <LayoutDashboard size={18} className="text-white" />
-        </div>
-        <Link to="/manufacturer" className="flex-1 min-w-0" onClick={() => setSidebarOpen(false)}>
-          <h1 className="font-semibold text-sm leading-tight text-mfr-dark truncate">{user?.company ?? 'Manufacturer'}</h1>
-          <p className="text-[10px] uppercase tracking-widest text-mfr-muted font-medium mt-0.5">Atelier Hub</p>
+        <Link to="/manufacturer" className="flex items-center gap-2.5 flex-1 min-w-0" onClick={() => setSidebarOpen(false)}>
+          <VyawanIcon size={32} />
+          <div className="min-w-0">
+            <h1 className="font-black text-sm leading-tight text-mfr-dark tracking-tight">Vyawan</h1>
+            <p className="text-[10px] uppercase tracking-widest text-mfr-muted font-medium mt-0.5 truncate">{user?.company ?? 'Manufacturer'}</p>
+          </div>
         </Link>
         <button className="lg:hidden p-1 text-mfr-muted" onClick={() => setSidebarOpen(false)}>
           <X size={18} />
@@ -115,6 +125,32 @@ export default function ManufacturerLayout() {
     </>
   )
 
+  // ── Activation Handler ─────────────────────────────────────────────────────
+  const [activationCode, setActivationCode] = useState('')
+  const [activating, setActivating] = useState(false)
+
+  const handleActivate = async () => {
+    if (activationCode.length !== 6) {
+      toast.error('Please enter a 6-digit code')
+      return
+    }
+    setActivating(true)
+    try {
+      await api.activateManufacturer(activationCode)
+      toast.success('Dashboard activated! Welcome.')
+      // Refresh the user/profile to clear the gate
+      window.location.reload() 
+    } catch (e: any) {
+      toast.error(e.message || 'Activation failed')
+    } finally {
+      setActivating(false)
+    }
+  }
+
+  const isApprovedButNotActivated = user?.role === 'manufacturer' && 
+                                    user?.manufacturerStatus === 'approved' && 
+                                    user?.isActivated === false
+
   return (
     <div className="flex h-screen overflow-hidden bg-white">
 
@@ -145,11 +181,56 @@ export default function ManufacturerLayout() {
             <Menu size={20} />
           </button>
           <div className="flex-1" />
-          <NotificationBell />
+          <div className="flex items-center gap-2 lg:gap-4">
+            <LanguageToggle />
+            <div className="w-px h-6 bg-gray-200 mx-1 hidden sm:block" />
+            <NotificationBell />
+          </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto bg-sp-bg/20">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto bg-sp-bg/20 relative">
+          {isApprovedButNotActivated ? (
+            <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-md flex items-center justify-center p-6">
+              <div className="bg-white rounded-3xl border border-mfr-border shadow-2xl p-8 max-w-sm w-full text-center">
+                <div className="w-16 h-16 bg-mfr-brown-pale rounded-full flex items-center justify-center mx-auto mb-6">
+                  <KeyRound className="w-8 h-8 text-mfr-brown" />
+                </div>
+                <h3 className="text-xl font-bold text-mfr-dark mb-2">Activate Your Dashboard</h3>
+                <p className="text-sm text-mfr-muted mb-6 leading-relaxed">
+                  Your account is approved! Enter the <strong>6-digit activation code</strong> sent to your registered email to unlock your dashboard.
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-mfr-muted" />
+                    <input
+                      type="text"
+                      maxLength={6}
+                      placeholder="Enter 6-digit code"
+                      className="w-full pl-12 pr-4 py-3 bg-mfr-bg border border-mfr-border rounded-xl text-center text-lg font-bold tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-mfr-brown/20 focus:border-mfr-brown"
+                      value={activationCode}
+                      onChange={e => setActivationCode(e.target.value.replace(/\D/g, ''))}
+                    />
+                  </div>
+                  
+                  <button
+                    onClick={handleActivate}
+                    disabled={activating || activationCode.length !== 6}
+                    className="w-full py-3.5 bg-mfr-brown hover:bg-mfr-brown-hover text-white font-bold rounded-xl shadow-lg hover:opacity-90 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
+                  >
+                    {activating ? 'Activating...' : 'Activate Dashboard'}
+                    <Zap className="w-4 h-4" />
+                  </button>
+                  
+                  <p className="text-xs text-mfr-muted">
+                    Didn't receive the code? Check your spam folder or contact support.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Outlet />
+          )}
         </main>
       </div>
     </div>

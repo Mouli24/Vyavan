@@ -59,7 +59,7 @@ Respond in JSON format:
 }`;
 
     const apiKey = (process.env.GEMINI_API_KEY || '').trim();
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     
     const geminiBody = {
       contents: [{

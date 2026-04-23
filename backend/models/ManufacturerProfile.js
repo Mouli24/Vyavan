@@ -3,11 +3,14 @@ import mongoose from 'mongoose';
 const manufacturerProfileSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
   companyCode: { type: String, unique: true, sparse: true },
+  planType: { type: String, enum: ['Free', 'Basic', 'Premium'], default: 'Free' },
+  sector: { type: String },
 
   // Business verification
   gstNumber:  { type: String, trim: true },
   panNumber:  { type: String, trim: true, uppercase: true },
   msmeNumber: { type: String, trim: true },
+  udyamNumber:{ type: String, trim: true },
   cinNumber:  { type: String, trim: true },
 
   // Address
@@ -18,15 +21,38 @@ const manufacturerProfileSchema = new mongoose.Schema({
     pincode: { type: String },
     country: { type: String, default: 'India' },
   },
+  geoLocation: {
+    lat: Number,
+    lng: Number,
+  },
 
   // Business details
   tradeName:       { type: String },
   description:     { type: String },
   mainCategory:    { type: String },
   subCategory:     { type: String },
-  capacity:        { type: String },
+  capacity:        { type: String }, // Legacy field, keeping for compatibility
+  factoryCapacity: {
+    units:  { type: Number },
+    period: { type: String, default: 'month' }
+  },
+  contactPerson: {
+    name:        String,
+    designation: String,
+    phone:        String,
+  },
   bizDocUrl:       { type: String },
   gstCertUrl:      { type: String },
+  certificationDocs: [{
+    name: String,
+    url:  String,
+  }],
+  documentVault: [{
+    name: String,
+    url: String,
+    type: String, // e.g., 'GST', 'PAN', 'Factory Photo', 'Other'
+    uploadedAt: { type: Date, default: Date.now }
+  }],
   yearEstablished: { type: Number },
   employeeCount:   { type: String, enum: ['1-10', '11-50', '51-200', '201-500', '500+'] },
   annualTurnover:  { type: String },
@@ -53,6 +79,10 @@ const manufacturerProfileSchema = new mongoose.Schema({
   // Admin review
   status:           { type: String, enum: ['pending', 'approved', 'rejected', 'suspended'], default: 'pending' },
   rejectionReason:  String,
+  verificationNote: String, // Admin feedback notes
+  isVerified:       { type: Boolean, default: false },
+  isActivated:      { type: Boolean, default: false },
+  activationCode:   { type: String },
   approvedAt:       Date,
   approvedBy:       { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
@@ -91,11 +121,14 @@ const manufacturerProfileSchema = new mongoose.Schema({
 
   // Stats (cached)
   stats: {
-    totalOrders:   { type: Number, default: 0 },
-    totalRevenue:  { type: Number, default: 0 },
-    avgRating:     { type: Number, default: 0 },
-    totalReviews:  { type: Number, default: 0 },
-    responseRate:  { type: Number, default: 0 },
+    totalOrders:      { type: Number, default: 0 },
+    totalRevenue:     { type: Number, default: 0 },
+    avgRating:        { type: Number, default: 0 },
+    avgQuality:       { type: Number, default: 0 },
+    avgDelivery:      { type: Number, default: 0 },
+    avgCommunication: { type: Number, default: 0 },
+    totalReviews:     { type: Number, default: 0 },
+    responseRate:     { type: Number, default: 0 },
   },
 }, { timestamps: true });
 

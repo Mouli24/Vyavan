@@ -1,4 +1,4 @@
-import HolidayCalendar from './HolidayCalendar';
+﻿import HolidayCalendar from './HolidayCalendar';
 
 export default function HolidaySettings() {
   return (
@@ -13,3 +13,4 @@ export default function HolidaySettings() {
     </div>
   );
 }
+

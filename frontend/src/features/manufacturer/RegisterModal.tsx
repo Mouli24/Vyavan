@@ -38,8 +38,15 @@ type GstStatus = 'idle' | 'validating' | 'valid' | 'invalid'
 type IfscStatus = 'idle' | 'fetching' | 'found'
 type PennyStatus = 'idle' | 'loading' | 'verified'
 
-const inp = "w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all"
-const lbl = "block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide"
+const inp = "w-full px-4 py-3 rounded-xl border border-stone-200 bg-white text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:border-[#6B4E3D] focus:ring-2 focus:ring-[#6B4E3D]/10 transition-all"
+const lbl = "block text-xs font-semibold text-stone-500 mb-1.5 uppercase tracking-wide"
+
+// Theme colors
+const BROWN = '#2C1810'
+const BROWN_MID = '#6B4E3D'
+const PEACH = '#FCE7D6'
+const PEACH_BORDER = '#F9D5B8'
+const BEIGE = '#F5F2ED'
 
 export default function ManufacturerRegisterModal({ open, onClose, onSuccess }: Props) {
   const { register } = useAuth()
@@ -266,7 +273,7 @@ export default function ManufacturerRegisterModal({ open, onClose, onSuccess }: 
       >
         {/* Progress bar */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gray-100 z-10">
-          <motion.div className="h-full" style={{ background: 'linear-gradient(90deg,#6366F1,#8B5CF6)' }}
+          <motion.div className="h-full" style={{ background: 'linear-gradient(90deg,#6B4E3D,#2C1810)' }}
             animate={{ width: `${(step / 5) * 100}%` }} transition={{ duration: 0.3 }} />
         </div>
 
@@ -275,15 +282,15 @@ export default function ManufacturerRegisterModal({ open, onClose, onSuccess }: 
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)' }}>
+                style={{ background: '#2C1810' }}>
                 <Factory size={20} className="text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-900 leading-tight">Manufacturer Registration</h2>
-                <p className="text-xs text-gray-400 mt-0.5">Step {step + 1} of 6 — {STEP_LABELS[step]}</p>
+                <h2 className="text-lg font-bold font-bold leading-tight">Manufacturer Registration</h2>
+                <p className="text-xs mt-0.5">Step {step + 1} of 6 — {STEP_LABELS[step]}</p>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600">
+            <button onClick={onClose} className="p-2 rounded-xl hover:bg-stone-100 transition-colors hover:text-stone-600">
               <X size={18} />
             </button>
           </div>
@@ -296,14 +303,14 @@ export default function ManufacturerRegisterModal({ open, onClose, onSuccess }: 
                 <div key={i} className="flex items-center flex-1">
                   <div className="flex flex-col items-center">
                     <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all flex-shrink-0"
-                      style={{ background: done ? '#10B981' : active ? '#6366F1' : '#F3F4F6', color: done || active ? '#fff' : '#9CA3AF' }}>
+                      style={{ background: done ? '#10B981' : active ? '#2C1810' : '#F5F2ED', color: done || active ? '#fff' : '#9CA3AF' }}>
                       {done ? <Check size={12} /> : i + 1}
                     </div>
                     <span className="text-[9px] mt-1 font-semibold whitespace-nowrap"
-                      style={{ color: active ? '#6366F1' : done ? '#10B981' : '#9CA3AF' }}>{label}</span>
+                      style={{ color: active ? '#2C1810' : done ? '#5D4037' : '#A89F91' }}>{label}</span>
                   </div>
                   {i < 5 && <div className="flex-1 h-0.5 mx-1 mb-3 rounded-full"
-                    style={{ background: done ? '#10B981' : '#E5E7EB' }} />}
+                    style={{ background: done ? '#5D4037' : '#E5E1DA' }} />}
                 </div>
               )
             })}
@@ -407,21 +414,21 @@ export default function ManufacturerRegisterModal({ open, onClose, onSuccess }: 
           {step === 0 ? (
             <button onClick={handleCreateAccount} disabled={submitting}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-60"
-              style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)' }}>
+              style={{ background: '#2C1810' }}>
               {submitting ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
               Verify &amp; Continue
             </button>
           ) : step === 5 ? (
             <button onClick={handleSubmit} disabled={submitting}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-60"
-              style={{ background: 'linear-gradient(135deg,#10B981,#059669)' }}>
+              style={{ background: '#5D4037' }}>
               {submitting ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
               Complete Registration
             </button>
           ) : (
             <button onClick={goNext}
               className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all"
-              style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)' }}>
+              style={{ background: '#2C1810' }}>
               Continue <ChevronRight size={15} />
             </button>
           )}
@@ -462,7 +469,7 @@ function StepAccount({ email, setEmail, password, setPassword, showPassword, set
           <input type={showPassword ? 'text' : 'password'} placeholder="Min. 6 characters"
             className={inp + " pl-10 pr-10"} value={password} onChange={e => setPassword(e.target.value)} />
           <button type="button" onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 hover:text-stone-600">
             {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
           </button>
         </div>
@@ -489,7 +496,7 @@ function StepAccount({ email, setEmail, password, setPassword, showPassword, set
           <button type="button" onClick={onSendOtp}
             disabled={otpLoading || (otpSent && otpVerified)}
             className="px-4 py-3 rounded-xl text-sm font-semibold text-white flex-shrink-0 flex items-center gap-1.5 disabled:opacity-60 transition-all"
-            style={{ background: otpVerified ? '#10B981' : '#6366F1' }}>
+            style={{ background: otpVerified ? '#5D4037' : '#2C1810' }}>
             {otpLoading ? <Loader2 size={14} className="animate-spin" /> : otpVerified ? <Check size={14} /> : null}
             {otpVerified ? 'Verified' : otpSent ? 'Resend' : 'Send OTP'}
           </button>
@@ -498,7 +505,7 @@ function StepAccount({ email, setEmail, password, setPassword, showPassword, set
 
       {otpMessage && (
         <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm"
-          style={{ background: otpVerified ? '#ECFDF5' : '#EEF2FF', color: otpVerified ? '#059669' : '#6366F1' }}>
+          style={{ background: otpVerified ? '#F0FDF4' : '#FCE7D6', color: otpVerified ? '#059669' : '#6B4E3D' }}>
           {otpVerified ? <CheckCircle2 size={14} /> : <Loader2 size={14} className="animate-spin" />}
           {otpMessage}
         </div>
@@ -512,7 +519,7 @@ function StepAccount({ email, setEmail, password, setPassword, showPassword, set
             value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} />
           <button type="button" onClick={onVerifyOtp} disabled={otp.length !== 6 || otpLoading}
             className="w-full py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-all"
-            style={{ background: '#1E293B' }}>
+            style={{ background: '#2C1810' }}>
             {otpLoading ? 'Verifying...' : 'Verify Phone Number'}
           </button>
           <p className="text-xs text-center text-gray-400">Use <strong>123456</strong> for testing</p>
@@ -565,9 +572,9 @@ function StepCompany({ companyName, setCompanyName, tradeName, setTradeName,
             <button key={cat} type="button" onClick={() => { setMainCategory(cat) }}
               className="px-3 py-2.5 rounded-xl text-sm font-medium text-left transition-all border"
               style={{
-                background: mainCategory === cat ? '#EEF2FF' : '#F9FAFB',
-                borderColor: mainCategory === cat ? '#6366F1' : '#E5E7EB',
-                color: mainCategory === cat ? '#6366F1' : '#374151',
+                background: mainCategory === cat ? '#FCE7D6' : '#F9FAFB',
+                borderColor: mainCategory === cat ? '#6B4E3D' : '#E5E1DA',
+                color: mainCategory === cat ? '#2C1810' : '#374151',
               }}>
               {cat}
             </button>
@@ -584,9 +591,9 @@ function StepCompany({ companyName, setCompanyName, tradeName, setTradeName,
               <button key={sub} type="button" onClick={() => toggleSubCat(sub)}
                 className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all border"
                 style={{
-                  background: subCategories.includes(sub) ? '#6366F1' : '#F3F4F6',
-                  borderColor: subCategories.includes(sub) ? '#6366F1' : '#E5E7EB',
-                  color: subCategories.includes(sub) ? '#fff' : '#6B7280',
+                  background: subCategories.includes(sub) ? '#2C1810' : '#F5F2ED',
+                  borderColor: subCategories.includes(sub) ? '#2C1810' : '#E5E1DA',
+                  color: subCategories.includes(sub) ? '#fff' : '#6B5744',
                 }}>
                 {sub}
               </button>
@@ -641,8 +648,8 @@ function StepDocuments({ gstNumber, setGstNumber, gstStatus, panNumber, setPanNu
             className={inp + " pl-10 pr-32 uppercase font-mono tracking-wider"}
             value={gstNumber} onChange={e => setGstNumber(e.target.value.toUpperCase().slice(0, 15))} />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs font-semibold">
-            {gstStatus === 'validating' && <><Loader2 size={12} className="animate-spin text-indigo-500" /><span className="text-indigo-500">Validating...</span></>}
-            {gstStatus === 'valid' && <><CheckCircle2 size={12} style={{ color: '#10B981' }} /><span style={{ color: '#10B981' }}>Verified</span></>}
+            {gstStatus === 'validating' && <><Loader2 size={12} className="animate-spin text-stone-600" /><span className="text-stone-600">Validating...</span></>}
+            {gstStatus === 'valid' && <><CheckCircle2 size={12} style={{ color: '#5D4037' }} /><span style={{ color: '#5D4037' }}>Verified</span></>}
             {gstStatus === 'invalid' && <><AlertCircle size={12} style={{ color: '#EF4444' }} /><span style={{ color: '#EF4444' }}>Invalid</span></>}
             {gstStatus === 'idle' && gstNumber.length > 0 && <span className="text-gray-400">{gstNumber.length}/15</span>}
           </span>
@@ -659,7 +666,7 @@ function StepDocuments({ gstNumber, setGstNumber, gstStatus, panNumber, setPanNu
           <p className="text-xs text-gray-400 mt-1">{panNumber.length}/10 characters</p>
         )}
         {panNumber.length === 10 && (
-          <p className="text-xs mt-1 flex items-center gap-1" style={{ color: '#10B981' }}>
+          <p className="text-xs mt-1 flex items-center gap-1" style={{ color: '#5D4037' }}>
             <CheckCircle2 size={11} /> PAN format valid
           </p>
         )}
@@ -753,7 +760,7 @@ function StepLocation({ street, setStreet, city, setCity, locationState, setLoca
           <p className="text-xs text-gray-400">Click to pin your factory location</p>
           <button type="button" onClick={onMapClick} disabled={mapLoading}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all disabled:opacity-60"
-            style={{ background: '#EEF2FF', color: '#6366F1', border: '1px solid #C7D2FE' }}>
+            style={{ background: '#EEF2FF', color: '#2C1810', border: '1px solid #E5E1DA' }}>
             {mapLoading ? <><Loader2 size={12} className="animate-spin" /> Pinning...</> : <><MapPin size={12} /> Drop Pin</>}
           </button>
         </div>
@@ -806,7 +813,7 @@ function StepBank({ accountNumber, setAccountNumber, confirmAccount, setConfirmA
           value={confirmAccount} onChange={e => setConfirmAccount(e.target.value.replace(/\D/g, ''))} />
         {mismatch && <p className="text-xs mt-1 text-red-500 flex items-center gap-1"><AlertCircle size={11} /> Account numbers do not match</p>}
         {!mismatch && confirmAccount.length > 0 && accountNumber === confirmAccount && (
-          <p className="text-xs mt-1 flex items-center gap-1" style={{ color: '#10B981' }}><CheckCircle2 size={11} /> Account numbers match</p>
+          <p className="text-xs mt-1 flex items-center gap-1" style={{ color: '#5D4037' }}><CheckCircle2 size={11} /> Account numbers match</p>
         )}
       </div>
 
@@ -817,8 +824,8 @@ function StepBank({ accountNumber, setAccountNumber, confirmAccount, setConfirmA
             className={inp + " uppercase font-mono tracking-wider pr-44"}
             value={ifscCode} onChange={e => setIfscCode(e.target.value.toUpperCase().slice(0, 11))} />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs font-medium max-w-[160px] truncate">
-            {ifscStatus === 'fetching' && <><Loader2 size={12} className="animate-spin text-indigo-500" /><span className="text-indigo-500">Looking up...</span></>}
-            {ifscStatus === 'found' && <span style={{ color: '#10B981' }} className="truncate">{bankDetails}</span>}
+            {ifscStatus === 'fetching' && <><Loader2 size={12} className="animate-spin text-stone-600" /><span className="text-stone-600">Looking up...</span></>}
+            {ifscStatus === 'found' && <span style={{ color: '#5D4037' }} className="truncate">{bankDetails}</span>}
           </span>
         </div>
       </div>
@@ -844,7 +851,7 @@ function StepBank({ accountNumber, setAccountNumber, confirmAccount, setConfirmA
         {pennyDropStatus === 'idle' && (
           <button type="button" onClick={onPennyDrop} disabled={!accountNumber || !bankName}
             className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 transition-all"
-            style={{ background: '#D97706' }}>
+            style={{ background: '#6B4E3D' }}>
             Initiate ₹1 Penny Drop
           </button>
         )}
@@ -919,7 +926,7 @@ function StepMedia({ logoUrl, setLogoUrl, bannerUrl, setBannerUrl,
           <button type="button" onClick={onAddPhoto}
             disabled={!photoInput.trim() || factoryPhotos.length >= 10}
             className="px-4 py-3 rounded-xl text-sm font-semibold text-white flex-shrink-0 flex items-center gap-1 disabled:opacity-50"
-            style={{ background: '#6366F1' }}>
+            style={{ background: '#2C1810' }}>
             <Plus size={14} /> Add
           </button>
         </div>
@@ -932,7 +939,7 @@ function StepMedia({ logoUrl, setLogoUrl, bannerUrl, setBannerUrl,
                 <img src={url} alt={`Factory ${i + 1}`} className="w-full h-full object-cover" />
                 {i === 0 && (
                   <span className="absolute top-1 left-1 text-[9px] font-bold px-1.5 py-0.5 rounded text-white"
-                    style={{ background: '#6366F1' }}>MAIN</span>
+                    style={{ background: '#2C1810' }}>MAIN</span>
                 )}
                 <button type="button" onClick={() => onRemovePhoto(i)}
                   className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -951,7 +958,7 @@ function StepMedia({ logoUrl, setLogoUrl, bannerUrl, setBannerUrl,
             </p>
           )}
           {factoryPhotos.length >= 2 && (
-            <p className="text-xs flex items-center gap-1" style={{ color: '#10B981' }}>
+            <p className="text-xs flex items-center gap-1" style={{ color: '#5D4037' }}>
               <CheckCircle2 size={11} /> Minimum met
             </p>
           )}
@@ -967,7 +974,7 @@ function StepMedia({ logoUrl, setLogoUrl, bannerUrl, setBannerUrl,
             onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), onAddCert())} />
           <button type="button" onClick={onAddCert} disabled={!certInput.trim()}
             className="px-4 py-3 rounded-xl text-sm font-semibold text-white flex-shrink-0 flex items-center gap-1 disabled:opacity-50"
-            style={{ background: '#6366F1' }}>
+            style={{ background: '#2C1810' }}>
             <Plus size={14} /> Add
           </button>
         </div>
@@ -987,7 +994,7 @@ function StepMedia({ logoUrl, setLogoUrl, bannerUrl, setBannerUrl,
           <div className="flex flex-wrap gap-2 mt-3">
             {certifications.map((c: string) => (
               <span key={c} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-                style={{ background: '#EEF2FF', color: '#6366F1' }}>
+                style={{ background: '#EEF2FF', color: '#2C1810' }}>
                 <CheckCircle2 size={11} /> {c}
                 <button type="button" onClick={() => onRemoveCert(c)} className="hover:opacity-70 ml-0.5">
                   <X size={11} />
@@ -1000,3 +1007,5 @@ function StepMedia({ logoUrl, setLogoUrl, bannerUrl, setBannerUrl,
     </div>
   )
 }
+
+

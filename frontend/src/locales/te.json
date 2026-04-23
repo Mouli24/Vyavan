@@ -1,0 +1,23 @@
+{
+  "navigation": {
+    "overview": "అవలోకనం",
+    "myStore": "నా స్టోర్",
+    "orders": "ఆర్డర్లు",
+    "inventory": "ఇన్వెంటరీ",
+    "shipment": "షిప్‌మెంట్",
+    "negotiation": "చర్చలు",
+    "payment": "చెల్లింపు",
+    "complaints": "ఫిర్యాదులు",
+    "onboarding": "ఆన్‌బోర్డింగ్",
+    "settings": "సెట్టింగ్‌లు",
+    "logout": "లాగ్ అవుట్"
+  },
+  "common": {
+    "login": "లాగిన్",
+    "signup": "సైన్ అప్",
+    "loading": "లోడ్ అవుతోంది...",
+    "save": "సేవ్ చేయి",
+    "cancel": "రద్దు చేయి",
+    "chooseLanguage": "మీకు నచ్చిన భాషను ఎంచుకోండి"
+  }
+}

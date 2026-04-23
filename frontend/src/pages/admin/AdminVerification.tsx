@@ -3,21 +3,60 @@ import { api } from '@/lib/api'
 import {
   ClipboardCheck, CheckCircle, XCircle, Eye, Search,
   Shield, FileText, MapPin, Building2, Users,
-  AlertCircle, ChevronDown, Download, RefreshCw,
+  AlertCircle, ChevronDown, Download, RefreshCw, Clock
 } from 'lucide-react'
 
 type Tab = 'manufacturers' | 'buyers'
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    approved:  'bg-sp-mint text-sp-success',
+    approved:  'bg-emerald-100 text-emerald-700',
     pending:   'bg-amber-100 text-amber-700',
-    rejected:  'bg-red-100 text-red-600',
-    suspended: 'bg-gray-100 text-gray-600',
+    rejected:  'bg-rose-100 text-rose-700',
+    suspended: 'bg-slate-100 text-slate-600',
   }
   return (
-    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide ${map[status] ?? 'bg-gray-100 text-gray-600'}`}>
+    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide ${map[status] ?? 'bg-slate-100 text-slate-600'}`}>
       {status}
+    </span>
+  )
+}
+
+function SLATimer({ createdAt }: { createdAt: string }) {
+  const [timeLeft, setTimeLeft] = useState<{h: number, m: number, isBreached: boolean}>({ h: 48, m: 0, isBreached: false })
+
+  useEffect(() => {
+    const calculateTime = () => {
+      const created = new Date(createdAt).getTime()
+      const now = new Date().getTime()
+      const diff = now - created
+      const hoursRemaining = 48 - (diff / (1000 * 60 * 60))
+      
+      if (hoursRemaining <= 0) {
+        setTimeLeft({ h: 0, m: 0, isBreached: true })
+      } else {
+        const h = Math.floor(hoursRemaining)
+        const m = Math.floor((hoursRemaining - h) * 60)
+        setTimeLeft({ h, m, isBreached: false })
+      }
+    }
+    calculateTime()
+    const timer = setInterval(calculateTime, 60000)
+    return () => clearInterval(timer)
+  }, [createdAt])
+
+  if (timeLeft.isBreached) {
+    return (
+      <span className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 text-rose-600 rounded-lg text-xs font-bold border border-rose-200">
+        <AlertCircle size={12} /> SLA Breached
+      </span>
+    )
+  }
+
+  const isWarning = timeLeft.h < 12
+  return (
+    <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${isWarning ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'}`}>
+      <Clock size={12} /> {timeLeft.h}h {timeLeft.m}m left
     </span>
   )
 }
@@ -69,6 +108,19 @@ export default function AdminVerification() {
       setShowRejectModal(false)
       setSelected(null)
       setRejectReason('')
+    } catch (e) { console.error(e) }
+    finally { setActionLoading(false) }
+  }
+
+  const handleRequestDocs = async () => {
+    if (!selected || !requestDocsNote.trim()) return
+    setActionLoading(true)
+    try {
+      await api.requestMoreDocs(selected._id, requestDocsNote)
+      setShowRequestModal(false)
+      setRequestDocsNote('')
+      // Refresh to show any updated notes in UI
+      fetchData()
     } catch (e) { console.error(e) }
     finally { setActionLoading(false) }
   }
@@ -143,8 +195,7 @@ export default function AdminVerification() {
                   <tr>
                     <th className="text-left py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider">Company</th>
                     <th className="text-left py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider hidden md:table-cell">GST / PAN</th>
-                    <th className="text-left py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider hidden lg:table-cell">Location</th>
-                    <th className="text-left py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider hidden lg:table-cell">Categories</th>
+                    <th className="text-left py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider hidden lg:table-cell">SLA Timer</th>
                     <th className="text-left py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider">Status</th>
                     <th className="text-right py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider">Actions</th>
                   </tr>
@@ -177,16 +228,7 @@ export default function AdminVerification() {
                         </div>
                       </td>
                       <td className="py-3.5 px-5 hidden lg:table-cell">
-                        <p className="text-xs text-sp-muted flex items-center gap-1">
-                          <MapPin className="w-3 h-3" /> {m.location ?? '—'}
-                        </p>
-                      </td>
-                      <td className="py-3.5 px-5 hidden lg:table-cell">
-                        <div className="flex flex-wrap gap-1">
-                          {(m.profile?.categories ?? []).slice(0, 2).map((c: string) => (
-                            <span key={c} className="text-[10px] px-2 py-0.5 bg-sp-purple-pale text-sp-purple rounded-full">{c}</span>
-                          ))}
-                        </div>
+                        <SLATimer createdAt={m.createdAt} />
                       </td>
                       <td className="py-3.5 px-5">
                         <StatusBadge status={m.manufacturerStatus ?? 'pending'} />
@@ -304,29 +346,91 @@ export default function AdminVerification() {
 
               <StatusBadge status={selected.manufacturerStatus ?? 'pending'} />
 
+                {selected.profile?.verificationNote && (
+                <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                  <p className="text-[10px] text-amber-600 font-bold uppercase tracking-wider mb-1">Previous Admin Note</p>
+                  <p className="text-xs text-amber-800 italic">"{selected.profile.verificationNote}"</p>
+                </div>
+              )}
+
+              {/* Mock GST Validation Service */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                 <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                       <Shield size={14} className="text-emerald-500" /> GST API Check (Mock)
+                    </p>
+                 </div>
+                 {selected.profile?.gstNumber ? (
+                    <div className="space-y-3">
+                       <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100">
+                          <span className="text-xs font-bold text-slate-500">Provided GST</span>
+                          <span className="text-xs font-black text-slate-800">{selected.profile.gstNumber}</span>
+                       </div>
+                       <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-emerald-100">
+                          <span className="text-xs font-bold text-slate-500">API Status</span>
+                          <span className="text-xs font-black text-emerald-600 flex items-center gap-1"><CheckCircle size={12}/> ACTIVE</span>
+                       </div>
+                       <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-emerald-100">
+                          <span className="text-xs font-bold text-slate-500">Legal Name Match</span>
+                          <span className="text-xs font-black text-emerald-600 flex items-center gap-1"><CheckCircle size={12}/> MATCHED</span>
+                       </div>
+                    </div>
+                 ) : (
+                    <div className="text-center py-4 bg-white rounded-xl border border-rose-100">
+                       <AlertCircle size={20} className="text-rose-400 mx-auto mb-2" />
+                       <p className="text-xs font-bold text-rose-500">No GST Number Provided</p>
+                    </div>
+                 )}
+              </div>
+
               {/* Documents */}
               <div>
                 <p className="text-xs font-bold text-sp-muted uppercase tracking-wider mb-3">Submitted Documents</p>
                 <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: 'GST Number', value: selected.profile?.gstNumber },
-                    { label: 'PAN Number', value: selected.profile?.panNumber },
-                    { label: 'MSME / Udyam', value: selected.profile?.msmeNumber },
-                    { label: 'CIN', value: selected.profile?.cinNumber },
-                    { label: 'Location', value: selected.location },
-                    { label: 'Year Est.', value: selected.profile?.yearEstablished },
-                    { label: 'Employees', value: selected.profile?.employeeCount },
-                    { label: 'Turnover', value: selected.profile?.annualTurnover },
-                  ].map(row => (
-                    <div key={row.label} className="bg-sp-bg rounded-xl p-3">
-                      <p className="text-[10px] text-sp-muted uppercase tracking-wider mb-1">{row.label}</p>
-                      <p className={`text-sm font-medium ${row.value ? 'text-sp-text' : 'text-sp-placeholder'}`}>
-                        {row.value ?? 'Not provided'}
+                    {[
+                      { label: 'GST Number', value: selected.profile?.gstNumber },
+                      { label: 'PAN Number', value: selected.profile?.panNumber },
+                      { label: 'Udyam Registration', value: selected.profile?.udyamNumber },
+                      { label: 'MSME', value: selected.profile?.msmeNumber },
+                      { label: 'CIN', value: selected.profile?.cinNumber },
+                      { label: 'Location', value: selected.location },
+                      { label: 'Coordinates', value: selected.profile?.geoLocation ? `${selected.profile.geoLocation.lat}, ${selected.profile.geoLocation.lng}` : null },
+                      { label: 'Year Est.', value: selected.profile?.yearEstablished },
+                      { label: 'Employees', value: selected.profile?.employeeCount },
+                      { label: 'Turnover', value: selected.profile?.annualTurnover },
+                    ].map(row => (
+                      <div key={row.label} className="bg-sp-bg rounded-xl p-3">
+                        <p className="text-[10px] text-sp-muted uppercase tracking-wider mb-1">{row.label}</p>
+                        <p className={`text-sm font-medium ${row.value ? 'text-sp-text' : 'text-sp-placeholder'}`}>
+                          {row.value ?? 'Not provided'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* New: Contact Person & Capacity */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs font-bold text-sp-muted uppercase tracking-wider mb-2">Contact Person</p>
+                    <div className="bg-sp-bg rounded-xl p-3 space-y-1">
+                      <p className="text-sm font-bold text-sp-text">{selected.profile?.contactPerson?.name ?? '—'}</p>
+                      <p className="text-[11px] text-sp-muted">{selected.profile?.contactPerson?.designation ?? '—'}</p>
+                      <p className="text-[11px] text-sp-purple font-medium">{selected.profile?.contactPerson?.phone ?? '—'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-sp-muted uppercase tracking-wider mb-2">Production Cap.</p>
+                    <div className="bg-sp-bg rounded-xl p-3">
+                      <p className="text-sm font-bold text-sp-text">
+                        {selected.profile?.factoryCapacity?.units?.toLocaleString() ?? '—'}
+                      </p>
+                      <p className="text-[11px] text-sp-muted uppercase tracking-tight">
+                        per {selected.profile?.factoryCapacity?.period ?? 'month'}
                       </p>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
 
               {/* Bank details */}
               {selected.profile?.bankDetails && (
@@ -359,6 +463,38 @@ export default function AdminVerification() {
                   <div className="flex flex-wrap gap-2">
                     {selected.profile.certifications.map((c: string) => (
                       <span key={c} className="px-2 py-1 bg-sp-mint text-sp-success text-xs rounded-full">{c}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Certification Documents */}
+              {selected.profile?.certificationDocs?.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-sp-muted uppercase tracking-wider mb-2">Certification Links</p>
+                  <div className="space-y-2">
+                    {selected.profile.certificationDocs.map((doc: any, i: number) => (
+                      <a key={i} href={doc.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2 bg-sp-bg border border-sp-border rounded-xl text-xs text-sp-purple hover:bg-sp-purple-pale transition-all">
+                        <Award className="w-4 h-4" />
+                        {doc.name || 'View Document'}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Factory Images */}
+              {selected.profile?.factoryImages?.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-sp-muted uppercase tracking-wider mb-3">Factory Photos</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selected.profile.factoryImages.map((img: string, i: number) => (
+                      <div key={i} className="aspect-video bg-sp-bg rounded-xl overflow-hidden border border-sp-border group relative">
+                        <img src={img} alt="Factory" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                        <a href={img} target="_blank" rel="noreferrer" className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                          <ExternalLink className="w-5 h-5" />
+                        </a>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -442,11 +578,11 @@ export default function AdminVerification() {
             <div className="flex gap-3 mt-4">
               <button onClick={() => setShowRequestModal(false)} className="flex-1 py-3 bg-sp-bg border border-sp-border text-sp-muted font-medium rounded-xl text-sm">Cancel</button>
               <button
-                onClick={() => { alert('Request sent to manufacturer!'); setShowRequestModal(false); setRequestDocsNote('') }}
-                disabled={!requestDocsNote.trim()}
+                onClick={handleRequestDocs}
+                disabled={!requestDocsNote.trim() || actionLoading}
                 className="flex-1 py-3 bg-amber-600 text-white font-bold rounded-xl text-sm hover:opacity-90 disabled:opacity-60"
               >
-                Send Request
+                {actionLoading ? 'Sending...' : 'Send Request'}
               </button>
             </div>
           </div>

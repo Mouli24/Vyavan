@@ -1,0 +1,27 @@
+{
+  "navigation": {
+    "overview": "अवलोकन",
+    "myStore": "मेरी दुकान",
+    "orders": "आदेश",
+    "inventory": "माल सूची",
+    "shipment": "शिपमेंट",
+    "negotiation": "बातचीत",
+    "payment": "भुगतान",
+    "complaints": "शिकायतें",
+    "onboarding": "ऑनबोर्डिंग",
+    "settings": "सेटिंग्स",
+    "logout": "लॉगआउट"
+  },
+  "common": {
+    "login": "लॉगिन",
+    "signup": "साइन अप",
+    "loading": "लोड हो रहा है...",
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "chooseLanguage": "अपनी पसंदीदा भाषा चुनें"
+  },
+  "landing": {
+    "hero_title": "समझदारी से सोर्स करें, सीधे खरीदें",
+    "industry_title": "हर क्षेत्र का अन्वेषण करें"
+  }
+}

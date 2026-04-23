@@ -22,6 +22,12 @@ const userSchema = new mongoose.Schema({
   isActive:    { type: Boolean, default: true },
   lastLogin:   { type: Date },
   loginCount:  { type: Number, default: 0 },
+  mustResetPassword: { type: Boolean, default: false },
+  loginHistory: [{
+    ip: String,
+    browser: String,
+    timestamp: { type: Date, default: Date.now }
+  }],
 
   // Buyer verification
   isVerified:  { type: Boolean, default: false },
@@ -40,6 +46,17 @@ const userSchema = new mongoose.Schema({
     country: { type: String, default: 'India' },
     isDefault: { type: Boolean, default: false }
   }],
+
+  // Multi-language support
+  language: { 
+    type: String, 
+    enum: ['en', 'hi', 'te', 'ta', 'kn'], 
+    default: 'en' 
+  },
+  languagePreferenceSet: { 
+    type: Boolean, 
+    default: false 
+  },
 }, { timestamps: true });
 
 // Hash password before save

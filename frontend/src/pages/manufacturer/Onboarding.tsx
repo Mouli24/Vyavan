@@ -60,15 +60,26 @@ interface OnboardingForm {
   ifscCode: string
   bankName: string
   branch: string
+  // New Fields
+  udyamNumber: string
+  contactName: string
+  contactDesignation: string
+  contactPhone: string
+  capacityUnits: string
+  capacityPeriod: string
+  lat: string
+  lng: string
 }
 
 const INITIAL: OnboardingForm = {
   yearEstablished: '', employeeCount: '', annualTurnover: '', exportMarkets: '',
   street: '', city: '', state: '', pincode: '', country: 'India',
-  gstNumber: '', panNumber: '', msmeNumber: '', cinNumber: '',
+  gstNumber: '', panNumber: '', msmeNumber: '', udyamNumber: '', cinNumber: '',
   categories: [], certifications: [],
   logo: '', profileBanner: '', factoryImages: [],
   accountName: '', accountNumber: '', ifscCode: '', bankName: '', branch: '',
+  contactName: '', contactDesignation: '', contactPhone: '',
+  capacityUnits: '', capacityPeriod: 'month', lat: '', lng: '',
 }
 
 export default function ManufacturerOnboarding() {
@@ -135,6 +146,20 @@ export default function ManufacturerOnboarding() {
           ifscCode: form.ifscCode,
           bankName: form.bankName,
           branch: form.branch,
+        },
+        udyamNumber: form.udyamNumber,
+        contactPerson: {
+          name: form.contactName,
+          designation: form.contactDesignation,
+          phone: form.contactPhone,
+        },
+        factoryCapacity: {
+          units: form.capacityUnits ? +form.capacityUnits : 0,
+          period: form.capacityPeriod,
+        },
+        geoLocation: {
+          lat: form.lat ? +form.lat : undefined,
+          lng: form.lng ? +form.lng : undefined,
         },
       })
       setSubmitted(true)
@@ -205,24 +230,24 @@ export default function ManufacturerOnboarding() {
   if (submitted) {
     return (
       <div className="min-h-screen gradient-hero flex items-center justify-center p-6">
-        <div className="bg-white rounded-3xl p-10 max-w-md w-full border border-sp-border shadow-card text-center">
-          <div className="w-16 h-16 bg-sp-mint rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-8 h-8 text-sp-success" />
+        <div className="bg-white rounded-3xl p-10 max-w-md w-full border border-mfr-border shadow-card text-center">
+          <div className="w-16 h-16 bg-mfr-peach rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-8 h-8 text-mfr-brown" />
           </div>
-          <h2 className="text-2xl font-bold text-sp-text mb-2">Application Submitted!</h2>
-          <p className="text-sp-muted mb-6 leading-relaxed">
+          <h2 className="text-2xl font-bold text-mfr-dark mb-2">Application Submitted!</h2>
+          <p className="text-mfr-muted mb-6 leading-relaxed">
             Thank you, <strong>{user?.name}</strong>! Your manufacturer application is under review.
             Our admin team will verify your documents and approve your account within 1–3 business days.
           </p>
           <div className="flex items-center gap-2 bg-sp-peach rounded-xl p-4 mb-6 text-left">
             <Clock className="w-5 h-5 text-amber-600 flex-shrink-0" />
             <p className="text-sm text-amber-700">
-              You'll receive a notification once your account is approved.
+              You'll receive a <strong>confirmation code via email</strong> once your account is approved. You must enter this code to activate your dashboard.
             </p>
           </div>
           <button
             onClick={() => navigate('/manufacturer/overview')}
-            className="w-full py-3 gradient-card-purple text-white font-bold rounded-xl hover:opacity-90 transition-all"
+            className="w-full py-3 bg-mfr-brown hover:bg-mfr-brown-hover text-white font-bold rounded-xl hover:opacity-90 transition-all"
           >
             Go to Dashboard
           </button>
@@ -236,8 +261,8 @@ export default function ManufacturerOnboarding() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-sp-text">Complete Your Business Profile</h1>
-          <p className="text-sp-muted mt-2">Set up your manufacturer profile to start receiving orders</p>
+          <h1 className="text-3xl font-bold text-mfr-dark">Complete Your Business Profile</h1>
+          <p className="text-mfr-muted mt-2">Set up your manufacturer profile to start receiving orders</p>
         </div>
 
         {/* Step indicator */}
@@ -248,24 +273,24 @@ export default function ManufacturerOnboarding() {
                 onClick={() => step > s.id && setStep(s.id)}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   step === s.id
-                    ? 'bg-sp-purple text-white'
+                    ? 'bg-mfr-brown text-white'
                     : step > s.id
-                    ? 'bg-sp-mint text-sp-success cursor-pointer'
-                    : 'bg-white text-sp-muted border border-sp-border cursor-not-allowed'
+                    ? 'bg-mfr-peach text-mfr-brown cursor-pointer'
+                    : 'bg-white text-mfr-muted border border-mfr-border cursor-not-allowed'
                 }`}
               >
                 {step > s.id ? <CheckCircle className="w-3.5 h-3.5" /> : <s.icon className="w-3.5 h-3.5" />}
                 <span className="hidden sm:inline">{s.label}</span>
               </button>
               {idx < STEPS.length - 1 && (
-                <div className={`h-px w-4 ${step > s.id ? 'bg-sp-success' : 'bg-sp-border'}`} />
+                <div className={`h-px w-4 ${step > s.id ? 'bg-mfr-brown' : 'bg-sp-border'}`} />
               )}
             </div>
           ))}
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-3xl border border-sp-border shadow-card p-8">
+        <div className="bg-white rounded-3xl border border-mfr-border shadow-card p-8">
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
               {error}
@@ -275,7 +300,7 @@ export default function ManufacturerOnboarding() {
           {/* Step 1 — Company Info */}
           {step === 1 && (
             <div className="space-y-5">
-              <StepHeader icon={<Building2 className="w-5 h-5 text-sp-purple" />} title="Company Information" />
+              <StepHeader icon={<Building2 className="w-5 h-5 text-mfr-brown" />} title="Company Information" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField label="Year Established" required>
                   <input type="number" placeholder="2010" className={inputCls}
@@ -294,9 +319,44 @@ export default function ManufacturerOnboarding() {
                   </select>
                 </FormField>
                 <FormField label="Export Markets (optional)">
-                  <input type="text" placeholder="USA, UAE, UK (comma separated)" className={inputCls}
+                   <input type="text" placeholder="USA, UAE, UK (comma separated)" className={inputCls}
                     value={form.exportMarkets} onChange={e => update('exportMarkets', e.target.value)} />
                 </FormField>
+              </div>
+
+              <div className="pt-4 border-t border-sp-border mt-4">
+                <p className="text-xs font-bold text-sp-muted uppercase tracking-wider mb-4">Primary Contact Person</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField label="Contact Person Name" required>
+                    <input type="text" placeholder="John Doe" className={inputCls}
+                      value={form.contactName} onChange={e => update('contactName', e.target.value)} />
+                  </FormField>
+                  <FormField label="Designation" required>
+                    <input type="text" placeholder="Sales Manager / COO" className={inputCls}
+                      value={form.contactDesignation} onChange={e => update('contactDesignation', e.target.value)} />
+                  </FormField>
+                  <FormField label="Phone Number" required>
+                    <input type="tel" placeholder="+91 XXXXX XXXXX" className={inputCls}
+                      value={form.contactPhone} onChange={e => update('contactPhone', e.target.value)} />
+                  </FormField>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-sp-border mt-4">
+                <p className="text-xs font-bold text-sp-muted uppercase tracking-wider mb-4">Production Capacity</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField label="Units per Month" required>
+                    <input type="number" placeholder="5000" className={inputCls}
+                      value={form.capacityUnits} onChange={e => update('capacityUnits', e.target.value)} />
+                  </FormField>
+                  <FormField label="Unit Type">
+                    <select className={inputCls} value={form.capacityPeriod} onChange={e => update('capacityPeriod', e.target.value)}>
+                      <option value="month">per Month</option>
+                      <option value="week">per Week</option>
+                      <option value="year">per Year</option>
+                    </select>
+                  </FormField>
+                </div>
               </div>
             </div>
           )}
@@ -304,7 +364,7 @@ export default function ManufacturerOnboarding() {
           {/* Step 2 — Address */}
           {step === 2 && (
             <div className="space-y-5">
-              <StepHeader icon={<MapPin className="w-5 h-5 text-sp-purple" />} title="Factory / Business Address" />
+              <StepHeader icon={<MapPin className="w-5 h-5 text-mfr-brown" />} title="Factory / Business Address" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField label="Street Address" className="sm:col-span-2">
                   <input type="text" placeholder="Street, Building, Area" className={inputCls}
@@ -327,14 +387,28 @@ export default function ManufacturerOnboarding() {
                     value={form.country} onChange={e => update('country', e.target.value)} />
                 </FormField>
               </div>
+
+              <div className="pt-4 border-t border-sp-border mt-4">
+                <p className="text-xs font-bold text-sp-muted uppercase tracking-wider mb-4">Geo-Location (Optional)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField label="Latitude">
+                    <input type="text" placeholder="19.0760" className={inputCls}
+                      value={form.lat} onChange={e => update('lat', e.target.value)} />
+                  </FormField>
+                  <FormField label="Longitude">
+                    <input type="text" placeholder="72.8777" className={inputCls}
+                      value={form.lng} onChange={e => update('lng', e.target.value)} />
+                  </FormField>
+                </div>
+              </div>
             </div>
           )}
 
           {/* Step 3 — Verification */}
           {step === 3 && (
             <div className="space-y-5">
-              <StepHeader icon={<Shield className="w-5 h-5 text-sp-purple" />} title="Business Verification Documents" />
-              <div className="p-3 bg-sp-purple-pale rounded-xl text-xs text-sp-purple border border-sp-purple/20 flex justify-between items-center">
+              <StepHeader icon={<Shield className="w-5 h-5 text-mfr-brown" />} title="Business Verification Documents" />
+              <div className="p-3 bg-mfr-brown-pale rounded-xl text-xs text-mfr-brown border border-mfr-border/20 flex justify-between items-center">
                 <span>These details will be verified automatically.</span>
                 {verifyingGst && <Loader2 className="w-4 h-4 animate-spin" />}
                 {gstVerified && <Badge className="bg-emerald-500 text-white border-none">Verified ✓</Badge>}
@@ -355,6 +429,10 @@ export default function ManufacturerOnboarding() {
                   <input type="text" placeholder="MSME-XXXXXXXX" className={inputCls}
                     value={form.msmeNumber} onChange={e => update('msmeNumber', e.target.value)} />
                 </FormField>
+                <FormField label="Udyam Registration Number" required>
+                  <input type="text" placeholder="UDYAM-XX-00-0000000" className={inputCls}
+                    value={form.udyamNumber} onChange={e => update('udyamNumber', e.target.value)} />
+                </FormField>
                 <FormField label="CIN Number (optional)">
                   <input type="text" placeholder="L17110MH1973PLC019786" className={inputCls}
                     value={form.cinNumber} onChange={e => update('cinNumber', e.target.value)} />
@@ -366,12 +444,12 @@ export default function ManufacturerOnboarding() {
           {/* ... Categories and Media Steps ... */}
           {step === 4 && (
             <div className="space-y-6">
-              <StepHeader icon={<Award className="w-5 h-5 text-sp-purple" />} title="Product Categories & Certifications" />
+              <StepHeader icon={<Award className="w-5 h-5 text-mfr-brown" />} title="Product Categories & Certifications" />
 
               <div>
-                <p className="text-sm font-semibold text-sp-text mb-3">
+                <p className="text-sm font-semibold text-mfr-dark mb-3">
                   Product Categories <span className="text-red-500">*</span>
-                  <span className="text-xs text-sp-muted font-normal ml-2">({form.categories.length} selected)</span>
+                  <span className="text-xs text-mfr-muted font-normal ml-2">({form.categories.length} selected)</span>
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {CATEGORIES.map(cat => (
@@ -380,8 +458,8 @@ export default function ManufacturerOnboarding() {
                       onClick={() => toggleItem('categories', cat)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
                         form.categories.includes(cat)
-                          ? 'bg-sp-purple text-white border-sp-purple'
-                          : 'bg-sp-bg text-sp-muted border-sp-border hover:border-sp-purple/40'
+                          ? 'bg-mfr-brown text-white border-mfr-border'
+                          : 'bg-mfr-bg text-mfr-muted border-mfr-border hover:border-mfr-border/40'
                       }`}
                     >
                       {cat}
@@ -391,9 +469,9 @@ export default function ManufacturerOnboarding() {
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-sp-text mb-3">
+                <p className="text-sm font-semibold text-mfr-dark mb-3">
                   Certifications
-                  <span className="text-xs text-sp-muted font-normal ml-2">({form.certifications.length} selected)</span>
+                  <span className="text-xs text-mfr-muted font-normal ml-2">({form.certifications.length} selected)</span>
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {CERTIFICATIONS.map(cert => (
@@ -402,8 +480,8 @@ export default function ManufacturerOnboarding() {
                       onClick={() => toggleItem('certifications', cert)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
                         form.certifications.includes(cert)
-                          ? 'bg-sp-mint text-sp-success border-sp-success'
-                          : 'bg-sp-bg text-sp-muted border-sp-border hover:border-sp-success/40'
+                          ? 'bg-mfr-peach text-mfr-brown border-mfr-border'
+                          : 'bg-mfr-bg text-mfr-muted border-mfr-border hover:border-mfr-border'
                       }`}
                     >
                       {cert}
@@ -416,8 +494,8 @@ export default function ManufacturerOnboarding() {
 
           {step === 5 && (
             <div className="space-y-5">
-              <StepHeader icon={<Image className="w-5 h-5 text-sp-purple" />} title="Company Media & Images" />
-              <p className="text-xs text-sp-muted">Add image URLs for your factory and company visuals. In production, these would be uploaded to cloud storage.</p>
+              <StepHeader icon={<Image className="w-5 h-5 text-mfr-brown" />} title="Company Media & Images" />
+              <p className="text-xs text-mfr-muted">Add image URLs for your factory and company visuals. In production, these would be uploaded to cloud storage.</p>
 
               <FormField label="Company Logo URL">
                 <input type="url" placeholder="https://..." className={inputCls}
@@ -429,7 +507,7 @@ export default function ManufacturerOnboarding() {
               </FormField>
 
               <div>
-                <label className="block text-sm font-medium text-sp-text mb-2">
+                <label className="block text-sm font-medium text-mfr-dark mb-2">
                   Factory Images ({form.factoryImages.length} added)
                 </label>
                 <div className="flex gap-2 mb-3">
@@ -443,7 +521,7 @@ export default function ManufacturerOnboarding() {
                   />
                   <button
                     onClick={addImageUrl}
-                    className="px-4 py-2.5 gradient-card-purple text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all flex items-center gap-2"
+                    className="px-4 py-2.5 bg-mfr-brown hover:bg-mfr-brown-hover text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all flex items-center gap-2"
                   >
                     <Upload className="w-4 h-4" /> Add
                   </button>
@@ -452,8 +530,8 @@ export default function ManufacturerOnboarding() {
                   <div className="flex flex-wrap gap-2">
                     {form.factoryImages.map((url, idx) => (
                       <div key={idx} className="relative group">
-                        <img src={url} alt="" className="w-20 h-20 object-cover rounded-xl border border-sp-border"
-                          onError={e => (e.currentTarget.src = 'https://placehold.co/80x80/EDE9FE/7C3AED?text=IMG')} />
+                        <img src={url} alt="" className="w-20 h-20 object-cover rounded-xl border border-mfr-border"
+                          onError={e => (e.currentTarget.src = 'https://placehold.co/80x80/FCE7D6/6B4E3D?text=IMG')} />
                         <button
                           onClick={() => setForm(prev => ({ ...prev, factoryImages: prev.factoryImages.filter((_, i) => i !== idx) }))}
                           className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs hidden group-hover:flex items-center justify-center"
@@ -471,7 +549,7 @@ export default function ManufacturerOnboarding() {
           {/* Step 6 — Bank Details */}
           {step === 6 && (
             <div className="space-y-5">
-              <StepHeader icon={<CreditCard className="w-5 h-5 text-sp-purple" />} title="Bank Account Details" />
+              <StepHeader icon={<CreditCard className="w-5 h-5 text-mfr-brown" />} title="Bank Account Details" />
               <div className="p-4 bg-sp-peach rounded-xl text-xs text-amber-900 border border-sp-peach-border flex justify-between items-center">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${bankVerified ? 'bg-emerald-500 text-white' : 'bg-amber-100 text-amber-600'}`}>
@@ -516,10 +594,10 @@ export default function ManufacturerOnboarding() {
           )}
 
           {/* Navigation */}
-          <div className="flex justify-between mt-8 pt-6 border-t border-sp-border">
+          <div className="flex justify-between mt-8 pt-6 border-t border-mfr-border">
             <button
               onClick={() => step > 1 ? setStep(s => s - 1) : navigate('/manufacturer/overview')}
-              className="flex items-center gap-2 px-5 py-2.5 bg-sp-bg border border-sp-border text-sp-muted font-medium rounded-xl text-sm hover:bg-sp-border transition-all"
+              className="flex items-center gap-2 px-5 py-2.5 bg-mfr-bg border border-mfr-border text-mfr-muted font-medium rounded-xl text-sm hover:bg-sp-border transition-all"
             >
               <ChevronLeft className="w-4 h-4" />
               {step === 1 ? 'Skip for now' : 'Previous'}
@@ -528,7 +606,7 @@ export default function ManufacturerOnboarding() {
             {step < STEPS.length ? (
               <button
                 onClick={() => setStep(s => s + 1)}
-                className="flex items-center gap-2 px-6 py-2.5 gradient-card-purple text-white font-bold rounded-xl text-sm hover:opacity-90 transition-all"
+                className="flex items-center gap-2 px-6 py-2.5 bg-mfr-brown hover:bg-mfr-brown-hover text-white font-bold rounded-xl text-sm hover:opacity-90 transition-all"
               >
                 Next <ChevronRight className="w-4 h-4" />
               </button>
@@ -536,7 +614,7 @@ export default function ManufacturerOnboarding() {
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="flex items-center gap-2 px-6 py-2.5 gradient-card-purple text-white font-bold rounded-xl text-sm hover:opacity-90 disabled:opacity-60 transition-all"
+                className="flex items-center gap-2 px-6 py-2.5 bg-mfr-brown hover:bg-mfr-brown-hover text-white font-bold rounded-xl text-sm hover:opacity-90 disabled:opacity-60 transition-all"
               >
                 {loading ? 'Submitting...' : 'Submit for Review'}
                 <CheckCircle className="w-4 h-4" />
@@ -546,8 +624,8 @@ export default function ManufacturerOnboarding() {
         </div>
 
         {/* Skip link */}
-        <p className="text-center text-sm text-sp-muted mt-4">
-          <button onClick={() => navigate('/manufacturer/overview')} className="hover:text-sp-purple transition-colors">
+        <p className="text-center text-sm text-mfr-muted mt-4">
+          <button onClick={() => navigate('/manufacturer/overview')} className="hover:text-mfr-brown transition-colors">
             Complete later from dashboard →
           </button>
         </p>
@@ -557,15 +635,15 @@ export default function ManufacturerOnboarding() {
 }
 
 // ── Helpers ──
-const inputCls = 'w-full px-4 py-3 bg-sp-bg border border-sp-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sp-purple/20 focus:border-sp-purple transition-all'
+const inputCls = 'w-full px-4 py-3 bg-mfr-bg border border-mfr-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mfr-brown/20 focus:border-mfr-border transition-all'
 
 function StepHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
     <div className="flex items-center gap-3 mb-2">
-      <div className="w-9 h-9 bg-sp-purple-pale rounded-xl flex items-center justify-center">
+      <div className="w-9 h-9 bg-mfr-brown-pale rounded-xl flex items-center justify-center">
         {icon}
       </div>
-      <h2 className="text-lg font-bold text-sp-text">{title}</h2>
+      <h2 className="text-lg font-bold text-mfr-dark">{title}</h2>
     </div>
   )
 }
@@ -577,10 +655,12 @@ function FormField({
 }) {
   return (
     <div className={className}>
-      <label className="block text-sm font-medium text-sp-text mb-1.5">
+      <label className="block text-sm font-medium text-mfr-dark mb-1.5">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {children}
     </div>
   )
 }
+
+

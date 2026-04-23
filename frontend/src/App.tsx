@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import './i18n' // Import i18n configuration
 
 // Pages
 import HomePage               from './pages/HomePage'
@@ -35,6 +36,9 @@ import ScheduledCalls         from './pages/manufacturer/ScheduledCalls'
 import HolidaySettings        from './pages/manufacturer/HolidaySettings'
 import PaymentSettingsPage    from './pages/manufacturer/PaymentSettingsPage'
 import ReceivablesDashboard   from './pages/manufacturer/ReceivablesDashboard'
+import ManufacturerReviews     from './pages/manufacturer/ManufacturerReviews'
+import ManufacturerGroups      from './pages/manufacturer/ManufacturerGroups'
+import BuyerPool                from './pages/manufacturer/BuyerPool'
 
 // Admin pages
 import AdminDashboard         from './pages/admin/AdminDashboard'
@@ -47,6 +51,8 @@ import AdminOrders            from './pages/admin/AdminOrders'
 import AdminSettings          from './pages/admin/AdminSettings'
 import AdminPayments          from './pages/admin/AdminPayments'
 import AdminContent           from './pages/admin/AdminContent'
+import AdminComingSoon        from './pages/admin/AdminComingSoon'
+import AdminManufacturerDetail from './pages/admin/AdminManufacturerDetail'
 
 // Public pages
 import CompanyStorefront      from './pages/company/CompanyStorefront'
@@ -82,33 +88,34 @@ function ProtectedRoute({
 
 export default function App() {
   return (
-    <Routes>
-      {/* ── Public routes ── */}
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<LoginPage />} />
+    <>
+      <Routes>
+        {/* ── Public routes ── */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
 
-      {/* ── Public company storefront ── */}
-      <Route path="/company/:id" element={<CompanyStorefront />} />
+        {/* ── Public company storefront ── */}
+        <Route path="/company/:id" element={<CompanyStorefront />} />
 
-      {/* ── Buyer routes ── */}
-      <Route path="/buyer" element={
-        <ProtectedRoute allowedRole="buyer">
-          <BuyerLayout />
-        </ProtectedRoute>
-      }>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard"   element={<BuyerDashboard />} />
-        <Route path="browse"      element={<BuyerBrowse />} />
-        <Route path="orders"      element={<BuyerOrders />} />
-        <Route path="shipments"   element={<BuyerShipments />} />
-        <Route path="complaints"  element={<BuyerComplaints />} />
-        <Route path="schedule"    element={<ScheduleCall />} />
-        <Route path="checkout"    element={<BuyerCheckout />} />
-        <Route path="negotiation" element={<BuyerNegotiation />} />
-      </Route>
+        {/* ── Buyer routes ── */}
+        <Route path="/buyer" element={
+          <ProtectedRoute allowedRole="buyer">
+            <BuyerLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard"   element={<BuyerDashboard />} />
+          <Route path="browse"      element={<BuyerBrowse />} />
+          <Route path="orders"      element={<BuyerOrders />} />
+          <Route path="shipments"   element={<BuyerShipments />} />
+          <Route path="complaints"  element={<BuyerComplaints />} />
+          <Route path="schedule"    element={<ScheduleCall />} />
+          <Route path="checkout"    element={<BuyerCheckout />} />
+          <Route path="negotiation" element={<BuyerNegotiation />} />
+        </Route>
 
-      {/* Search accessible without login */}
-      <Route path="/browse" element={<BuyerBrowse />} />
+        {/* Search accessible without login */}
+        <Route path="/browse" element={<BuyerBrowse />} />
 
       {/* ── Manufacturer routes ── */}
       <Route path="/manufacturer" element={
@@ -130,35 +137,50 @@ export default function App() {
         <Route path="settings"        element={<ManufacturerSettings />} />
         <Route path="settings/payments" element={<PaymentSettingsPage />} />
         <Route path="receivables"     element={<ReceivablesDashboard />} />
+        <Route path="reviews"         element={<ManufacturerReviews />} />
+        <Route path="groups"          element={<ManufacturerGroups />} />
+        <Route path="groups/pool"     element={<BuyerPool />} />
       </Route>
 
-      <Route path="/manufacturer/onboarding" element={
-        <ProtectedRoute allowedRole="manufacturer">
-          <Onboarding />
-        </ProtectedRoute>
-      } />
+        <Route path="/manufacturer/onboarding" element={
+          <ProtectedRoute allowedRole="manufacturer">
+            <Onboarding />
+          </ProtectedRoute>
+        } />
 
-      {/* ── Admin routes ── */}
-      <Route path="/admin" element={
-        <ProtectedRoute allowedRole="admin">
-          <AdminLayout />
-        </ProtectedRoute>
-      }>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard"      element={<AdminDashboard />} />
-        <Route path="manufacturers"  element={<AdminManufacturers />} />
-        <Route path="verification"   element={<AdminVerification />} />
-        <Route path="buyers"         element={<AdminBuyers />} />
-        <Route path="orders"         element={<AdminOrders />} />
-        <Route path="complaints"     element={<AdminComplaints />} />
-        <Route path="payments"       element={<AdminPayments />} />
-        <Route path="analytics"      element={<AdminAnalytics />} />
-        <Route path="content"        element={<AdminContent />} />
-        <Route path="settings"       element={<AdminSettings />} />
-      </Route>
+        {/* ── Admin routes ── */}
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard"      element={<AdminDashboard />} />
+          <Route path="manufacturers"  element={<AdminManufacturers />} />
+          <Route path="manufacturers/:id" element={<AdminManufacturerDetail />} />
+          <Route path="verification"   element={<AdminVerification />} />
+          <Route path="buyers"         element={<AdminBuyers />} />
+          <Route path="orders"         element={<AdminOrders />} />
+          <Route path="complaints"     element={<AdminComplaints />} />
+          <Route path="payments"       element={<AdminPayments />} />
+          <Route path="analytics"      element={<AdminAnalytics />} />
+          <Route path="content"        element={<AdminContent />} />
+          <Route path="settings"       element={<AdminSettings />} />
 
-      {/* ── Catch-all ── */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+          {/* Placeholders for new modules */}
+          <Route path="monitoring/*"   element={<AdminComingSoon />} />
+          <Route path="orders/stuck"   element={<AdminComingSoon />} />
+          <Route path="disputes/*"     element={<AdminComingSoon />} />
+          <Route path="finance/*"      element={<AdminComingSoon />} />
+          <Route path="analytics/*"    element={<AdminComingSoon />} />
+          <Route path="plans"          element={<AdminComingSoon />} />
+          <Route path="communicate/*"  element={<AdminComingSoon />} />
+          <Route path="settings/*"     element={<AdminComingSoon />} />
+        </Route>
+
+        {/* ── Catch-all ── */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   )
 }

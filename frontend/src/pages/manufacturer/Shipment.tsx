@@ -19,7 +19,7 @@ import { useAuth } from '@/context/AuthContext';
 // ── Transport type config ──────────────────────────────────────────────────────
 const TRANSPORT_TYPES = [
   { id: 'own_vehicle',        label: 'Own Vehicle',        sub: 'Self transport',       icon: Truck,     color: 'bg-amber-100 text-amber-700 border-amber-200' },
-  { id: 'transport_company',  label: 'Transport Company',  sub: 'Hired Carrier',     icon: Navigation, color: 'bg-blue-100 text-blue-700 border-blue-200' },
+  { id: 'transport_company',  label: 'Transport Company',  sub: 'Hired Carrier',     icon: Navigation, color: 'bg-mfr-peach text-mfr-brown border-mfr-border' },
   { id: 'bus_cargo',          label: 'Bus Cargo',          sub: 'GSRTC / MSRTC',     icon: Bus,       color: 'bg-green-100 text-green-700 border-green-200' },
   { id: 'train_parcel',       label: 'Train Parcel',       sub: 'Railway Cargo',     icon: Train,     color: 'bg-purple-100 text-purple-700 border-purple-200' },
   { id: 'courier',            label: 'Third Party Courier', sub: 'Delhivery / Shiprocket', icon: Package, color: 'bg-rose-100 text-rose-700 border-rose-200' },
@@ -30,8 +30,8 @@ const STATUS_STEPS = ['Order Placed', 'Confirmed', 'Dispatched', 'In Transit', '
 const STATUS_COLORS: Record<string, string> = {
   Processing: 'bg-slate-100 text-slate-600',
   Packed: 'bg-amber-100 text-amber-700',
-  Dispatched: 'bg-blue-100 text-blue-700',
-  'In Transit': 'bg-indigo-100 text-indigo-700',
+  Dispatched: 'bg-mfr-peach text-mfr-brown',
+  'In Transit': 'bg-amber-100 text-amber-700',
   'Reached Hub': 'bg-purple-100 text-purple-700',
   'Out for Delivery': 'bg-orange-100 text-orange-700',
   Delivered: 'bg-green-100 text-green-700',
@@ -184,27 +184,13 @@ export default function Shipment() {
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[#F5F2ED]">
       {/* Top Bar */}
-      <header className="h-20 flex items-center justify-between px-10 border-b border-[#E5E1DA] bg-[#F5F2ED] shrink-0">
-        <div className="relative w-80">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A89F91]" size={17} />
+      <header className="h-14 flex items-center px-10 border-b border-[#E5E1DA] bg-[#F5F2ED] shrink-0">
+        <div className="relative w-full max-w-md">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A89F91]" size={16} />
           <Input
             placeholder="Search shipments..."
-            className="pl-12 bg-[#EFE9E1] border-none rounded-full h-11 text-sm placeholder:text-[#A89F91] focus-visible:ring-0"
+            className="pl-12 bg-[#EFE9E1] border-none rounded-full h-10 text-sm placeholder:text-[#A89F91] focus-visible:ring-0"
           />
-        </div>
-        <div className="flex items-center gap-5">
-          <button className="text-[#6B4E3D] hover:opacity-70"><Bell size={20} /></button>
-          <button className="text-[#6B4E3D] hover:opacity-70"><HelpCircle size={20} /></button>
-          <Separator orientation="vertical" className="h-8 bg-[#E5E1DA]" />
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-bold text-[#1A1A1A]">{user?.name}</p>
-              <p className="text-[10px] text-[#A89F91] uppercase tracking-widest font-bold">Manufacturer</p>
-            </div>
-            <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
-              <AvatarFallback className="bg-[#6B4E3D] text-white">{user?.name?.[0]}</AvatarFallback>
-            </Avatar>
-          </div>
         </div>
       </header>
 
@@ -222,7 +208,8 @@ export default function Shipment() {
             <div className="flex gap-3">
               <Button
                 onClick={handleAiPlan}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-6 h-12 font-bold gap-2 shadow-lg shadow-indigo-600/20"
+                className="rounded-full px-6 h-12 font-bold gap-2 shadow-lg text-white"
+                style={{ background: '#6B4E3D', boxShadow: '0 4px 16px rgba(107,78,61,0.25)' }}
               >
                 <Sparkles size={18} /> AI Smart Plan
               </Button>
@@ -312,7 +299,7 @@ export default function Shipment() {
           <div className="grid grid-cols-4 gap-4">
             {[
               { label: 'Total Shipments', value: shipments.length, icon: Package, color: 'bg-[#FCE7D6] text-[#6B4E3D]' },
-              { label: 'In Transit', value: shipments.filter(s => s.status === 'In Transit' || s.status === 'Dispatched').length, icon: Truck, color: 'bg-blue-100 text-blue-700' },
+              { label: 'In Transit', value: shipments.filter(s => s.status === 'In Transit' || s.status === 'Dispatched').length, icon: Truck, color: 'bg-mfr-peach text-mfr-brown' },
               { label: 'Pending Dispatch', value: confirmedOrders.length, icon: Clock, color: 'bg-amber-100 text-amber-700' },
               { label: 'Delivered', value: shipments.filter(s => s.status === 'Delivered').length, icon: CheckCircle2, color: 'bg-green-100 text-green-700' },
             ].map(stat => (
@@ -799,7 +786,7 @@ export default function Shipment() {
               onClick={e => e.stopPropagation()}
               className="w-full max-w-3xl h-full bg-[#F5F2ED] flex flex-col shadow-2xl overflow-hidden"
             >
-              <div className="px-8 pt-8 pb-6 bg-indigo-600 text-white shrink-0">
+              <div className="px-8 pt-8 pb-6 text-white shrink-0" style={{ background: '#6B4E3D' }}>
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="text-2xl font-black flex items-center gap-2"><Sparkles size={24} /> AI Shipment Plan</h2>
                   <button onClick={() => setShowAiModal(false)} className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30">
@@ -814,16 +801,16 @@ export default function Shipment() {
               <ScrollArea className="flex-1">
                 <div className="p-8 space-y-8">
                   {loadingAi ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-indigo-600">
+                    <div className="flex flex-col items-center justify-center py-20" style={{ color: '#6B4E3D' }}>
                       <Loader2 className="w-12 h-12 animate-spin mb-4" />
                       <p className="font-bold">Analyzing pending orders and routes...</p>
                     </div>
                   ) : aiPlan ? (
                     <>
-                      <div className="bg-white rounded-2xl p-6 border border-indigo-100 shadow-sm flex items-center justify-between">
+                      <div className="bg-white rounded-2xl p-6 border border-mfr-border shadow-sm flex items-center justify-between">
                         <div>
                           <p className="text-xs uppercase tracking-widest font-bold text-[#A89F91]">Est. Savings</p>
-                          <p className="text-3xl font-black text-indigo-600">₹{aiPlan.summary?.estimated_total_savings_inr?.toLocaleString('en-IN')}</p>
+                          <p className="text-3xl font-black" style={{ color: '#6B4E3D' }}>₹{aiPlan.summary?.estimated_total_savings_inr?.toLocaleString('en-IN')}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-bold text-[#1A1A1A]">{aiPlan.summary?.total_shipment_groups} Optimized Groups</p>
@@ -849,7 +836,7 @@ export default function Shipment() {
                           <div className="relative z-10">
                             <div className="flex items-center justify-between mb-4">
                               <div>
-                                <Badge className="bg-indigo-100 text-indigo-700 border-none mb-2">{group.group_id}</Badge>
+                                <Badge className="bg-mfr-peach text-mfr-brown border-none mb-2">{group.group_id}</Badge>
                                 <h3 className="text-lg font-black text-[#1A1A1A]">{group.delivery_area}</h3>
                               </div>
                               <div className="text-right">
@@ -902,7 +889,7 @@ export default function Shipment() {
                                 setTransportType(matchingType ? matchingType.id : 'own_vehicle');
                                 setShowForm(true);
                               }}
-                              className="w-full mt-5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold border border-indigo-200"
+                              className="w-full mt-5 bg-mfr-peach hover:bg-mfr-peach-mid text-mfr-brown font-bold border border-mfr-border"
                             >
                               Setup This Shipment
                             </Button>

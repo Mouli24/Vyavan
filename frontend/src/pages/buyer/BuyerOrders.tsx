@@ -34,6 +34,7 @@ export default function BuyerOrders() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [selected, setSelected] = useState<Order | null>(null)
+  const [reviewOrder, setReviewOrder] = useState<Order | null>(null)
 
   useEffect(() => {
     api.getOrders(statusFilter ? { status: statusFilter } : undefined)
@@ -134,9 +135,22 @@ export default function BuyerOrders() {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="font-bold text-sp-purple">{order.value}</p>
-                    <button className="mt-1.5 flex items-center gap-1 text-xs text-sp-muted hover:text-sp-purple transition-colors ml-auto">
-                      <Eye className="w-3 h-3" /> Details
-                    </button>
+                    <div className="flex flex-col items-end gap-1.5 mt-1.5">
+                      <button className="flex items-center gap-1 text-xs text-sp-muted hover:text-sp-purple transition-colors">
+                        <Eye className="w-3 h-3" /> Details
+                      </button>
+                      {order.status === 'Delivered' && !order.isReviewed && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setReviewOrder(order);
+                          }}
+                          className="flex items-center gap-1 text-xs font-bold text-sp-success hover:bg-sp-mint px-2 py-1 rounded-md transition-colors"
+                        >
+                          <Star className="w-3 h-3 fill-current" /> Rate Now
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -227,6 +241,98 @@ export default function BuyerOrders() {
           </div>
         </div>
       )}
+      {/* Review Modal */}
+      {reviewOrder && <ReviewModal order={reviewOrder} onClose={() => setReviewOrder(null)} onDone={(rev) => {
+        setOrders(prev => prev.map(o => o._id === reviewOrder._id ? { ...o, isReviewed: true, review: rev._id } : o));
+        setReviewOrder(null);
+      }} />}
     </div>
   )
+}
+
+function ReviewModal({ order, onClose, onDone }: { order: Order; onClose: () => void; onDone: (rev: any) => void }) {
+  const [ratings, setRatings] = useState({ quality: 5, delivery: 5, communication: 5 });
+  const [comment, setComment] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    try {
+      setLoading(true);
+      const res = await api.submitReview({
+        orderId: order._id,
+        ratings,
+        comment
+      });
+      alert('Thank you for your review!');
+      onDone(res);
+    } catch (e: any) {
+      alert(e.message ?? 'Failed to submit review');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="p-6 border-b border-sp-border flex items-center justify-between">
+          <h3 className="text-lg font-bold text-sp-text">Rate Your Experience</h3>
+          <button onClick={onClose} className="text-sp-muted hover:text-sp-text">✕</button>
+        </div>
+        <div className="p-6 space-y-6">
+          <div className="text-center mb-2">
+            <p className="text-xs text-sp-muted uppercase tracking-widest mb-1">Manufacturer</p>
+            <p className="font-bold text-sp-text">{(order.manufacturer as any)?.company || (order.manufacturer as any)?.name || 'Manufacturer'}</p>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              { key: 'quality', label: 'Product Quality' },
+              { key: 'delivery', label: 'Delivery Timeline' },
+              { key: 'communication', label: 'Communication' },
+            ].map(param => (
+              <div key={param.key} className="flex items-center justify-between">
+                <span className="text-sm font-medium text-sp-text">{param.label}</span>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <button
+                      key={star}
+                      onClick={() => setRatings(prev => ({ ...prev, [param.key]: star }))}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                        ratings[param.key as keyof typeof ratings] >= star
+                          ? 'bg-amber-100 text-amber-500'
+                          : 'bg-sp-bg text-sp-border hover:bg-gray-100'
+                      }`}
+                    >
+                      <Star className={`w-4 h-4 ${ratings[param.key as keyof typeof ratings] >= star ? 'fill-current' : ''}`} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-sp-muted uppercase tracking-wider mb-2">Review Comment (Optional)</label>
+            <textarea
+              className="w-full bg-sp-bg border border-sp-border rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-sp-purple/20 focus:border-sp-purple"
+              rows={3}
+              placeholder="Share your experience (max 500 characters)..."
+              maxLength={500}
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+            />
+          </div>
+
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="w-full py-4 gradient-card-purple text-white font-extrabold rounded-2xl shadow-lg hover:opacity-90 transition-all disabled:opacity-50"
+          >
+            {loading ? 'Submitting...' : 'Submit Review'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

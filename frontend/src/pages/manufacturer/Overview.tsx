@@ -179,7 +179,7 @@ export default function Overview() {
               value: activeOrderCount,
               sub: `${orders.filter(o => o.status === 'Shipped').length} shipments in transit`,
               subColor: 'text-slate-400',
-              bg: 'bg-white', iconBg: 'bg-blue-50', iconColor: 'text-blue-500',
+              bg: 'bg-white', iconBg: 'bg-mfr-peach', iconColor: 'text-mfr-brown',
             },
             {
               icon: BarChart2, label: 'Efficiency Rate',
@@ -288,8 +288,8 @@ export default function Overview() {
                 ) : activeOrders.slice(0, 4).map((order, idx) => {
                   const statusLabel = order.status === 'In Production' ? 'In Progress' : 'Finishing'
                   const statusColor = order.status === 'In Production'
-                    ? 'bg-purple-50 text-purple-600'
-                    : 'bg-blue-50 text-blue-600'
+                    ? 'bg-mfr-peach text-mfr-brown'
+                    : 'bg-amber-50 text-amber-700'
                   const icons = ['📦', '🚚', '🏭', '✂️']
 
                   return (
@@ -372,7 +372,7 @@ export default function Overview() {
               <div className="flex flex-col gap-3 mb-4">
                 {orders.slice(0, 2).map((order, i) => {
                   const initials = order.buyer?.initials || order.buyer?.name?.slice(0, 2).toUpperCase() || 'JD'
-                  const colors = ['bg-blue-100 text-blue-700', 'bg-purple-100 text-purple-700']
+                  const colors = ['bg-mfr-peach text-mfr-brown', 'bg-amber-100 text-amber-700']
                   return (
                     <div key={i} className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${colors[i % 2]}`}>

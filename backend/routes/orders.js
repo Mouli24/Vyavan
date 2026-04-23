@@ -6,6 +6,7 @@ import Shipment from '../models/Shipment.js';
 import StockLog from '../models/StockLog.js';
 import { protect, requireRole } from '../middleware/auth.js';
 import { handleHolidayAutomation } from '../utils/holidayHelper.js';
+import BuyerGroupLog from '../models/BuyerGroupLog.js';
 
 const router = Router();
 
@@ -44,7 +45,10 @@ router.get('/:id', protect, async (req, res) => {
 // POST /api/orders  — buyer places order
 router.post('/', protect, requireRole('buyer'), async (req, res) => {
   try {
-    const { manufacturer, items, value, valueRaw, expectedDate, products, deliveryAddress } = req.body;
+    const { 
+      manufacturer, items, value, valueRaw, expectedDate, products, deliveryAddress,
+      appliedRewardValue, appliedGroupId 
+    } = req.body;
     const orderId = `#ORD-${Date.now().toString().slice(-5)}`;
     const order = await Order.create({
       orderId,
@@ -60,11 +64,23 @@ router.post('/', protect, requireRole('buyer'), async (req, res) => {
       valueRaw,
       expectedDate,
       products,
-      deliveryAddress
+      deliveryAddress,
+      appliedRewardValue,
+      appliedGroupId
     });
 
     // Holiday behavior
     await handleHolidayAutomation(manufacturer, req.user._id, 'order');
+
+    // Reward Log
+    if (appliedGroupId) {
+      await BuyerGroupLog.create({
+        group: appliedGroupId,
+        buyer: req.user._id,
+        action: 'reward_used',
+        details: `Reward applied to order ${orderId} (Value: ${appliedRewardValue})`
+      });
+    }
 
     res.status(201).json(order);
   } catch (err) {
@@ -78,8 +94,10 @@ router.patch('/:id/confirm', protect, requireRole('manufacturer'), async (req, r
     const order = await Order.findOne({ _id: req.params.id, manufacturer: req.user._id }).populate('products.product');
     if (!order) return res.status(404).json({ message: 'Order not found' });
     
-    console.log(`Confirming order ${order.orderId}. Current status: "${order.status}"`);
-
+    if (order.status === 'Confirmed') {
+      return res.json(order);
+    }
+    
     if (order.status && order.status.toLowerCase() !== 'new') {
       return res.status(400).json({ message: `Order can only be confirmed from New status (Current: ${order.status})` });
     }
@@ -223,7 +241,7 @@ router.patch('/:id/delivered', protect, requireRole('buyer'), async (req, res) =
   try {
     const order = await Order.findOneAndUpdate(
       { _id: req.params.id, 'buyer.ref': req.user._id, status: 'Shipped' },
-      { status: 'Delivered' },
+      { status: 'Delivered', deliveredAt: new Date() },
       { new: true }
     );
     if (!order) return res.status(404).json({ message: 'Order not found or not shipped' });

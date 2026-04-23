@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Search, Bell, ShoppingBag, ChevronDown, MapPin,
@@ -90,12 +90,9 @@ export default function BuyerBrowse() {
       {/* ── Top Navbar ── */}
       <header className="sticky top-0 z-50 bg-white border-b border-[#EDE8E0] px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-10">
-          <h1
-            className="text-xl font-black text-slate-900 cursor-pointer tracking-tight"
-            onClick={() => navigate('/login')}
-          >
-            B2BHarat
-          </h1>
+          <div className="cursor-pointer" onClick={() => navigate('/login')}>
+            <VyawanLogo size={26} />
+          </div>
           <nav className="hidden md:flex items-center gap-7">
             {['Collections', 'Artisans', 'Services', 'Inquiry', 'Tracking'].map((item, i) => (
               <button
@@ -334,8 +331,8 @@ export default function BuyerBrowse() {
                   onClick={() => setSubCat(sub === subCat ? '' : sub)}
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
                     subCat === sub
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-white border-[#EDE8E0] text-slate-600 hover:border-slate-400'
+                      ? 'bg-sp-purple text-white border-sp-purple'
+                      : 'bg-white border-sp-border text-slate-600 hover:border-sp-purple/40'
                   }`}
                 >
                   {sub}
@@ -442,8 +439,8 @@ export default function BuyerBrowse() {
       <footer className="bg-white border-t border-[#EDE8E0] px-8 py-12">
         <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-lg font-black text-slate-900 mb-2">B2BHARAT</h3>
-            <p className="text-sm text-slate-400 leading-relaxed">
+            <VyawanLogo size={22} />
+            <p className="text-sm text-slate-400 leading-relaxed mt-2">
               Connecting world-class manufacturers with global brands through a curated digital experience.
             </p>
           </div>
@@ -481,7 +478,7 @@ export default function BuyerBrowse() {
           </div>
         </div>
         <div className="max-w-6xl mx-auto mt-8 pt-6 border-t border-[#EDE8E0] flex items-center justify-between">
-          <p className="text-xs text-slate-400">© 2024 B2BHarat. Crafted for the Modern Trade.</p>
+          <p className="text-xs text-slate-400">© 2024 Vyawan. India's Premier B2B Marketplace.</p>
         </div>
       </footer>
     </div>
@@ -589,3 +586,4 @@ function CompanyCard({ company, idx, onView }: { company: any; idx: number; onVi
     </motion.div>
   )
 }
+

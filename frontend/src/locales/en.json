@@ -1,0 +1,27 @@
+{
+  "navigation": {
+    "overview": "Overview",
+    "myStore": "My Store",
+    "orders": "Orders",
+    "inventory": "Inventory",
+    "shipment": "Shipment",
+    "negotiation": "Negotiation",
+    "payment": "Payment",
+    "complaints": "Complaints",
+    "onboarding": "Onboarding",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "common": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "chooseLanguage": "Choose your preferred language"
+  },
+  "landing": {
+    "hero_title": "Source Smarter, Buy Direct",
+    "industry_title": "Explore Every Sector"
+  }
+}

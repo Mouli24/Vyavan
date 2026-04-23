@@ -80,10 +80,10 @@ export default function TransactionHistory() {
       cell: info => {
         const type = info.getValue();
         const colors: any = {
-          'Order Payment': 'text-blue-600 bg-blue-50',
-          'Refund': 'text-purple-600 bg-purple-50',
+          'Order Payment': 'text-mfr-brown bg-mfr-peach',
+          'Refund': 'text-mfr-brown bg-mfr-peach',
           'Platform Fee': 'text-orange-600 bg-orange-50',
-          'Payout': 'text-indigo-600 bg-indigo-50'
+          'Payout': 'text-mfr-brown bg-mfr-peach'
         };
         return (
           <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-flex ${colors[type]}`}>

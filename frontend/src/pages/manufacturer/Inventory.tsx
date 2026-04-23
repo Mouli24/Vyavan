@@ -41,7 +41,7 @@ function deriveStatus(available: number, reorder: number): StockRow['status'] {
 const STATUS_STYLE: Record<StockRow['status'], string> = {
   CRITICAL:   'bg-red-500 text-white',
   'LOW STOCK':'bg-orange-400 text-white',
-  HEALTHY:    'bg-blue-100 text-blue-600',
+  HEALTHY:    'bg-mfr-peach text-mfr-brown',
 }
 
 export default function Inventory() {
@@ -129,6 +129,16 @@ export default function Inventory() {
     }, 800)
   }
 
+  const handleToggleStock = async (row: StockRow) => {
+    try {
+      const newStock = row.available > 0 ? 0 : row.reorderLevel * 2; // Simple reset to healthy if OOS
+      await api.updateProduct(row.product._id, { stock: newStock });
+      fetchProducts();
+    } catch (e) {
+      alert('Failed to update stock status');
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
@@ -141,43 +151,15 @@ export default function Inventory() {
     <div className="flex-1 p-8 overflow-y-auto bg-[#FAF7F4]">
 
       {/* ── Topbar ── */}
-      <header className="flex items-center justify-between mb-10">
-        <div className="relative w-80">
+      <header className="flex items-center mb-10">
+        <div className="relative w-full max-w-lg">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
           <Input
             placeholder="Search inventory..."
-            className="pl-10 bg-white border-none shadow-sm rounded-full h-11 focus-visible:ring-primary/20 uppercase placeholder:normal-case"
+            className="pl-10 bg-white border-none shadow-sm rounded-full h-11 focus-visible:ring-primary/20 placeholder:normal-case"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
-        </div>
-
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/60">
-            <Globe size={20} className="text-muted-foreground" />
-          </Button>
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/60 relative">
-            <Bell size={20} className="text-muted-foreground" />
-            {lowStockCount > 0 && (
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[#FAF7F4]" />
-            )}
-          </Button>
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/60">
-            <HelpCircle size={20} className="text-muted-foreground" />
-          </Button>
-
-          <Separator orientation="vertical" className="h-8" />
-
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-bold">{user?.name || 'User'}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{user?.company || 'Manufacturer'}</p>
-            </div>
-            <Avatar className="h-10 w-10 border-2 border-primary/10">
-              <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user?.name || 'User'}`} />
-              <AvatarFallback>{user?.name?.[0] || 'U'}</AvatarFallback>
-            </Avatar>
-          </div>
         </div>
       </header>
 
@@ -287,7 +269,7 @@ export default function Inventory() {
                   <p className={`text-sm font-bold ${
                     row.status === 'CRITICAL' ? 'text-red-500' :
                     row.status === 'LOW STOCK' ? 'text-orange-500' :
-                    'text-blue-500'
+                    'text-mfr-brown'
                   }`}>
                     {row.available}
                   </p>
@@ -299,6 +281,18 @@ export default function Inventory() {
                   <Badge className={`rounded-full px-3 py-1 text-[10px] font-bold w-fit ${STATUS_STYLE[row.status]}`}>
                     {row.status}
                   </Badge>
+
+                  {/* Actions (New) */}
+                  <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleToggleStock(row)}
+                      className={`text-[10px] font-black uppercase tracking-tight rounded-xl ${row.available > 0 ? 'text-red-500 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
+                    >
+                      {row.available > 0 ? 'Mark OOS' : 'Restock'}
+                    </Button>
+                  </div>
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -416,7 +410,7 @@ export default function Inventory() {
                 'Reserved stock is released instantly upon Order Cancellation.',
               ].map((item, i) => (
                 <li key={i} className="flex items-start gap-2">
-                  <CheckCircle2 size={14} className="text-blue-500 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 size={14} className="text-mfr-brown mt-0.5 flex-shrink-0" />
                   <p className="text-xs text-muted-foreground leading-relaxed">{item}</p>
                 </li>
               ))}
@@ -436,7 +430,7 @@ export default function Inventory() {
                     exit={{ opacity: 0, x: -10 }}
                     className="flex items-start gap-3"
                   >
-                    <div className={`w-1 rounded-full mt-1 flex-shrink-0 self-stretch ${adj.type === 'add' ? 'bg-blue-400' : 'bg-red-400'}`} />
+                    <div className={`w-1 rounded-full mt-1 flex-shrink-0 self-stretch ${adj.type === 'add' ? 'bg-mfr-brown' : 'bg-red-400'}`} />
                     <div>
                       <p className="text-xs font-semibold text-slate-800">{adj.label}</p>
                       <p className="text-[10px] text-muted-foreground">{adj.time} • {adj.note}</p>

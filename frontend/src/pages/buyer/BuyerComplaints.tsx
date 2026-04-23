@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { 
   AlertCircle, 
   Plus, 
@@ -62,7 +62,7 @@ export default function BuyerComplaints() {
   };
 
   const handleEscalate = async (id: string) => {
-    if (!confirm('Are you sure you want to escalate this to Sephio Admin?')) return;
+    if (!confirm('Are you sure you want to escalate this to Vyawan Admin?')) return;
     try {
       const res = await api.escalateComplaint(id);
       setComplaints(prev => prev.map(c => c._id === id ? { ...c, status: res.status } : c));
@@ -266,3 +266,4 @@ export default function BuyerComplaints() {
     </div>
   );
 }
+

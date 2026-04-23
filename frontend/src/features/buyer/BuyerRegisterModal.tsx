@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
@@ -113,7 +113,7 @@ export default function BuyerRegisterModal({ open, onClose, onSuccess }: Props) 
         <div className="p-8 pb-4">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-slate-900">Buyer Registration</h2>
-            <p className="text-sm text-slate-500 mt-1">Join Sephio as a business buyer</p>
+            <p className="text-sm text-slate-500 mt-1">Join Vyawan as a business buyer</p>
           </div>
 
           {error && (
@@ -238,3 +238,4 @@ export default function BuyerRegisterModal({ open, onClose, onSuccess }: Props) 
     </div>
   )
 }
+
