@@ -189,70 +189,89 @@ export default function AdminVerification() {
               <p className="font-medium text-sm">No pending manufacturer verifications</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-sp-bg/60 border-b border-sp-border-light">
-                  <tr>
-                    <th className="text-left py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider">Company</th>
-                    <th className="text-left py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider hidden md:table-cell">GST / PAN</th>
-                    <th className="text-left py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider hidden lg:table-cell">SLA Timer</th>
-                    <th className="text-left py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider">Status</th>
-                    <th className="text-right py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-sp-border-light">
-                  {filteredMfr.map(m => (
-                    <tr key={m._id} className="hover:bg-sp-bg/40 transition-colors">
-                      <td className="py-3.5 px-5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-sp-purple-pale rounded-full flex items-center justify-center text-sp-purple font-semibold text-sm flex-shrink-0">
-                            {m.name?.[0] ?? 'M'}
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-sp-text">{m.name}</p>
-                            <p className="text-xs text-sp-muted">{m.company}</p>
-                            <p className="text-xs text-sp-placeholder">{m.email}</p>
-                          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 p-6">
+              {filteredMfr.map(m => (
+                <div key={m._id} className="bg-white border-2 border-sp-border-light rounded-[32px] p-6 hover:border-sp-purple/20 hover:shadow-xl transition-all group flex flex-col">
+                  {/* Header */}
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="flex gap-4">
+                      <div className="w-14 h-14 bg-sp-purple-pale rounded-2xl flex items-center justify-center text-sp-purple text-xl font-bold border border-sp-purple/10">
+                        {m.name?.[0]}
+                      </div>
+                      <div className="max-w-[150px]">
+                        <h3 className="font-bold text-sp-text truncate">{m.name}</h3>
+                        <p className="text-xs text-sp-muted italic truncate">{m.company}</p>
+                        <p className="text-[10px] text-sp-placeholder mt-1">{new Date(m.createdAt).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <SLATimer createdAt={m.createdAt} />
+                  </div>
+
+                  {/* Document Checklist */}
+                  <div className="space-y-3 mb-8">
+                     <p className="text-[10px] font-black text-sp-muted uppercase tracking-widest px-1">Document Checklist</p>
+                     <div className="grid grid-cols-2 gap-2">
+                        <div className={`flex items-center gap-2 p-2.5 rounded-xl border ${m.profile?.gstNumber ? 'bg-emerald-50/50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
+                           <Shield size={14} className={m.profile?.gstNumber ? 'text-emerald-500' : ''} />
+                           <span className="text-[10px] font-bold">GST Cert.</span>
+                           {m.profile?.gstNumber && <CheckCircle size={12} className="ml-auto text-emerald-500" />}
                         </div>
-                      </td>
-                      <td className="py-3.5 px-5 hidden md:table-cell">
-                        <div className="space-y-1">
-                          {m.profile?.gstNumber ? (
-                            <p className="text-xs font-medium text-sp-text flex items-center gap-1">
-                              <Shield className="w-3 h-3 text-sp-success" /> {m.profile.gstNumber}
-                            </p>
-                          ) : <p className="text-xs text-sp-placeholder">GST not submitted</p>}
-                          {m.profile?.panNumber && (
-                            <p className="text-xs text-sp-muted">{m.profile.panNumber}</p>
-                          )}
+                        <div className={`flex items-center gap-2 p-2.5 rounded-xl border ${m.profile?.panNumber ? 'bg-emerald-50/50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
+                           <Building2 size={14} className={m.profile?.panNumber ? 'text-emerald-500' : ''} />
+                           <span className="text-[10px] font-bold">PAN Card</span>
+                           {m.profile?.panNumber && <CheckCircle size={12} className="ml-auto text-emerald-500" />}
                         </div>
-                      </td>
-                      <td className="py-3.5 px-5 hidden lg:table-cell">
-                        <SLATimer createdAt={m.createdAt} />
-                      </td>
-                      <td className="py-3.5 px-5">
-                        <StatusBadge status={m.manufacturerStatus ?? 'pending'} />
-                      </td>
-                      <td className="py-3.5 px-5">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button onClick={() => setSelected(m)} className="p-1.5 text-sp-muted hover:text-sp-purple hover:bg-sp-purple-pale rounded-lg transition-all" title="View docs">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleApprove(m._id)} className="p-1.5 text-sp-success hover:bg-sp-mint rounded-lg transition-all" title="Approve">
-                            <CheckCircle className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => { setSelected(m); setShowRejectModal(true) }} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Reject">
-                            <XCircle className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => { setSelected(m); setShowRequestModal(true) }} className="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg transition-all" title="Request more docs">
-                            <FileText className="w-4 h-4" />
-                          </button>
+                        <div className={`flex items-center gap-2 p-2.5 rounded-xl border ${m.profile?.factoryImages?.length ? 'bg-emerald-50/50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
+                           <Search size={14} className={m.profile?.factoryImages?.length ? 'text-emerald-500' : ''} />
+                           <span className="text-[10px] font-bold">Factory Photos</span>
+                           {m.profile?.factoryImages?.length && <CheckCircle size={12} className="ml-auto text-emerald-500" />}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <div className={`flex items-center gap-2 p-2.5 rounded-xl border ${m.profile?.bizDocUrl ? 'bg-emerald-50/50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
+                           <FileText size={14} className={m.profile?.bizDocUrl ? 'text-emerald-500' : ''} />
+                           <span className="text-[10px] font-bold">Biz Reg.</span>
+                           {m.profile?.bizDocUrl && <CheckCircle size={12} className="ml-auto text-emerald-500" />}
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* GST Validation Status */}
+                  {m.profile?.gstNumber && (
+                     <div className="mb-8 p-3 bg-emerald-50/30 border border-emerald-100 rounded-2xl flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                           <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
+                              <Shield size={12} />
+                           </div>
+                           <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-tight">GST Legal Check</span>
+                        </div>
+                        <span className="text-[10px] font-black text-emerald-600 flex items-center gap-1"><CheckCircle size={12} /> VALIDATED</span>
+                     </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="mt-auto space-y-3">
+                    <button 
+                      onClick={() => setSelected(m)}
+                      className="w-full py-3 bg-sp-bg border border-sp-border text-sp-text text-sm font-bold rounded-2xl hover:bg-sp-purple-pale hover:text-sp-purple hover:border-sp-purple/20 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Eye size={16} /> View Details
+                    </button>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleApprove(m._id)}
+                        className="flex-1 py-3 bg-emerald-600 text-white text-xs font-black rounded-2xl hover:opacity-90 transition-all shadow-lg shadow-emerald-100"
+                      >
+                        APPROVE
+                      </button>
+                      <button 
+                        onClick={() => { setSelected(m); setShowRejectModal(true) }}
+                        className="flex-1 py-3 bg-white border border-red-100 text-red-600 text-xs font-black rounded-2xl hover:bg-red-50 transition-all"
+                      >
+                        REJECT
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )
         ) : (

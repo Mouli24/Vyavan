@@ -47,6 +47,18 @@ const orderSchema = new mongoose.Schema({
   reviewReminderSent: { type: Boolean, default: false },
   appliedRewardValue: { type: Number, default: 0 },
   appliedGroupId: { type: mongoose.Schema.Types.ObjectId, ref: 'BuyerGroup' },
+  
+  // New Admin fields
+  escrowStatus: { type: String, enum: ['Held', 'Released', 'Refunded', 'Pending'], default: 'Pending' },
+  paymentStatus: { type: String, enum: ['Paid', 'Partial', 'Unpaid', 'Overdue'], default: 'Unpaid' },
+  adminNotes: { type: String },
+  timeline: [{
+    status: String,
+    actor: String, // 'system', 'manufacturer', 'buyer', 'admin'
+    note: String,
+    createdAt: { type: Date, default: Date.now }
+  }],
+  
 }, { timestamps: true });
 
 export default mongoose.model('Order', orderSchema);

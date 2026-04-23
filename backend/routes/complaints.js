@@ -142,6 +142,16 @@ router.patch('/:id/escalate', protect, requireRole('buyer'), async (req, res) =>
       refId: complaint._id,
     })));
 
+    // Notify Admin Dashboard
+    if (req.io) {
+      req.io.to('admin_dashboard').emit('new_flag', {
+        title: complaint.title,
+        company: complaint.company,
+        status: complaint.status,
+        updatedAt: complaint.updatedAt
+      });
+    }
+
     res.json(complaint);
   } catch (err) {
     res.status(500).json({ message: err.message });

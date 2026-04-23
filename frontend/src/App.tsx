@@ -51,6 +51,15 @@ import AdminPayments          from './pages/admin/AdminPayments'
 import AdminContent           from './pages/admin/AdminContent'
 import AdminComingSoon        from './pages/admin/AdminComingSoon'
 import AdminManufacturerDetail from './pages/admin/AdminManufacturerDetail'
+import AdminBuyerDetail      from './pages/admin/AdminBuyerDetail'
+import AdminBuyerVerification from './pages/admin/AdminBuyerVerification'
+import AdminGlobalActivity   from './pages/admin/AdminGlobalActivity'
+import AdminFraudCenter      from './pages/admin/AdminFraudCenter'
+import AdminOrderDetail      from './pages/admin/AdminOrderDetail'
+import AdminStuckOrders      from './pages/admin/AdminStuckOrders'
+import AdminDisputeResolution from './pages/admin/AdminDisputeResolution'
+import AdminReturns           from './pages/admin/AdminReturns'
+import AdminPlans             from './pages/admin/AdminPlans'
 
 // Public pages
 import CompanyStorefront      from './pages/company/CompanyStorefront'
@@ -156,20 +165,27 @@ export default function App() {
           <Route path="manufacturers/:id" element={<AdminManufacturerDetail />} />
           <Route path="verification"   element={<AdminVerification />} />
           <Route path="buyers"         element={<AdminBuyers />} />
+          <Route path="buyers/:id"     element={<AdminBuyerDetail />} />
+          <Route path="buyers/verification" element={<AdminBuyerVerification />} />
           <Route path="orders"         element={<AdminOrders />} />
+          <Route path="orders/:id"     element={<AdminOrderDetail />} />
+          <Route path="orders/stuck"   element={<AdminStuckOrders />} />
           <Route path="complaints"     element={<AdminComplaints />} />
+          <Route path="complaints/:id/resolution" element={<AdminDisputeResolution />} />
+          <Route path="disputes/returns" element={<AdminReturns />} />
+          <Route path="finance/escrow" element={<AdminPayments />} />
+          <Route path="finance/commission" element={<AdminPayments />} />
+          <Route path="finance/refunds" element={<AdminPayments />} />
           <Route path="payments"       element={<AdminPayments />} />
           <Route path="analytics"      element={<AdminAnalytics />} />
+          <Route path="analytics/sectors" element={<AdminAnalytics />} />
+          <Route path="analytics/geography" element={<AdminAnalytics />} />
+          <Route path="analytics/performance" element={<AdminAnalytics />} />
+          <Route path="logs"           element={<AdminGlobalActivity />} />
+          <Route path="fraud"          element={<AdminFraudCenter />} />
           <Route path="content"        element={<AdminContent />} />
+          <Route path="plans"          element={<AdminPlans />} />
           <Route path="settings"       element={<AdminSettings />} />
-
-          {/* Placeholders for new modules */}
-          <Route path="monitoring/*"   element={<AdminComingSoon />} />
-          <Route path="orders/stuck"   element={<AdminComingSoon />} />
-          <Route path="disputes/*"     element={<AdminComingSoon />} />
-          <Route path="finance/*"      element={<AdminComingSoon />} />
-          <Route path="analytics/*"    element={<AdminComingSoon />} />
-          <Route path="plans"          element={<AdminComingSoon />} />
           <Route path="communicate/*"  element={<AdminComingSoon />} />
           <Route path="settings/*"     element={<AdminComingSoon />} />
         </Route>

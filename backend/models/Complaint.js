@@ -16,9 +16,23 @@ const complaintSchema = new mongoose.Schema({
   filingDate:   { type: String },
   buyer:        { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   manufacturer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  resolution:   {
-    type: { type: String, enum: ['replace', 'refund', 'rejected', null], default: null },
-    note: { type: String },
+  order:        { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+  orderId:      { type: String }, 
+  
+  // Manufacturer Details
+  manufacturerExplanation: { type: String },
+  manufacturerDocuments:   [{ type: String }],
+  
+  resolution: {
+    decision: { 
+      type: String, 
+      enum: ['FAVOUR_BUYER', 'FAVOUR_MANUFACTURER', 'PARTIAL_REFUND', 'BOTH_AT_FAULT', 'PENDING'], 
+      default: 'PENDING' 
+    },
+    refundAmount:  { type: Number, default: 0 },
+    adminNote:     { type: String },
+    resolvedAt:    { type: Date },
+    resolvedBy:    { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
   },
 }, { timestamps: true });
 

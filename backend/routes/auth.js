@@ -66,6 +66,17 @@ router.post('/register', [
       return res.status(409).json({ message: 'Email already registered' });
     }
     const user = await User.create({ name, email, password, role, company, location });
+
+    // Notify Admin Dashboard
+    if (req.io) {
+      req.io.to('admin_dashboard').emit('new_registration', {
+        name: user.name,
+        role: user.role,
+        company: user.company,
+        createdAt: user.createdAt
+      });
+    }
+
     res.status(201).json({ token: signToken(user._id), user });
   } catch (err) {
     res.status(500).json({ message: err.message });

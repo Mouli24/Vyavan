@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
   avatar:  { type: String },
   location:{ type: String },
   phone:   { type: String },
+  parentPartner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // For sub-users/team members
 
   // Manufacturer-specific status (pending admin approval)
   manufacturerStatus: {
@@ -31,6 +32,7 @@ const userSchema = new mongoose.Schema({
 
   // Buyer verification
   isVerified:  { type: Boolean, default: false },
+  isFlagged:   { type: Boolean, default: false },
   gstVerified: { type: Boolean, default: false },
 
   // Address Book

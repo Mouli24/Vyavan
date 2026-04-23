@@ -82,6 +82,16 @@ router.post('/', protect, requireRole('buyer'), async (req, res) => {
       });
     }
 
+    // Notify Admin Dashboard
+    if (req.io) {
+      req.io.to('admin_dashboard').emit('new_order', {
+        orderId: order.orderId,
+        value: order.value,
+        createdAt: order.createdAt,
+        buyer: order.buyer
+      });
+    }
+
     res.status(201).json(order);
   } catch (err) {
     res.status(500).json({ message: err.message });

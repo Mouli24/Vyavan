@@ -79,6 +79,14 @@ io.on('connection', (socket) => {
   socket.on('leave_negotiation', (negotiationId) => {
     socket.leave(negotiationId);
   });
+
+  // Admin dashboard live feed room
+  socket.on('join_admin_dashboard', () => {
+    socket.join('admin_dashboard');
+  });
+  socket.on('leave_admin_dashboard', () => {
+    socket.leave('admin_dashboard');
+  });
 });
 
 // Attach io to req

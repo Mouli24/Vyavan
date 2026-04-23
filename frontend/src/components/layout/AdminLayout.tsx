@@ -32,9 +32,8 @@ const ADMIN_NAV = [
     label: 'Monitoring',
     icon: Eye,
     subItems: [
-      { icon: Activity,       label: 'Activity',   to: '/admin/monitoring/activity' },
-      { icon: ShieldAlert,    label: 'Suspicious', to: '/admin/monitoring/suspicious' },
-      { icon: Ghost,          label: 'Spam',       to: '/admin/monitoring/spam' },
+      { icon: History,        label: 'Global Logs',   to: '/admin/logs' },
+      { icon: ShieldAlert,    label: 'Risk Control', to: '/admin/fraud' },
     ]
   },
   {
@@ -42,7 +41,7 @@ const ADMIN_NAV = [
     icon: ShoppingCart,
     subItems: [
       { icon: List,           label: 'All Orders',     to: '/admin/orders' },
-      { icon: Clock,          label: 'Stuck Orders',   to: '/admin/orders/stuck' },
+      { icon: ShieldAlert,    label: 'Fulfillment Gap', to: '/admin/orders/stuck' },
     ]
   },
   {
@@ -51,7 +50,7 @@ const ADMIN_NAV = [
     subItems: [
       { icon: AlertCircle,    label: 'Escalated',      to: '/admin/complaints?status=escalated' },
       { icon: RotateCcw,      label: 'Returns',        to: '/admin/disputes/returns' },
-      { icon: History,        label: 'History',        to: '/admin/disputes/history' },
+      { icon: History,        label: 'Resolution Hub', to: '/admin/complaints' },
     ]
   },
   {

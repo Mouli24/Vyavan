@@ -1,236 +1,163 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '@/lib/api'
-import { AlertCircle, CheckCircle, Search, Filter, Eye, MessageSquare } from 'lucide-react'
-
-const STATUS_FILTERS = ['all', 'PENDING', 'ESCALATED', 'ADMIN REVIEWED', 'RESOLVED', 'REJECTED']
-
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    'PENDING':        'bg-amber-100 text-amber-700',
-    'ESCALATED':      'bg-red-100 text-red-600',
-    'ADMIN REVIEWED': 'bg-blue-100 text-blue-700',
-    'RESOLVED':       'bg-sp-mint text-sp-success',
-    'REJECTED':       'bg-gray-100 text-gray-600',
-  }
-  return (
-    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide ${map[status] ?? 'bg-gray-100 text-gray-500'}`}>
-      {status}
-    </span>
-  )
-}
+import { 
+  AlertCircle, Gavel, ShieldAlert, Clock, User, 
+  Building2, ChevronRight, BarChart3, Filter, 
+  Search, Info, ArrowUpRight, TrendingUp, AlertTriangle,
+  Loader, CheckCircle2, MessageSquare
+} from 'lucide-react'
+import { motion } from 'motion/react'
+import toast from 'react-hot-toast'
 
 export default function AdminComplaints() {
-  const [complaints, setComplaints] = useState<any[]>([])
+  const [list, setList] = useState<any[]>([])
+  const [analytics, setAnalytics] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [search, setSearch] = useState('')
-  const [selected, setSelected] = useState<any | null>(null)
-  const [adminNote, setAdminNote] = useState('')
-  const [resolveStatus, setResolveStatus] = useState('RESOLVED')
+  const [activeTab, setActiveTab] = useState<'ESCALATED' | 'RESOLVED' | 'PENDING'>('ESCALATED')
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      const data = await api.getAdminComplaints({ status: statusFilter, limit: 50 })
-      setComplaints(data.data ?? [])
+      const [res, stats] = await Promise.all([
+        api.getAdminComplaints({ status: activeTab }),
+        api.getDisputeAnalytics()
+      ])
+      setList(res.data)
+      setAnalytics(stats)
     } catch (e) {
-      console.error(e)
+      toast.error('Failed to load disputes')
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { fetchData() }, [statusFilter])
-
-  const filtered = complaints.filter(c =>
-    !search || c.title?.toLowerCase().includes(search.toLowerCase()) ||
-    c.company?.toLowerCase().includes(search.toLowerCase())
-  )
-
-  const handleResolve = async () => {
-    if (!selected) return
-    await api.resolveAdminComplaint(selected._id, { status: resolveStatus, adminNote })
-    setSelected(null)
-    setAdminNote('')
+  useEffect(() => {
     fetchData()
+  }, [activeTab])
+
+  const getSlaInfo = (date: string) => {
+     const days = Math.floor((Date.now() - new Date(date).getTime()) / (1000 * 60 * 60 * 24))
+     if (days > 7) return { label: `${days}D PENDING`, color: 'text-rose-600', bg: 'bg-rose-50' }
+     return { label: `${days}D PENDING`, color: 'text-amber-600', bg: 'bg-amber-50' }
   }
 
   return (
-    <div className="p-5 sm:p-6 space-y-5">
-      <div>
-        <h1 className="text-xl font-bold text-sp-text tracking-tight">Complaints</h1>
-        <p className="text-sp-muted text-sm mt-0.5">Review and resolve platform disputes</p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-sp-placeholder" />
-          <input
-            type="text"
-            placeholder="Search complaints..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-sp-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sp-purple/15 focus:border-sp-purple transition-all"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {STATUS_FILTERS.map(f => (
-            <button
-              key={f}
-              onClick={() => setStatusFilter(f)}
-              className={`px-3 py-2 text-xs font-medium rounded-lg transition-all ${
-                statusFilter === f
-                  ? 'bg-sp-purple text-white shadow-sm'
-                  : 'bg-white border border-sp-border text-sp-muted hover:border-sp-purple/40 hover:text-sp-text'
-              }`}
-            >
-              {f === 'all' ? 'All' : f}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-sp-border-light shadow-card overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center h-40">
-            <div className="w-6 h-6 border-2 border-sp-purple border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-sp-muted">
-            <CheckCircle className="w-10 h-10 mx-auto mb-3 text-sp-success opacity-50" />
-            <p className="font-medium text-sm">No complaints found</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-sp-bg/60 border-b border-sp-border-light">
-                <tr>
-                  <th className="text-left py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider">Complaint</th>
-                  <th className="text-left py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider hidden md:table-cell">Category</th>
-                  <th className="text-left py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider hidden lg:table-cell">Parties</th>
-                  <th className="text-left py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider">Status</th>
-                  <th className="text-right py-3.5 px-5 text-[11px] font-semibold text-sp-muted uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-sp-border-light">
-                {filtered.map((c) => (
-                  <tr key={c._id} className="hover:bg-sp-bg/40 transition-colors">
-                    <td className="py-3.5 px-5">
-                      <p className="text-sm font-semibold text-sp-text">{c.title}</p>
-                      <p className="text-xs text-sp-muted">{c.complaintId} · {c.company}</p>
-                      <p className="text-xs text-sp-placeholder">{c.filingDate ?? new Date(c.createdAt).toLocaleDateString()}</p>
-                    </td>
-                    <td className="py-3.5 px-5 hidden md:table-cell">
-                      <span className="text-xs px-2.5 py-1 bg-sp-bg rounded-full text-sp-muted font-medium">{c.category}</span>
-                    </td>
-                    <td className="py-3.5 px-5 hidden lg:table-cell">
-                      <p className="text-xs text-sp-text">Buyer: {c.buyer?.name ?? '—'}</p>
-                      <p className="text-xs text-sp-muted">Mfr: {c.manufacturer?.name ?? '—'}</p>
-                    </td>
-                    <td className="py-3.5 px-5">
-                      <StatusBadge status={c.status} />
-                    </td>
-                    <td className="py-3.5 px-5">
-                      <div className="flex justify-end">
-                        <button
-                          onClick={() => { setSelected(c); setAdminNote('') }}
-                          className="p-1.5 text-sp-muted hover:text-sp-purple hover:bg-sp-purple-pale rounded-lg transition-all"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Detail panel */}
-      {selected && (
-        <div className="fixed inset-0 z-50 flex">
-          <div className="flex-1 bg-black/20 backdrop-blur-sm" onClick={() => setSelected(null)} />
-          <div className="w-full max-w-lg bg-white border-l border-sp-border overflow-y-auto p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-sp-text">Complaint Details</h2>
-              <button onClick={() => setSelected(null)} className="text-sp-muted">✕</button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <AlertCircle className="w-5 h-5 text-red-500" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sp-text">{selected.title}</h3>
-                  <p className="text-sm text-sp-muted">{selected.complaintId} · {selected.company}</p>
-                </div>
-              </div>
-
-              <StatusBadge status={selected.status} />
-
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: 'Category', value: selected.category },
-                  { label: 'Filed', value: selected.filingDate ?? new Date(selected.createdAt).toLocaleDateString() },
-                  { label: 'Buyer', value: selected.buyer?.name },
-                  { label: 'Manufacturer', value: selected.manufacturer?.name },
-                ].map(row => (
-                  <div key={row.label} className="bg-sp-bg rounded-xl p-3">
-                    <p className="text-[10px] text-sp-muted uppercase tracking-wider mb-1">{row.label}</p>
-                    <p className="text-sm font-medium text-sp-text">{row.value ?? '—'}</p>
+    <div className="space-y-8">
+      {/* Analytics Hero */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+         <div className="lg:col-span-2 bg-slate-900 p-10 rounded-[48px] text-white relative overflow-hidden">
+            <div className="relative z-10">
+               <h1 className="text-3xl font-black tracking-tight flex items-center gap-4">
+                  Dispute Resolution Center
+                  <Gavel className="text-indigo-500 animate-pulse" size={32} />
+               </h1>
+               <p className="text-slate-400 font-medium mt-2 max-w-sm">
+                  Tribunal-grade intervention engine resolving transactional conflicts across the platform ecosystem.
+               </p>
+               
+               <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mt-10">
+                  <div className="space-y-1">
+                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Escalations</p>
+                     <p className="text-3xl font-black text-rose-500">{list.length}</p>
                   </div>
-                ))}
-              </div>
-
-              {selected.description && (
-                <div className="bg-sp-bg rounded-xl p-4">
-                  <p className="text-xs text-sp-muted uppercase tracking-wider mb-2 flex items-center gap-1">
-                    <MessageSquare className="w-3 h-3" /> Description
-                  </p>
-                  <p className="text-sm text-sp-text leading-relaxed">{selected.description}</p>
-                </div>
-              )}
-
-              {selected.response && (
-                <div className="bg-sp-mint rounded-xl p-4">
-                  <p className="text-xs text-sp-success uppercase tracking-wider mb-2">Manufacturer Response</p>
-                  <p className="text-sm text-sp-text">{selected.response}</p>
-                </div>
-              )}
-
-              {/* Admin resolution */}
-              <div className="border-t border-sp-border pt-4 space-y-3">
-                <p className="text-sm font-semibold text-sp-text">Admin Resolution</p>
-                <select
-                  value={resolveStatus}
-                  onChange={e => setResolveStatus(e.target.value)}
-                  className="w-full px-3 py-2 bg-sp-bg border border-sp-border rounded-xl text-sm focus:outline-none focus:border-sp-purple"
-                >
-                  <option value="RESOLVED">Resolved</option>
-                  <option value="REJECTED">Rejected</option>
-                  <option value="ADMIN REVIEWED">Admin Reviewed (No Action)</option>
-                </select>
-                <textarea
-                  className="w-full p-3 bg-sp-bg border border-sp-border rounded-xl text-sm resize-none focus:outline-none focus:border-sp-purple"
-                  rows={3}
-                  placeholder="Admin note / resolution details..."
-                  value={adminNote}
-                  onChange={e => setAdminNote(e.target.value)}
-                />
-                <button
-                  onClick={handleResolve}
-                  className="w-full py-3 gradient-card-purple text-white font-bold rounded-xl text-sm hover:opacity-90 transition-all"
-                >
-                  Submit Resolution
-                </button>
-              </div>
+                  {analytics?.resolutionStats?.map((s: any) => (
+                     <div key={s._id} className="space-y-1">
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{s._id.replace(/_/g, ' ')}</p>
+                        <p className="text-3xl font-black text-indigo-400">{s.count}</p>
+                     </div>
+                  ))}
+               </div>
             </div>
-          </div>
-        </div>
-      )}
+            <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2" />
+         </div>
+
+         {/* Ranking Card */}
+         <div className="bg-white p-8 rounded-[40px] border-2 border-sp-border-light shadow-sm">
+            <h3 className="text-xs font-black text-sp-placeholder uppercase tracking-widest mb-6 flex items-center gap-2">
+               <ShieldAlert size={14} className="text-rose-500" /> High Friction Nodes
+            </h3>
+            <div className="space-y-4">
+               {analytics?.ranking?.map((m: any, i: number) => (
+                  <div key={m._id} className="flex items-center justify-between p-3 bg-sp-bg/50 rounded-2xl border border-sp-border-light hover:border-rose-200 transition-all cursor-pointer group">
+                     <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-lg bg-indigo-600 text-white text-[10px] font-black flex items-center justify-center">{i+1}</span>
+                        <p className="text-[11px] font-bold text-sp-text truncate max-w-[120px]">{m.mfr.company}</p>
+                     </div>
+                     <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded-lg border border-rose-100">{m.count} DISPUTES</span>
+                  </div>
+               ))}
+            </div>
+         </div>
+      </div>
+
+      {/* Control Tabs */}
+      <div className="flex items-center gap-2 p-1.5 bg-white border-2 border-sp-border-light w-fit rounded-[24px]">
+         <button onClick={() => setActiveTab('ESCALATED')} className={`px-6 py-3 rounded-[18px] text-xs font-black uppercase transition-all ${activeTab === 'ESCALATED' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-sp-placeholder hover:text-sp-text'}`}>Tribunal Feed</button>
+         <button onClick={() => setActiveTab('RESOLVED')} className={`px-6 py-3 rounded-[18px] text-xs font-black uppercase transition-all ${activeTab === 'RESOLVED' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-sp-placeholder hover:text-sp-text'}`}>Archived Resolutions</button>
+         <button onClick={() => setActiveTab('PENDING')} className={`px-6 py-3 rounded-[18px] text-xs font-black uppercase transition-all ${activeTab === 'PENDING' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-sp-placeholder hover:text-sp-text'}`}>Standard Complaints</button>
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6">
+         {loading ? (
+            <div className="col-span-full py-20 text-center"><Loader size={32} className="text-indigo-600 animate-spin mx-auto" /></div>
+         ) : list.length === 0 ? (
+            <div className="col-span-full py-24 text-center bg-white rounded-[48px] border-2 border-dashed border-sp-border-light">
+               <CheckCircle2 size={56} className="text-emerald-500 mx-auto mb-6" />
+               <h3 className="text-xl font-black text-sp-text uppercase tracking-tight">Perimeter Secure</h3>
+               <p className="text-sm font-medium text-sp-placeholder mt-2 uppercase tracking-wide">No unresolved disputes detected in the active segment</p>
+            </div>
+         ) : (
+            list.map(c => {
+               const sla = getSlaInfo(c.updatedAt)
+               return (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={c._id} className="bg-white rounded-[40px] border-2 border-sp-border-light shadow-sm overflow-hidden flex flex-col group hover:border-indigo-200 transition-all">
+                     <div className="p-7 border-b-2 border-sp-border-light flex items-center justify-between">
+                        <div className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest ${sla.bg} ${sla.color}`}>
+                           {sla.label}
+                        </div>
+                        <span className="text-[10px] font-black text-sp-placeholder uppercase tracking-widest">REF: {c.complaintId}</span>
+                     </div>
+                     
+                     <div className="p-7 flex-1 space-y-6">
+                        <div>
+                           <h3 className="text-lg font-black text-sp-text leading-tight group-hover:text-indigo-600 transition-colors">{c.title}</h3>
+                           <p className="text-xs font-bold text-sp-placeholder uppercase mt-2">{c.category || 'Conflict'}</p>
+                        </div>
+                        
+                        <div className="space-y-3">
+                           <div className="flex items-center gap-3 p-3 bg-sp-bg rounded-2xl">
+                              <div className="w-8 h-8 rounded-lg bg-white border border-sp-border flex items-center justify-center font-black text-[10px] text-sp-purple">B</div>
+                              <div>
+                                 <p className="text-[10px] font-black text-sp-text leading-none truncate max-w-[140px]">{c.buyer?.company || c.buyer?.name}</p>
+                                 <p className="text-[9px] font-bold text-sp-placeholder uppercase mt-1 tracking-tight">Accuser Node</p>
+                              </div>
+                           </div>
+                           <div className="flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-100 rounded-2xl">
+                              <div className="w-8 h-8 rounded-lg bg-white border border-indigo-200 flex items-center justify-center font-black text-[10px] text-indigo-500">M</div>
+                              <div>
+                                 <p className="text-[10px] font-black text-indigo-900 leading-none truncate max-w-[140px]">{c.manufacturer?.company}</p>
+                                 <p className="text-[9px] font-bold text-indigo-400 uppercase mt-1 tracking-tight">Respondent Node</p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+
+                     <div className="px-7 py-6 bg-sp-bg/20 border-t-2 border-sp-border-light">
+                        <Link 
+                           to={`/admin/complaints/${c._id}/resolution`}
+                           className="w-full flex items-center justify-center gap-2 py-4 bg-white border-2 border-sp-border-light rounded-2xl text-[10px] font-black text-sp-text hover:bg-indigo-600 hover:text-white hover:border-transparent transition-all shadow-sm group/btn"
+                        >
+                           OPEN LITIGATION SUITE
+                           <ArrowUpRight size={14} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+                        </Link>
+                     </div>
+                  </motion.div>
+               )
+            })
+         )}
+      </div>
     </div>
   )
 }

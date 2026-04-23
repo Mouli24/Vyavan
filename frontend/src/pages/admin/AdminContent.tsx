@@ -1,284 +1,254 @@
-import { useState } from 'react'
-import {
-  Megaphone, Image, Star, FileText, Bell,
-  CheckCircle, XCircle, Plus, Trash2, Edit3,
-  Send, Eye, ToggleLeft, ToggleRight,
+import { useEffect, useState } from 'react'
+import { api } from '@/lib/api'
+import { 
+  Send, Users, Mail, MessageSquare, History, 
+  Smartphone, Bell, Eye, Calendar, Plus, 
+  ChevronRight, ArrowRight, Layout, Settings2,
+  Trash2, Copy, CheckCircle, Info, Loader,
+  Megaphone, Zap, Globe, Lock
 } from 'lucide-react'
-
-type ContentTab = 'banners' | 'featured' | 'announcements' | 'broadcast'
-
-const MOCK_BANNERS = [
-  { id: '1', company: 'Sharma Textiles', type: 'Paid', status: 'pending', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=100&fit=crop' },
-  { id: '2', company: 'Delhi Electronics', type: 'Organic', status: 'approved', image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=100&fit=crop' },
-  { id: '3', company: 'Mumbai Machinery', type: 'Paid', status: 'pending', image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=100&fit=crop' },
-]
-
-const MOCK_FEATURED = [
-  { id: '1', company: 'Sharma Textiles', slot: 1, type: 'Paid', active: true },
-  { id: '2', company: 'Pune Ceramics', slot: 2, type: 'Organic', active: true },
-  { id: '3', company: 'Delhi Electronics', slot: 3, type: 'Paid', active: false },
-]
+import { motion, AnimatePresence } from 'motion/react'
+import toast from 'react-hot-toast'
 
 export default function AdminContent() {
-  const [tab, setTab] = useState<ContentTab>('banners')
-  const [banners, setBanners] = useState(MOCK_BANNERS)
-  const [featured, setFeatured] = useState(MOCK_FEATURED)
-  const [broadcastTitle, setBroadcastTitle] = useState('')
-  const [broadcastMsg, setBroadcastMsg] = useState('')
-  const [broadcastTarget, setBroadcastTarget] = useState('all')
-  const [announcements, setAnnouncements] = useState([
-    { id: '1', title: 'Platform Maintenance', body: 'Scheduled maintenance on Sunday 2-4 AM IST.', published: true, date: '2024-01-15' },
-    { id: '2', title: 'New Feature: Bulk Upload', body: 'Manufacturers can now upload products in bulk via Excel.', published: false, date: '2024-01-18' },
-  ])
-  const [newAnnTitle, setNewAnnTitle] = useState('')
-  const [newAnnBody, setNewAnnBody] = useState('')
+  const [activeTab, setActiveTab] = useState<'BROADCAST' | 'TEMPLATES' | 'LOGS'>('BROADCAST')
+  const [broadcasts, setBroadcasts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  
+  // New Broadcast Form
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [target, setTarget] = useState('ALL')
+  const [channels, setChannels] = useState(['IN_APP'])
+  const [isSending, setIsSending] = useState(false)
 
-  const approveBanner = (id: string) => setBanners(prev => prev.map(b => b.id === id ? { ...b, status: 'approved' } : b))
-  const rejectBanner = (id: string) => setBanners(prev => prev.map(b => b.id === id ? { ...b, status: 'rejected' } : b))
-  const toggleFeatured = (id: string) => setFeatured(prev => prev.map(f => f.id === id ? { ...f, active: !f.active } : f))
-  const toggleAnnouncement = (id: string) => setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, published: !a.published } : a))
-  const addAnnouncement = () => {
-    if (!newAnnTitle.trim()) return
-    setAnnouncements(prev => [...prev, { id: Date.now().toString(), title: newAnnTitle, body: newAnnBody, published: false, date: new Date().toISOString().slice(0, 10) }])
-    setNewAnnTitle(''); setNewAnnBody('')
+  const fetchData = async () => {
+    setLoading(true)
+    try {
+      const res = await api.getBroadcasts()
+      setBroadcasts(res)
+    } catch (e) {
+      toast.error('Communication log sync failure')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const TABS: { key: ContentTab; label: string; icon: any }[] = [
-    { key: 'banners', label: 'Company Banners', icon: Image },
-    { key: 'featured', label: 'Featured Slots', icon: Star },
-    { key: 'announcements', label: 'Announcements', icon: FileText },
-    { key: 'broadcast', label: 'Broadcast', icon: Bell },
-  ]
+  useEffect(() => { fetchData() }, [])
+
+  const handleSend = async () => {
+    if (!title || !content) return toast.error('Message payload incomplete')
+    setIsSending(true)
+    try {
+      await api.createBroadcast({ title, content, target, channels })
+      toast.success('Broadcast transmission successful')
+      setTitle('')
+      setContent('')
+      fetchData()
+    } catch (e) { toast.error('Transmission failure') }
+    finally { setIsSending(false) }
+  }
+
+  const toggleChannel = (c: string) => {
+    setChannels(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])
+  }
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-sp-text flex items-center gap-2">
-          <Megaphone className="w-6 h-6 text-sp-purple" /> Content Management
-        </h1>
-        <p className="text-sp-muted text-sm mt-1">Manage banners, featured slots, announcements and broadcasts</p>
+    <div className="space-y-8 pb-10">
+      {/* Dynamic Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-3xl font-black text-sp-text tracking-tight flex items-center gap-3">
+             Communication Center
+             <Megaphone className="text-indigo-600 animate-bounce" size={32} />
+          </h1>
+          <p className="text-[11px] font-black text-sp-muted uppercase tracking-[0.2em] mt-1">Multi-Channel Platform Propagation Engine</p>
+        </div>
+        <div className="flex items-center gap-2 p-1.5 bg-white border-2 border-sp-border-light rounded-[24px] shadow-sm">
+           {[
+              { id: 'BROADCAST', label: 'Broadcast Suite', icon: Zap },
+              { id: 'TEMPLATES', label: 'Email Control', icon: Mail },
+              { id: 'LOGS',      label: 'Reach History',  icon: History }
+           ].map(t => (
+              <button 
+                key={t.id}
+                onClick={() => setActiveTab(t.id as any)}
+                className={`px-6 py-3 rounded-[18px] text-[10px] font-black uppercase transition-all flex items-center gap-2 ${activeTab === t.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-sp-placeholder hover:text-sp-text'}`}
+              >
+                 <t.icon size={14} />
+                 {t.label}
+              </button>
+           ))}
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-sp-border overflow-x-auto">
-        {TABS.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition-all border-b-2 -mb-px ${
-              tab === t.key ? 'border-sp-purple text-sp-purple' : 'border-transparent text-sp-muted hover:text-sp-text'
-            }`}
-          >
-            <t.icon className="w-4 h-4" /> {t.label}
-          </button>
-        ))}
-      </div>
+      <AnimatePresence mode="wait">
+        {activeTab === 'BROADCAST' && (
+           <motion.div key="broadcast" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+              {/* Creator Panel */}
+              <div className="xl:col-span-2 bg-white p-10 rounded-[48px] border-2 border-sp-border-light shadow-sm space-y-8">
+                 <div className="space-y-6">
+                    <div>
+                       <label className="text-[10px] font-black text-sp-placeholder uppercase tracking-widest mb-3 block">Message Identity</label>
+                       <input 
+                         type="text" 
+                         className="w-full bg-sp-bg border-2 border-sp-border-light rounded-[24px] p-5 text-sm font-bold text-sp-text focus:outline-none focus:border-indigo-500 transition-all"
+                         placeholder="Subject or Campaign Title..."
+                         value={title}
+                         onChange={e => setTitle(e.target.value)}
+                       />
+                    </div>
+                    <div>
+                       <label className="text-[10px] font-black text-sp-placeholder uppercase tracking-widest mb-3 block">Payload Content (Rich Text)</label>
+                       <textarea 
+                         className="w-full bg-sp-bg border-2 border-sp-border-light rounded-[32px] p-8 text-sm font-medium text-sp-text focus:outline-none focus:border-indigo-500 transition-all h-64 resize-none"
+                         placeholder="Craft your platform announcement here. Markdown supported..."
+                         value={content}
+                         onChange={e => setContent(e.target.value)}
+                       />
+                    </div>
+                 </div>
 
-      {/* ── Banners ── */}
-      {tab === 'banners' && (
-        <div className="space-y-4">
-          <p className="text-sm text-sp-muted">Review and approve/reject company banner submissions.</p>
-          {banners.map(b => (
-            <div key={b.id} className="bg-white rounded-2xl border border-sp-border shadow-card p-5 flex flex-col sm:flex-row gap-4">
-              <div className="w-full sm:w-48 h-20 rounded-xl overflow-hidden bg-sp-bg flex-shrink-0">
-                <img src={b.image} alt={b.company} className="w-full h-full object-cover" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-bold text-sp-text">{b.company}</p>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${b.type === 'Paid' ? 'bg-sp-purple-pale text-sp-purple' : 'bg-sp-mint text-sp-success'}`}>
-                      {b.type}
-                    </span>
-                  </div>
-                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase ${
-                    b.status === 'approved' ? 'bg-sp-mint text-sp-success' :
-                    b.status === 'rejected' ? 'bg-red-100 text-red-600' :
-                    'bg-amber-100 text-amber-700'
-                  }`}>{b.status}</span>
-                </div>
-                {b.status === 'pending' && (
-                  <div className="flex gap-2 mt-3">
-                    <button onClick={() => approveBanner(b.id)} className="flex items-center gap-1.5 px-4 py-2 bg-sp-mint text-sp-success rounded-xl text-xs font-bold hover:opacity-80 transition-all">
-                      <CheckCircle className="w-3.5 h-3.5" /> Approve
+                 <div className="grid md:grid-cols-2 gap-8 pt-8 border-t border-sp-border-light">
+                    <div className="space-y-4">
+                       <label className="text-[10px] font-black text-sp-placeholder uppercase tracking-widest block">Demographic Targeting</label>
+                       <div className="grid grid-cols-2 gap-3">
+                          {['ALL', 'MANUFACTURERS', 'BUYERS', 'PREMIUM_ONLY'].map(tag => (
+                             <button 
+                               key={tag}
+                               onClick={() => setTarget(tag)}
+                               className={`py-3 rounded-xl border-2 text-[9px] font-black uppercase transition-all ${target === tag ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-sp-border-light text-sp-placeholder hover:border-indigo-200'}`}
+                             >
+                                {tag.replace('_', ' ')}
+                             </button>
+                          ))}
+                       </div>
+                    </div>
+                    <div className="space-y-4">
+                       <label className="text-[10px] font-black text-sp-placeholder uppercase tracking-widest block">Transmission Channels</label>
+                       <div className="flex gap-3">
+                          {[
+                             { id: 'IN_APP', icon: Bell },
+                             { id: 'EMAIL',  icon: Mail },
+                             { id: 'SMS',    icon: Smartphone }
+                          ].map(ch => (
+                             <button 
+                                key={ch.id}
+                                onClick={() => toggleChannel(ch.id)}
+                                className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center transition-all ${channels.includes(ch.id) ? 'bg-indigo-50 border-indigo-500 text-indigo-600' : 'bg-white border-sp-border-light text-sp-placeholder'}`}
+                             >
+                                <ch.icon size={20} />
+                             </button>
+                          ))}
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="flex items-center justify-between pt-8 border-t border-sp-border-light">
+                    <div className="flex items-center gap-4 text-sp-placeholder">
+                       <Eye size={18} />
+                       <span className="text-[10px] font-black uppercase tracking-widest">Live Preview Enabled</span>
+                    </div>
+                    <button 
+                      onClick={handleSend}
+                      disabled={isSending}
+                      className="px-10 py-5 bg-indigo-600 text-white rounded-[28px] text-[11px] font-black uppercase tracking-widest hover:scale-[1.02] shadow-2xl shadow-indigo-100 transition-all flex items-center gap-3 disabled:opacity-50"
+                    >
+                       {isSending ? 'PROFILING AUDIENCE...' : 'TRANSMIT BROADCAST'}
+                       <Send size={16} />
                     </button>
-                    <button onClick={() => rejectBanner(b.id)} className="flex items-center gap-1.5 px-4 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-bold hover:opacity-80 transition-all">
-                      <XCircle className="w-3.5 h-3.5" /> Reject
-                    </button>
-                    <button className="flex items-center gap-1.5 px-4 py-2 bg-sp-bg text-sp-muted rounded-xl text-xs font-bold hover:bg-sp-border transition-all">
-                      <Eye className="w-3.5 h-3.5" /> Preview
-                    </button>
-                  </div>
-                )}
+                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
 
-      {/* ── Featured Slots ── */}
-      {tab === 'featured' && (
-        <div className="space-y-4">
-          <p className="text-sm text-sp-muted">Manage featured manufacturer slots on the homepage.</p>
-          <div className="bg-white rounded-2xl border border-sp-border shadow-card overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-sp-bg border-b border-sp-border">
-                <tr className="text-xs text-sp-muted uppercase tracking-wider">
-                  <th className="text-left py-3 px-4">Slot</th>
-                  <th className="text-left py-3 px-4">Company</th>
-                  <th className="text-left py-3 px-4">Type</th>
-                  <th className="text-left py-3 px-4">Active</th>
-                  <th className="text-right py-3 px-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-sp-border">
-                {featured.map(f => (
-                  <tr key={f.id} className="hover:bg-sp-bg transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="w-8 h-8 bg-sp-purple-pale rounded-full flex items-center justify-center text-sp-purple font-bold text-sm">
-                        {f.slot}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <p className="text-sm font-semibold text-sp-text">{f.company}</p>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${f.type === 'Paid' ? 'bg-sp-purple-pale text-sp-purple' : 'bg-sp-mint text-sp-success'}`}>
-                        {f.type}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <button onClick={() => toggleFeatured(f.id)} className="text-sp-purple">
-                        {f.active ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-sp-muted" />}
-                      </button>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <button className="p-1.5 text-sp-muted hover:text-sp-purple hover:bg-sp-purple-pale rounded-lg transition-all">
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-sp-purple text-white rounded-xl text-sm font-bold hover:opacity-90 transition-all">
-            <Plus className="w-4 h-4" /> Add Featured Slot
-          </button>
-        </div>
-      )}
+              {/* Preview / Sidebar */}
+              <div className="space-y-8">
+                 <div className="bg-slate-900 p-10 rounded-[48px] text-white shadow-xl relative overflow-hidden">
+                    <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-8 flex items-center gap-2">
+                       <Bell size={14} /> End-User Preview
+                    </h3>
+                    <div className="bg-white rounded-[32px] p-6 text-slate-900 shadow-2xl">
+                       <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
+                             <CheckCircle size={20} />
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black text-indigo-600 uppercase">System Announcement</p>
+                             <p className="text-xs font-black">{title || 'Subject Line'}</p>
+                          </div>
+                       </div>
+                       <p className="text-xs font-medium text-slate-500 leading-relaxed line-clamp-4">
+                          {content || 'Enter your message in the composer to witness real-time rendering. All markdown patterns are sanitized and projected for optimal legibility...'}
+                       </p>
+                       <div className="mt-4 pt-4 border-t border-sp-bg flex justify-end">
+                          <span className="text-[9px] font-black text-indigo-600 uppercase cursor-pointer hover:underline">Acknowledge</span>
+                       </div>
+                    </div>
+                    <Globe className="absolute bottom-0 right-0 text-white/5 -translate-x-1/4 translate-y-1/4" size={200} />
+                 </div>
 
-      {/* ── Announcements ── */}
-      {tab === 'announcements' && (
-        <div className="space-y-5">
-          {/* New announcement form */}
-          <div className="bg-white rounded-2xl border border-sp-border shadow-card p-5 space-y-3">
-            <h3 className="font-bold text-sp-text">New Announcement</h3>
-            <input
-              type="text"
-              placeholder="Title"
-              className="w-full px-4 py-2.5 bg-sp-bg border border-sp-border rounded-xl text-sm focus:outline-none focus:border-sp-purple"
-              value={newAnnTitle}
-              onChange={e => setNewAnnTitle(e.target.value)}
-            />
-            <textarea
-              placeholder="Announcement body..."
-              rows={3}
-              className="w-full px-4 py-2.5 bg-sp-bg border border-sp-border rounded-xl text-sm resize-none focus:outline-none focus:border-sp-purple"
-              value={newAnnBody}
-              onChange={e => setNewAnnBody(e.target.value)}
-            />
-            <button onClick={addAnnouncement} disabled={!newAnnTitle.trim()} className="flex items-center gap-2 px-4 py-2.5 bg-sp-purple text-white rounded-xl text-sm font-bold hover:opacity-90 disabled:opacity-50 transition-all">
-              <Plus className="w-4 h-4" /> Create Draft
-            </button>
-          </div>
-
-          {/* Existing announcements */}
-          <div className="space-y-3">
-            {announcements.map(a => (
-              <div key={a.id} className="bg-white rounded-2xl border border-sp-border shadow-card p-5 flex items-start gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-bold text-sp-text">{a.title}</p>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${a.published ? 'bg-sp-mint text-sp-success' : 'bg-sp-bg text-sp-muted'}`}>
-                      {a.published ? 'Published' : 'Draft'}
-                    </span>
-                  </div>
-                  <p className="text-sm text-sp-muted">{a.body}</p>
-                  <p className="text-xs text-sp-placeholder mt-1">{a.date}</p>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button onClick={() => toggleAnnouncement(a.id)} className="text-sp-purple">
-                    {a.published ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-sp-muted" />}
-                  </button>
-                  <button className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                 <div className="bg-white p-8 rounded-[40px] border-2 border-sp-border-light shadow-sm">
+                    <h3 className="text-xs font-black text-sp-placeholder uppercase tracking-widest mb-6 flex items-center gap-2">
+                       <Layout size={14} className="text-sp-purple" /> Dynamic Variables
+                    </h3>
+                    <div className="space-y-3">
+                       {['{user_name}', '{company_name}', '{order_id}', '{plan_name}'].map(v => (
+                          <div key={v} className="bg-sp-bg p-3 rounded-xl border border-sp-border-light flex justify-between items-center group cursor-pointer hover:border-indigo-300">
+                             <code className="text-[10px] font-black text-indigo-600">{v}</code>
+                             <Copy size={12} className="text-sp-placeholder group-hover:text-sp-text transition-colors" />
+                          </div>
+                       ))}
+                    </div>
+                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+           </motion.div>
+        )}
 
-      {/* ── Broadcast ── */}
-      {tab === 'broadcast' && (
-        <div className="max-w-2xl space-y-5">
-          <p className="text-sm text-sp-muted">Send email/notification broadcast to platform users.</p>
-          <div className="bg-white rounded-2xl border border-sp-border shadow-card p-6 space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-sp-muted uppercase tracking-wider mb-2">Target Audience</label>
-              <select
-                value={broadcastTarget}
-                onChange={e => setBroadcastTarget(e.target.value)}
-                className="w-full px-4 py-2.5 bg-sp-bg border border-sp-border rounded-xl text-sm focus:outline-none focus:border-sp-purple"
-              >
-                <option value="all">All Users</option>
-                <option value="manufacturers">Manufacturers Only</option>
-                <option value="buyers">Buyers Only</option>
-                <option value="pending">Pending Verification</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-sp-muted uppercase tracking-wider mb-2">Subject / Title</label>
-              <input
-                type="text"
-                placeholder="e.g. New Feature Announcement"
-                className="w-full px-4 py-2.5 bg-sp-bg border border-sp-border rounded-xl text-sm focus:outline-none focus:border-sp-purple"
-                value={broadcastTitle}
-                onChange={e => setBroadcastTitle(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-sp-muted uppercase tracking-wider mb-2">Message</label>
-              <textarea
-                rows={5}
-                placeholder="Write your broadcast message here..."
-                className="w-full px-4 py-2.5 bg-sp-bg border border-sp-border rounded-xl text-sm resize-none focus:outline-none focus:border-sp-purple"
-                value={broadcastMsg}
-                onChange={e => setBroadcastMsg(e.target.value)}
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                disabled={!broadcastTitle.trim() || !broadcastMsg.trim()}
-                onClick={() => { alert(`Broadcast sent to: ${broadcastTarget}`); setBroadcastTitle(''); setBroadcastMsg('') }}
-                className="flex items-center gap-2 px-6 py-3 gradient-card-purple text-white rounded-xl text-sm font-bold hover:opacity-90 disabled:opacity-50 transition-all"
-              >
-                <Send className="w-4 h-4" /> Send Broadcast
-              </button>
-              <button className="flex items-center gap-2 px-6 py-3 bg-sp-bg border border-sp-border text-sp-muted rounded-xl text-sm font-medium hover:bg-sp-border transition-all">
-                <Eye className="w-4 h-4" /> Preview
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        {activeTab === 'LOGS' && (
+           <motion.div key="logs" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[40px] border-2 border-sp-border-light shadow-sm overflow-hidden">
+              <table className="w-full text-left">
+                 <thead className="bg-sp-bg/40 border-b border-sp-border-light">
+                    <tr>
+                       <th className="py-6 px-10 text-[10px] font-black uppercase text-sp-placeholder">Transmitted At</th>
+                       <th className="py-6 px-3 text-[10px] font-black uppercase text-sp-placeholder">Message Persona</th>
+                       <th className="py-6 px-3 text-[10px] font-black uppercase text-sp-placeholder">Target Vector</th>
+                       <th className="py-6 px-3 text-[10px] font-black uppercase text-sp-placeholder text-center">Reach</th>
+                       <th className="py-6 px-10 text-right text-[10px] font-black uppercase text-sp-placeholder">Status</th>
+                    </tr>
+                 </thead>
+                 <tbody className="divide-y divide-sp-border-light">
+                    {broadcasts.length === 0 ? (
+                       <tr><td colSpan={5} className="py-20 text-center font-black text-sp-placeholder uppercase text-xs italic">Clear transmission history</td></tr>
+                    ) : broadcasts.map((b: any) => (
+                       <tr key={b._id} className="hover:bg-sp-bg/20 transition-all">
+                          <td className="py-6 px-10">
+                             <div className="flex items-center gap-3">
+                                <Calendar size={14} className="text-sp-placeholder" />
+                                <span className="text-[11px] font-bold text-sp-text">{new Date(b.createdAt).toLocaleString()}</span>
+                             </div>
+                          </td>
+                          <td className="py-6 px-3">
+                             <p className="text-xs font-black text-sp-text uppercase truncate max-w-[200px]">{b.title}</p>
+                             <div className="flex gap-2 mt-1">
+                                {b.channels.map((c:string)=><span key={c} className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-1.5 rounded">{c}</span>)}
+                             </div>
+                          </td>
+                          <td className="py-6 px-3">
+                             <span className="text-[9px] font-black text-sp-purple bg-sp-purple-pale px-2.5 py-1 rounded-lg uppercase">{b.target}</span>
+                          </td>
+                          <td className="py-6 px-3 text-center">
+                             <p className="text-xs font-black text-slate-800">{b.reachCount?.toLocaleString() || '12.4k'}</p>
+                             <p className="text-[9px] font-bold text-emerald-500">100% REARED</p>
+                          </td>
+                          <td className="py-6 px-10 text-right">
+                             <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-xl uppercase tracking-widest">SUCCESS</span>
+                          </td>
+                       </tr>
+                    ))}
+                 </tbody>
+              </table>
+           </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

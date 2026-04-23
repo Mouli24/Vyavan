@@ -258,9 +258,25 @@ export const api = {
 
   getAdminAnalytics: () => request<any>('/admin/analytics'),
 
-  getAdminManufacturers: (params?: { status?: string; page?: number; limit?: number; name?: string; city?: string; state?: string; plan?: string; sector?: string }) => {
+  getAdminManufacturers: (params?: { status?: string; page?: number; limit?: number; name?: string; city?: string; state?: string; plan?: string; sector?: string; sortBy?: string }) => {
     const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([,v]) => v !== undefined && v !== '').map(([k,v]) => [k, String(v)]))).toString() : '';
     return request<{ data: any[]; total: number; page: number }>(`/admin/manufacturers${qs}`);
+  },
+
+  getAdminBuyers: (params?: { page?: number; limit?: number; status?: string; search?: string; type?: string; sortBy?: string }) => {
+    const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([,v]) => v !== undefined && v !== '').map(([k,v]) => [k, String(v)]))).toString() : '';
+    return request<{ data: any[]; total: number; page: number }>(`/admin/buyers${qs}`);
+  },
+
+  getAdminBuyerProfile: (id: string) =>
+    request<{ user: any; profile: any; orders: any[]; favorites: any[]; complaints: any[]; activity: any[] }>(`/admin/buyers/${id}/profile`),
+
+  getAdminBuyerActivityStats: (id: string) =>
+    request<{ loginFrequency: any[]; queries: any[]; cart: any }>(`/admin/buyers/${id}/activity-stats`),
+
+  getGlobalActivityLogs: (params?: { page?: number; limit?: number; user?: string; action?: string; isSuspicious?: boolean }) => {
+    const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([,v]) => v !== undefined).map(([k,v]) => [k, String(v)]))).toString() : '';
+    return request<{ data: any[]; total: number; page: number }>(`/admin/logs/global${qs}`);
   },
 
   getAdminManufacturerProfile: (id: string) =>
@@ -287,23 +303,101 @@ export const api = {
   requestMoreDocs: (id: string, note: string) =>
     request<any>(`/admin/manufacturers/${id}/request-docs`, { method: 'PATCH', body: JSON.stringify({ note }) }),
 
-  getAdminComplaints: (params?: { status?: string; limit?: number }) => {
-    const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([,v]) => v !== undefined).map(([k,v]) => [k, String(v)]))).toString() : '';
-    return request<{ data: any[]; total: number }>(`/admin/complaints${qs}`);
-  },
+  getEscrowMetrics: () =>
+    request<{ totalHeld: number; orders: any[] }>('/admin/finance/escrow'),
+
+  getCommissionHistory: () =>
+    request<any[]>('/admin/finance/commissions'),
+
+  getAnalyticGMV: (days: number = 30) =>
+    request<any[]>(`/admin/analytics/gmv-trend?days=${days}`),
+
+  getAnalyticSectors: () =>
+    request<any[]>('/admin/analytics/sectors'),
+
+  getAnalyticGeo: () =>
+    request<any[]>('/admin/analytics/geography'),
+
+  getPricingPlans: () =>
+    request<{ plans: any[]; stats: any[] }>('/admin/plans'),
+
+  overrideUserPlan: (data: { userId: string; planType: string; reason: string }) =>
+    request<any>('/admin/plans/override', { method: 'POST', body: JSON.stringify(data) }),
+
+  getBroadcasts: () =>
+    request<any[]>('/admin/broadcasts'),
+
+  createBroadcast: (data: any) =>
+    request<any>('/admin/broadcasts', { method: 'POST', body: JSON.stringify(data) }),
+
+  getDisputeAnalytics: () =>
+    request<{ ranking: any[]; resolutionStats: any[] }>('/admin/complaints/analytics/dispute-rate'),
+
+  getDisputeDetail: (id: string) =>
+    request<{ complaint: any; order: any }>(`/admin/complaints/${id}`),
+
+  resolveDispute: (id: string, data: { decision: string; refundAmount: number; adminNote: string }) =>
+    request<any>(`/admin/complaints/${id}/dispute-resolve`, { method: 'PATCH', body: JSON.stringify(data) }),
 
   resolveAdminComplaint: (id: string, data: { status: string; adminNote?: string }) =>
     request<any>(`/admin/complaints/${id}/resolve`, { method: 'PATCH', body: JSON.stringify(data) }),
 
-  getAdminOrders: (params?: { status?: string; page?: number }) => {
+  getAdminOrders: (params?: { page?: number; status?: string; search?: string; sector?: string; minVal?: number; maxVal?: number; startDate?: string; endDate?: string }) => {
     const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([,v]) => v !== undefined).map(([k,v]) => [k, String(v)]))).toString() : '';
-    return request<{ data: any[]; total: number }>(`/admin/orders${qs}`);
+    return request<{ data: any[]; total: number; page: number }>(`/admin/orders${qs}`);
   },
 
-  getAdminBuyers: (params?: { page?: number }) => {
+  getStuckOrders: () =>
+    request<{ notDispatched: any[]; notConfirmed: any[] }>('/admin/orders/stuck'),
+
+  getAdminOrderDetail: (id: string) =>
+    request<any>(`/admin/orders/${id}`),
+
+  updateOrderAdminNotes: (id: string, notes: string) =>
+    request<any>(`/admin/orders/${id}/admin-notes`, { method: 'PATCH', body: JSON.stringify({ notes }) }),
+
+  updateOrderEscrow: (id: string, status: string) =>
+    request<any>(`/admin/orders/${id}/escrow`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+
+  nudgePartner: (id: string) =>
+    request<any>(`/admin/orders/${id}/remind`, { method: 'POST' }),
+
+  getAdminBuyersList: (params?: { status?: string; page?: number; limit?: number }) => {
     const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([,v]) => v !== undefined).map(([k,v]) => [k, String(v)]))).toString() : '';
     return request<{ data: any[]; total: number }>(`/admin/buyers${qs}`);
   },
+
+  approveBuyer: (id: string) =>
+    request<any>(`/admin/manufacturers/${id}/approve`, { method: 'PATCH' }), // Reusing verification logic
+
+  rejectBuyer: (id: string, reason?: string) =>
+    request<any>(`/admin/manufacturers/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
+
+  suspendUser: (id: string, reason?: string) =>
+    request<any>(`/admin/manufacturers/${id}/suspend`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
+
+  resetUserPassword: (id: string) =>
+    request<any>(`/admin/manufacturers/${id}/reset-password`, { method: 'POST' }),
+
+  flagRelationship: (data: { manufacturerId: string; buyerId: string; isSuspicious: boolean; reason?: string }) =>
+    request<any>('/admin/relationships/flag', { method: 'PATCH', body: JSON.stringify(data) }),
+
+  getSystemFlags: (params?: { status?: string; severity?: string; type?: string }) => {
+    const qs = params ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([,v]) => v !== undefined).map(([k,v]) => [k, String(v)]))).toString() : '';
+    return request<any[]>(`/admin/flags${qs}`);
+  },
+
+  runFraudScan: () =>
+    request<any>('/admin/flags/run-scan', { method: 'POST' }),
+
+  resolveFlag: (id: string, data: { status: string; note: string }) =>
+    request<any>(`/admin/flags/${id}/resolve`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  getFlagSummary: () =>
+    request<any[]>('/admin/flags/summary'),
+
+  revokeSubuser: (id: string) =>
+    request<any>(`/admin/sub-users/${id}/revoke`, { method: 'PATCH' }),
 
   // ── Notifications ─────────────────────────────────────────────────────────
   getNotifications: (params?: { limit?: number; unreadOnly?: boolean }) => {
