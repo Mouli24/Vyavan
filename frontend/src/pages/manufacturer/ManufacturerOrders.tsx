@@ -126,6 +126,40 @@ export default function ManufacturerOrders() {
   const pendingShipments = stats?.pendingShipments ?? 0
   const todayRevenue = stats?.todayRevenue ?? 0
 
+  const handleExport = () => {
+    if (filtered.length === 0) {
+      alert('No orders match the current filter.')
+      return
+    }
+    
+    // Create CSV content
+    const headers = ['Order ID', 'Customer Name', 'Location', 'Items', 'Status', 'Due Date', 'Value']
+    const rows = filtered.map(o => {
+      const customer = o.deliveryAddress?.companyName || o.buyer?.name || 'Unknown'
+      const loc = o.deliveryAddress ? `${o.deliveryAddress.city}, ${o.deliveryAddress.state}` : (o.buyer?.location || 'Unknown')
+      
+      // Escape commas and quotes for CSV
+      const escape = (str: string) => `"${String(str).replace(/"/g, '""')}"`
+      
+      return [
+        escape(o.orderId),
+        escape(customer),
+        escape(loc),
+        escape(o.items || ''),
+        escape(o.status),
+        escape(o.expectedDate || ''),
+        escape(o.value || '')
+      ].join(',')
+    })
+
+    const csvContent = [headers.join(','), ...rows].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `Orders_Report_${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+  }
+
   return (
     <div className="flex-1 overflow-y-auto bg-[#FAF7F4]">
       <div className="p-6 lg:p-10 space-y-8">
@@ -140,7 +174,10 @@ export default function ManufacturerOrders() {
               Manage and track your manufacturing orders in real-time.
             </p>
           </div>
-          <button className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#E5E1DA] bg-white text-[#6B4E3D] text-sm font-semibold hover:bg-[#F5E6D3] transition-all shadow-sm flex-shrink-0">
+          <button 
+            onClick={handleExport}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#E5E1DA] bg-white text-[#6B4E3D] text-sm font-semibold hover:bg-[#F5E6D3] transition-all shadow-sm flex-shrink-0"
+          >
             <Download size={15} /> Export Report
           </button>
         </div>
@@ -184,7 +221,10 @@ export default function ManufacturerOrders() {
               <button className="bg-[#5D4037] hover:bg-[#4E342E] text-white font-bold rounded-full px-6 py-2.5 text-sm transition-all shadow-sm">
                 Review All Orders
               </button>
-              <button className="bg-white/70 hover:bg-white border border-[#E5D5C0] text-[#5D4037] font-semibold rounded-full px-6 py-2.5 text-sm transition-all">
+              <button 
+                onClick={handleExport}
+                className="bg-white/70 hover:bg-white border border-[#E5D5C0] text-[#5D4037] font-semibold rounded-full px-6 py-2.5 text-sm transition-all"
+              >
                 Download Reports
               </button>
             </div>

@@ -256,31 +256,38 @@ router.patch('/manufacturers/:id/approve', adminOnly, async (req, res) => {
     );
     if (!user) return res.status(404).json({ message: 'Manufacturer not found' });
 
-    // Update profile status and generate activation code
+    // Find and update profile to trigger pre('save') hooks for companyCode
+    let profile = await ManufacturerProfile.findOne({ user: req.params.id });
+    if (!profile) {
+      profile = new ManufacturerProfile({ user: req.params.id });
+    }
+
     const activationCode = Math.floor(100000 + Math.random() * 900000).toString();
     
-    await ManufacturerProfile.findOneAndUpdate(
-      { user: req.params.id },
-      { 
-        status: 'approved', 
-        isVerified: true,
-        isActivated: false,
-        activationCode,
-        approvedAt: new Date(), 
-        approvedBy: req.user._id 
-      },
-    );
+    profile.status = 'approved';
+    profile.isVerified = true;
+    profile.isActivated = false;
+    profile.activationCode = activationCode;
+    profile.approvedAt = new Date();
+    profile.approvedBy = req.user._id;
+
+    await profile.save(); // Triggers pre('save') hook for companyCode if missing
 
     // Send notification with code (Simulation of Email)
     await Notification.create({
       user: req.params.id,
       type: 'manufacturer_approved',
       title: 'Account Approved! Action Required',
-      message: `Congratulations! Your account is approved. Use this Activation Code to unlock your dashboard: ${activationCode}`,
+      message: `Congratulations! Your account is approved. Store ID: ${profile.companyCode}. Activation Code: ${activationCode}`,
       link: '/manufacturer/overview',
     });
 
-    res.json({ message: 'Manufacturer approved', user });
+    res.json({ 
+      message: 'Manufacturer approved', 
+      user, 
+      companyCode: profile.companyCode, 
+      activationCode 
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -6,10 +6,11 @@ import NotificationBell from '../NotificationBell'
 import LanguageToggle from '../LanguageToggle'
 import { VerticalDock } from '../Dock'
 import { VyawanIcon } from '../VyawanLogo'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
   LayoutDashboard, Store, Truck, MessageSquare, CreditCard,
   AlertCircle, Settings, HelpCircle, Zap, LogOut, ClipboardList,
-  ShoppingCart, Boxes, CalendarClock, CalendarDays, Menu, X, Star, Users, Lock, KeyRound
+  ShoppingCart, Boxes, CalendarClock, CalendarDays, Menu, X, Star, Users, Lock, KeyRound, ChevronDown
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
@@ -70,22 +71,18 @@ export default function ManufacturerLayout() {
 
   const SidebarContent = () => (
     <>
-      {/* Logo */}
-      <div className="mb-6 px-2 flex items-center gap-3">
-        <Link to="/manufacturer" className="flex items-center gap-2.5 flex-1 min-w-0" onClick={() => setSidebarOpen(false)}>
-          <VyawanIcon size={32} />
-          <div className="min-w-0">
-            <h1 className="font-black text-sm leading-tight text-mfr-dark tracking-tight">Vyawan</h1>
-            <p className="text-[10px] uppercase tracking-widest text-mfr-muted font-medium mt-0.5 truncate">{user?.company ?? 'Manufacturer'}</p>
-          </div>
+      {/* Logo — edge to edge */}
+      <div className="mb-4 flex items-center justify-between">
+        <Link to="/manufacturer" className="flex-1 min-w-0" onClick={() => setSidebarOpen(false)}>
+          <VyawanIcon size={44} className="w-full" />
         </Link>
-        <button className="lg:hidden p-1 text-mfr-muted" onClick={() => setSidebarOpen(false)}>
+        <button className="lg:hidden p-1 text-mfr-muted flex-shrink-0 mr-2" onClick={() => setSidebarOpen(false)}>
           <X size={18} />
         </button>
       </div>
 
       {/* Primary nav — VerticalDock */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto px-3">
         <VerticalDock
           items={navDockItems}
           baseItemSize={36}
@@ -96,7 +93,7 @@ export default function ManufacturerLayout() {
       </div>
 
       {/* Upgrade card */}
-      <div className="mt-4 bg-mfr-peach/70 border border-mfr-border rounded-xl p-4 mb-3">
+      <div className="mt-4 mx-3 bg-mfr-peach/70 border border-mfr-border rounded-xl p-4 mb-3">
         <Zap className="text-mfr-brown mb-2" size={16} />
         <h4 className="text-[11px] font-semibold text-mfr-brown mb-2">Upgrade to Pro</h4>
         <p className="text-[10px] text-mfr-muted mb-3 leading-relaxed">Get advanced analytics &amp; AI features.</p>
@@ -106,7 +103,7 @@ export default function ManufacturerLayout() {
       </div>
 
       {/* Bottom items — VerticalDock */}
-      <div className="pt-2 border-t border-mfr-border">
+      <div className="pt-2 border-t border-mfr-border px-3">
         <VerticalDock
           items={bottomDockItems}
           baseItemSize={36}
@@ -155,7 +152,7 @@ export default function ManufacturerLayout() {
       {/* Sidebar */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-50
-        w-60 flex-shrink-0 flex flex-col py-6 px-3
+        w-60 flex-shrink-0 flex flex-col pt-0 pb-6 px-0
         bg-mfr-sidebar border-r border-mfr-border
         transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -174,10 +171,63 @@ export default function ManufacturerLayout() {
             <Menu size={20} />
           </button>
           <div className="flex-1" />
-          <div className="flex items-center gap-2 lg:gap-4">
+          <div className="flex items-center gap-3">
             <LanguageToggle />
-            <div className="w-px h-6 bg-gray-200 mx-1 hidden sm:block" />
+            <div className="w-px h-6 bg-gray-200 hidden sm:block mx-1" />
             <NotificationBell />
+            <div className="w-px h-6 bg-gray-200 hidden sm:block mx-1" />
+            
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <button
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-mfr-border bg-white text-mfr-dark text-sm font-semibold hover:border-mfr-brown transition-all focus:outline-none cursor-pointer"
+                >
+                  <div className="w-7 h-7 rounded-full bg-mfr-brown-pale flex items-center justify-center text-mfr-brown">
+                     <Users size={14} />
+                  </div>
+                  <span className="hidden sm:inline lowercase first-letter:uppercase">{user ? user.name?.split(' ')[0] : 'Merchant'}</span>
+                  <ChevronDown size={13} className="text-mfr-muted" />
+                </button>
+              </DropdownMenu.Trigger>
+
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content 
+                  align="end" 
+                  sideOffset={8}
+                  className="z-[100] w-52 bg-white rounded-2xl p-1.5 shadow-2xl border border-mfr-border animate-in fade-in zoom-in-95"
+                >
+                  <div className="px-3 py-2 border-b border-mfr-bg mb-1">
+                     <p className="text-[10px] font-black uppercase tracking-widest text-mfr-muted">Store Account</p>
+                     <p className="text-xs font-bold text-mfr-dark truncate">{user?.email}</p>
+                  </div>
+                  
+                  <DropdownMenu.Item 
+                    onClick={() => navigate('/manufacturer/settings')}
+                    className="flex items-center gap-2 px-3 py-2.5 text-xs font-semibold text-mfr-dark hover:bg-mfr-bg rounded-xl cursor-pointer outline-none transition-colors"
+                  >
+                    <Settings size={14} className="text-mfr-muted" />
+                    Business Settings
+                  </DropdownMenu.Item>
+                  
+                  <DropdownMenu.Item 
+                    className="flex items-center gap-2 px-3 py-2.5 text-xs font-semibold text-mfr-dark hover:bg-mfr-bg rounded-xl cursor-pointer outline-none transition-colors"
+                  >
+                    <Star size={14} className="text-mfr-muted" />
+                    Reviews Center
+                  </DropdownMenu.Item>
+
+                  <DropdownMenu.Separator className="h-px bg-mfr-bg my-1" />
+                  
+                  <DropdownMenu.Item 
+                    onClick={() => { logout(); navigate('/login'); }}
+                    className="flex items-center gap-2 px-3 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-xl cursor-pointer outline-none transition-colors"
+                  >
+                    <LogOut size={14} />
+                    Sign Out
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
           </div>
         </div>
 

@@ -85,6 +85,7 @@ console.log('Users seeded');
 await ManufacturerProfile.create([
   {
     user: manufacturer._id,
+    companyCode: 'MNG001',
     gstNumber: '29ABCDE1234F1Z5',
     panNumber: 'ABCDE1234F',
     msmeNumber: 'MSME-12345',
@@ -98,6 +99,7 @@ await ManufacturerProfile.create([
   },
   {
     user: manufacturer2._id,
+    companyCode: 'MNG002',
     gstNumber: '27XYZAB5678C2Z1',
     panNumber: 'XYZAB5678C',
     address: { street: 'Shivaji Nagar, Industrial Area', city: 'Pune', state: 'Maharashtra', pincode: '411005', country: 'India' },

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { motion, AnimatePresence } from 'motion/react'
@@ -7,6 +7,7 @@ import { useGoogleLogin } from '@react-oauth/google'
 import ManufacturerRegisterModal from '@/features/manufacturer/RegisterModal'
 import BuyerRegisterModal from '@/features/buyer/BuyerRegisterModal'
 import VyawanLogo from '@/components/VyawanLogo'
+import { api } from '@/lib/api'
 
 type Role = 'buyer' | 'manufacturer'
 
@@ -223,7 +224,7 @@ function Shell({ children, onLogoClick }: { children: React.ReactNode; onLogoCli
   return (
     <div style={{ height: '100vh', background: BG, display: 'flex', alignItems: 'center', fontFamily: 'Inter, sans-serif', overflow: 'hidden', position: 'relative' }}>
       <div onClick={onLogoClick} style={{ position: 'absolute', top: '1.5rem', left: '2rem', cursor: 'pointer', zIndex: 10 }}>
-        <VyawanLogo size={26} />
+        <VyawanLogo size={44} />
       </div>
       <FloatingIcons />
       <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', height: '100%', position: 'relative' }}>
@@ -282,10 +283,25 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault(); setError(''); setLoading(true)
     try {
+      let targetCompanyId = ''
+      if (role === 'buyer') {
+        if (!storeCode.trim()) throw new Error('Store Access Code is required for buyers.')
+        const company = await api.getCompanyByCode(storeCode.toUpperCase())
+        targetCompanyId = company.user._id
+        localStorage.setItem('directStoreAccess', targetCompanyId)
+      }
+
       const user = await login(email, password)
       if (user.role !== role) { setError(`This account is a ${user.role}, not ${role}.`); return }
-      navigate(role === 'buyer' ? '/buyer/dashboard' : '/manufacturer/overview')
-    } catch (err: any) { setError(err.message ?? 'Login failed.') }
+      
+      if (role === 'buyer') {
+        navigate(`/company/${targetCompanyId}`)
+      } else {
+        navigate('/manufacturer/overview')
+      }
+    } catch (err: any) { 
+      setError(err.message === 'Company not found' ? 'Invalid Store Code. Please check MNG ID.' : err.message ?? 'Login failed.') 
+    }
     finally { setLoading(false) }
   }
 
@@ -299,10 +315,23 @@ export default function LoginPage() {
     finally { setLoading(false) }
   }
 
+  const [storeCode, setStoreCode] = useState('')
+
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: handleGoogleSuccess,
     onError: () => setError('Google Sign-in failed.'),
   })
+
+  const handleStoreAccess = async (e: React.FormEvent) => {
+    e.preventDefault(); if (!storeCode.trim()) return;
+    setError(''); setLoading(true);
+    try {
+      const company = await api.getCompanyByCode(storeCode.toUpperCase());
+      navigate(`/companies/${company.user._id}`);
+    } catch (err: any) {
+      setError(err.message === 'Company not found' ? 'Invalid Store ID. Please check the code.' : 'Failed to find store.');
+    } finally { setLoading(false) }
+  }
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault(); setError(''); setLoading(true)
@@ -363,105 +392,144 @@ export default function LoginPage() {
   const ri = ROLE_INFO[role]
 
   return (
-    <Shell onLogoClick={handleLogoClick}>
-      <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35 }}
-        style={{ background: CARD, borderRadius: '24px', padding: '2.25rem', width: '100%', boxShadow: '0 8px 40px rgba(44,24,16,0.12)', maxHeight: '94vh', overflowY: 'auto' }}>
+    <>
+      <Shell onLogoClick={handleLogoClick}>
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35 }}
+          style={{ background: CARD, borderRadius: '24px', padding: '2.25rem', width: '100%', boxShadow: '0 8px 40px rgba(44,24,16,0.12)', maxHeight: '94vh', overflowY: 'auto' }}>
 
-        {/* Role toggle + subtitle — NO thumbnail image */}
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <div style={{ display: 'inline-flex', background: INPUT, borderRadius: '12px', padding: '3px', gap: '2px', marginBottom: '10px' }}>
-            {(['buyer', 'manufacturer'] as Role[]).map(r => (
-              <button key={r} type="button" onClick={() => setRole(r)}
-                style={{
-                  padding: '7px 18px', borderRadius: '9px', border: 'none', cursor: 'pointer',
-                  fontWeight: 600, fontSize: '13px', transition: 'all 0.2s', fontFamily: 'Inter, sans-serif',
-                  background: role === r ? CARD : 'transparent',
-                  color: role === r ? BROWN : MUTED,
-                  boxShadow: role === r ? '0 1px 6px rgba(44,24,16,0.1)' : 'none',
-                }}>
-                {r === 'buyer' ? 'Buyer' : 'Manufacturer'}
-              </button>
-            ))}
-          </div>
-          <AnimatePresence mode="wait">
-            <motion.p key={role} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}
-              style={{ fontSize: '13px', color: MUTED, margin: 0, fontFamily: 'Inter, sans-serif' }}>
-              {ri.subtitle}
-            </motion.p>
-          </AnimatePresence>
-        </div>
-
-        {/* Sourcing badge */}
-        <AnimatePresence>
-          {buyerCompany && role === 'buyer' && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden', marginBottom: '10px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: MID, background: PEACH, padding: '4px 10px', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                🏭 Sourcing from: {buyerCompany}
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Error */}
-        {error && (
-          <div style={{ background: '#FEF2F2', color: '#DC2626', fontSize: '13px', padding: '10px 14px', borderRadius: '10px', marginBottom: '12px', border: '1px solid #FECACA' }}>
-            {error}
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
-          <input type="email" placeholder="Email Address" value={email} onChange={e => setEmail(e.target.value)} required style={inp()}
-            onFocus={e => (e.currentTarget.style.borderColor = MID)} onBlur={e => (e.currentTarget.style.borderColor = BORDER)} />
-
-          <div style={{ position: 'relative' }}>
-            <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password}
-              onChange={e => setPassword(e.target.value)} required style={inp({ paddingRight: '44px' })}
-              onFocus={e => (e.currentTarget.style.borderColor = MID)} onBlur={e => (e.currentTarget.style.borderColor = BORDER)} />
-            <button type="button" onClick={() => setShowPassword(v => !v)}
-              style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: MUTED }}>
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
+          {/* Role toggle + subtitle — NO thumbnail image */}
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'inline-flex', background: INPUT, borderRadius: '12px', padding: '3px', gap: '2px', marginBottom: '10px' }}>
+              {(['buyer', 'manufacturer'] as Role[]).map(r => (
+                <button key={r} type="button" onClick={() => setRole(r)}
+                  style={{
+                    padding: '7px 18px', borderRadius: '9px', border: 'none', cursor: 'pointer',
+                    fontWeight: 600, fontSize: '13px', transition: 'all 0.2s', fontFamily: 'Inter, sans-serif',
+                    background: role === r ? CARD : 'transparent',
+                    color: role === r ? BROWN : MUTED,
+                    boxShadow: role === r ? '0 1px 6px rgba(44,24,16,0.1)' : 'none',
+                  }}>
+                  {r === 'buyer' ? 'Buyer' : 'Manufacturer'}
+                </button>
+              ))}
+            </div>
+            <AnimatePresence mode="wait">
+              <motion.p key={role} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}
+                style={{ fontSize: '13px', color: MUTED, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+                {ri.subtitle}
+              </motion.p>
+            </AnimatePresence>
           </div>
 
+          {/* Sourcing badge */}
           <AnimatePresence>
-            {role === 'buyer' && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden' }}>
-                <input type="text" placeholder="Enter Company Name" value={buyerCompany} onChange={e => setBuyerCompany(e.target.value)}
-                  style={inp()}
-                  onFocus={e => (e.currentTarget.style.borderColor = MID)} onBlur={e => (e.currentTarget.style.borderColor = BORDER)} />
+            {buyerCompany && role === 'buyer' && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden', marginBottom: '10px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: MID, background: PEACH, padding: '4px 10px', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                  🏭 Sourcing from: {buyerCompany}
+                </span>
               </motion.div>
             )}
           </AnimatePresence>
 
-          <button type="submit" disabled={loading}
-            style={{ marginTop: '4px', padding: '14px', borderRadius: '12px', background: BROWN, color: '#fff', fontWeight: 700, fontSize: '15px', border: 'none', cursor: 'pointer', opacity: loading ? 0.7 : 1, fontFamily: 'Inter, sans-serif', letterSpacing: '0.01em' }}>
-            {loading ? 'Signing in...' : ri.btn}
-          </button>
+          {/* Error */}
+          {error && (
+            <div style={{ background: '#FEF2F2', color: '#DC2626', fontSize: '13px', padding: '10px 14px', borderRadius: '10px', marginBottom: '12px', border: '1px solid #FECACA' }}>
+              {error}
+            </div>
+          )}
 
-          <p style={{ textAlign: 'center', fontSize: '13px', color: MUTED, margin: '2px 0 0', fontFamily: 'Inter, sans-serif' }}>
-            New here?{' '}
-            <span onClick={() => role === 'buyer' ? setShowBuyerRegisterModal(true) : setShowRegisterModal(true)}
-              style={{ color: MID, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
-              {role === 'buyer' ? 'Create your buyer account' : 'Create your business account'}
-            </span>
-          </p>
+          {/* Form */}
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
+            <input type="email" placeholder="Email Address" value={email} onChange={e => setEmail(e.target.value)} required style={inp()}
+              onFocus={e => (e.currentTarget.style.borderColor = MID)} onBlur={e => (e.currentTarget.style.borderColor = BORDER)} />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '2px 0' }}>
-            <div style={{ flex: 1, height: '1px', background: BORDER }} />
-            <span style={{ fontSize: '12px', color: MUTED, fontFamily: 'Inter, sans-serif' }}>or</span>
-            <div style={{ flex: 1, height: '1px', background: BORDER }} />
-          </div>
+            <div style={{ position: 'relative' }}>
+              <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password}
+                onChange={e => setPassword(e.target.value)} required style={inp({ paddingRight: '44px' })}
+                onFocus={e => (e.currentTarget.style.borderColor = MID)} onBlur={e => (e.currentTarget.style.borderColor = BORDER)} />
+              <button type="button" onClick={() => setShowPassword(v => !v)}
+                style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: MUTED }}>
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
 
-          <button type="button" onClick={() => handleGoogleLogin()} disabled={loading}
-            style={{ padding: '12px', borderRadius: '12px', border: `1.5px solid ${BORDER}`, background: CARD, color: BROWN, fontWeight: 600, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontFamily: 'Inter, sans-serif' }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = MID)}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = BORDER)}>
-            <img src="https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png" alt="Google" style={{ width: '18px', height: '18px' }} />
-            Continue with Google
-          </button>
-        </form>
-      </motion.div>
-    </Shell>
+            <AnimatePresence>
+              {role === 'buyer' && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: '11px' }}>
+                  <input type="text" placeholder="Enter Company Name" value={buyerCompany} onChange={e => setBuyerCompany(e.target.value)}
+                    style={inp()}
+                    onFocus={e => (e.currentTarget.style.borderColor = MID)} onBlur={e => (e.currentTarget.style.borderColor = BORDER)} />
+
+                  {/* Direct Store Access (Buyer Only) */}
+                  <div style={{ marginTop: '0.5rem', paddingTop: '1rem', borderTop: `1px dashed ${BORDER}` }}>
+                    <p style={{ fontSize: '11px', fontWeight: 700, color: MID, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                      Store Access Code *
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. MFR-AB12CD" 
+                        value={storeCode}
+                        onChange={e => setStoreCode(e.target.value.toUpperCase())}
+                        required
+                        style={{ ...inp(), flex: 1, textTransform: 'uppercase', fontWeight: 600, fontSize: '13px' }} 
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <button type="submit" disabled={loading}
+              style={{ marginTop: '4px', padding: '14px', borderRadius: '12px', background: BROWN, color: '#fff', fontWeight: 700, fontSize: '15px', border: 'none', cursor: 'pointer', opacity: loading ? 0.7 : 1, fontFamily: 'Inter, sans-serif', letterSpacing: '0.01em' }}>
+              {loading ? 'Signing in...' : ri.btn}
+            </button>
+
+            <p style={{ textAlign: 'center', fontSize: '13px', color: MUTED, margin: '2px 0 0', fontFamily: 'Inter, sans-serif' }}>
+              New here?{' '}
+              <span onClick={() => role === 'buyer' ? setShowBuyerRegisterModal(true) : setShowRegisterModal(true)}
+                style={{ color: MID, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
+                {role === 'buyer' ? 'Create your buyer account' : 'Create your business account'}
+              </span>
+            </p>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '2px 0' }}>
+              <div style={{ flex: 1, height: '1px', background: BORDER }} />
+              <span style={{ fontSize: '12px', color: MUTED, fontFamily: 'Inter, sans-serif' }}>or</span>
+              <div style={{ flex: 1, height: '1px', background: BORDER }} />
+            </div>
+
+            <button type="button" onClick={() => handleGoogleLogin()} disabled={loading}
+              style={{ padding: '12px', borderRadius: '12px', border: `1.5px solid ${BORDER}`, background: CARD, color: BROWN, fontWeight: 600, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontFamily: 'Inter, sans-serif' }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = MID)}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = BORDER)}>
+              <img src="https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png" alt="Google" style={{ width: '18px', height: '18px' }} />
+              Continue with Google
+            </button>
+          </form>
+        </motion.div>
+      </Shell>
+
+      <AnimatePresence>
+        {showRegisterModal && (
+          <ManufacturerRegisterModal 
+            open={showRegisterModal} 
+            onClose={() => setShowRegisterModal(false)} 
+            onSuccess={() => { setShowRegisterModal(false); setError('Account created successfully! Please login.') }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showBuyerRegisterModal && (
+          <BuyerRegisterModal 
+            open={showBuyerRegisterModal} 
+            onClose={() => setShowBuyerRegisterModal(false)} 
+            onSuccess={() => { setShowBuyerRegisterModal(false); setError('Account created successfully! Please login.') }}
+          />
+        )}
+      </AnimatePresence>
+    </>
   )
 }

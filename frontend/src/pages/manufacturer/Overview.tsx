@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import {
   Download, Plus, TrendingUp, ShoppingBag,
   BarChart2, Package, AlertTriangle, MessageSquare,
-  Zap, ChevronRight, Loader2, ArrowRight, X, Star, CheckCircle
+  Zap, ChevronRight, Loader2, ArrowRight, X, Star, CheckCircle, Copy
 } from 'lucide-react'
 import { motion } from 'motion/react'
 import { api, Order } from '@/lib/api'
@@ -27,6 +27,8 @@ export default function Overview() {
   const [orders, setOrders] = useState<Order[]>([])
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [companyCode, setCompanyCode] = useState<string | null>(null)
+  const [codeCopied, setCodeCopied] = useState(false)
 
   // Simulated bar heights for production velocity
   const barHeights = [45, 60, 100, 55, 70, 40, 50]
@@ -38,12 +40,22 @@ export default function Overview() {
       api.getManufacturerStats().catch(() => ({
         todayRevenue: 0, todayOrderCount: 0, pendingShipments: 0,
         activeDeals: 0, totalProducts: 0,
-      }))
-    ]).then(([ordersData, statsData]) => {
+      })),
+      api.getMyManufacturerProfile().catch(() => null),
+    ]).then(([ordersData, statsData, profileData]) => {
       setOrders(Array.isArray(ordersData) ? ordersData : [])
       setStats(statsData)
+      if (profileData?.companyCode) setCompanyCode(profileData.companyCode)
     }).finally(() => setLoading(false))
   }, [])
+
+  const handleCopyCode = () => {
+    if (!companyCode) return
+    navigator.clipboard.writeText(companyCode).then(() => {
+      setCodeCopied(true)
+      setTimeout(() => setCodeCopied(false), 2000)
+    })
+  }
 
   const handleDismissWelcome = async () => {
     try {
@@ -125,6 +137,35 @@ export default function Overview() {
                 </div>
               ))}
             </div>
+          </motion.div>
+        )}
+
+        {/* ── Store Access Code Banner ── */}
+        {companyCode && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#F5E6D3' }}>
+                <span className="text-base">🏪</span>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-black tracking-widest text-amber-600 mb-0.5">Your Store Access Code</p>
+                <p className="text-xs text-slate-500">Share this with buyers so they can access your store</p>
+              </div>
+            </div>
+            <button
+              onClick={handleCopyCode}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-amber-300 bg-white text-sm font-bold tracking-widest transition-all hover:bg-amber-50"
+              style={{ color: '#5D4037', fontFamily: 'monospace', letterSpacing: '0.1em' }}
+            >
+              <span>{companyCode}</span>
+              {codeCopied
+                ? <CheckCircle size={14} className="text-green-500" />
+                : <Copy size={14} style={{ color: '#8B7355' }} />}
+            </button>
           </motion.div>
         )}
 

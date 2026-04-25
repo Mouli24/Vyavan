@@ -74,7 +74,7 @@ export default function BuyerComplaints() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
-        <Loader2 className="w-8 h-8 text-sp-purple animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#5D4037] animate-spin" />
       </div>
     );
   }
@@ -83,12 +83,12 @@ export default function BuyerComplaints() {
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-10 flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-black text-sp-text tracking-tight">Support <span className="text-sp-purple">&amp; Complaints</span></h1>
-          <p className="text-sp-muted font-bold uppercase text-[10px] tracking-widest mt-1">Resolution center for buyers</p>
+          <h1 className="text-4xl font-black text-[#1A1A1A] tracking-tight">Support <span className="text-[#5D4037]">&amp; Complaints</span></h1>
+          <p className="text-[#A89F91] font-bold uppercase text-[10px] tracking-widest mt-1">Resolution center for buyers</p>
         </div>
         <Button 
           onClick={() => setShowNewModal(true)}
-          className="gradient-card-purple text-white rounded-2xl px-6 h-12 font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-sp-purple/20 hover:scale-105 active:scale-95 transition-all"
+          className="bg-[#5D4037] text-white rounded-2xl px-6 h-12 font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-sp-purple/20 hover:scale-105 active:scale-95 transition-all"
         >
           <Plus size={18} /> New Ticket
         </Button>
@@ -96,11 +96,11 @@ export default function BuyerComplaints() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         {[
-          { label: 'Total Tickets', value: complaints.length, icon: MessageSquare, color: 'bg-sp-bg text-sp-text' },
+          { label: 'Total Tickets', value: complaints.length, icon: MessageSquare, color: 'bg-[#FAF8F5] text-[#1A1A1A]' },
           { label: 'Resolved', value: complaints.filter(c => c.status === 'RESOLVED').length, icon: ShieldCheck, color: 'bg-sp-mint text-sp-success' },
           { label: 'Escalated', value: complaints.filter(c => c.status === 'ESCALATED').length, icon: ShieldAlert, color: 'bg-red-50 text-red-600' },
         ].map(stat => (
-          <div key={stat.label} className={`${stat.color} p-6 rounded-[2rem] border border-sp-border shadow-sm`}>
+          <div key={stat.label} className={`${stat.color} p-6 rounded-[2rem] border border-[#E5E1DA] shadow-sm`}>
             <stat.icon className="w-6 h-6 mb-4 opacity-70" />
             <p className="text-3xl font-black tracking-tight">{stat.value}</p>
             <p className="text-[10px] font-black uppercase tracking-widest opacity-70 mt-1">{stat.label}</p>
@@ -110,10 +110,10 @@ export default function BuyerComplaints() {
 
       <div className="space-y-4">
         {complaints.length === 0 ? (
-          <div className="bg-sp-bg rounded-[2.5rem] py-20 text-center border-2 border-dashed border-sp-border">
+          <div className="bg-[#FAF8F5] rounded-[2.5rem] py-20 text-center border-2 border-dashed border-[#E5E1DA]">
             <AlertCircle className="w-12 h-12 mx-auto mb-4 text-sp-border" />
-            <p className="font-black text-sp-text">No active tickets</p>
-            <p className="text-xs text-sp-muted mt-1 uppercase font-bold tracking-widest">Great! You have no pending disputes or issues at the moment.</p>
+            <p className="font-black text-[#1A1A1A]">No active tickets</p>
+            <p className="text-xs text-[#A89F91] mt-1 uppercase font-bold tracking-widest">Great! You have no pending disputes or issues at the moment.</p>
           </div>
         ) : (
           complaints.map((ticket, idx) => (
@@ -122,52 +122,52 @@ export default function BuyerComplaints() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
-              className="bg-white rounded-[2.5rem] p-8 border border-sp-border shadow-sm hover:border-sp-purple/30 transition-all flex flex-col md:flex-row gap-8 items-start group"
+              className="bg-white rounded-[2.5rem] p-8 border border-[#E5E1DA] shadow-sm hover:border-[#5D4037]/30 transition-all flex flex-col md:flex-row gap-8 items-start group"
             >
-              <div className="w-16 h-16 bg-sp-bg rounded-[1.5rem] flex items-center justify-center shrink-0">
-                {ticket.status === 'RESOLVED' ? <ShieldCheck className="text-sp-success" /> : <Clock className="text-sp-muted" />}
+              <div className="w-16 h-16 bg-[#FAF8F5] rounded-[1.5rem] flex items-center justify-center shrink-0">
+                {ticket.status === 'RESOLVED' ? <ShieldCheck className="text-sp-success" /> : <Clock className="text-[#A89F91]" />}
               </div>
 
               <div className="flex-1 space-y-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-lg font-black text-sp-text">{ticket.title}</h3>
-                    <p className="text-[10px] font-black text-sp-muted uppercase tracking-widest mt-1">ID: {ticket.complaintId} • Category: {ticket.category}</p>
+                    <h3 className="text-lg font-black text-[#1A1A1A]">{ticket.title}</h3>
+                    <p className="text-[10px] font-black text-[#A89F91] uppercase tracking-widest mt-1">ID: {ticket.complaintId} • Category: {ticket.category}</p>
                   </div>
                   <Badge className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest border-none ${
                     ticket.status === 'RESOLVED' ? 'bg-sp-mint text-sp-success' :
                     ticket.status === 'ESCALATED' ? 'bg-red-50 text-red-600' :
-                    'bg-sp-purple-pale text-sp-purple'
+                    'bg-[#5D4037]-pale text-[#5D4037]'
                   }`}>
                     {ticket.status}
                   </Badge>
                 </div>
 
-                <p className="text-sm text-sp-muted leading-relaxed line-clamp-2">
+                <p className="text-sm text-[#A89F91] leading-relaxed line-clamp-2">
                   {ticket.description}
                 </p>
 
                 {ticket.response && (
-                  <div className="bg-sp-bg/50 p-5 rounded-[1.5rem] border border-sp-border/50">
-                    <p className="text-[10px] font-black text-sp-purple uppercase tracking-widest mb-1">Manufacturer Response</p>
-                    <p className="text-xs font-medium text-sp-text italic">"{ticket.response}"</p>
+                  <div className="bg-[#FAF8F5]/50 p-5 rounded-[1.5rem] border border-[#E5E1DA]/50">
+                    <p className="text-[10px] font-black text-[#5D4037] uppercase tracking-widest mb-1">Manufacturer Response</p>
+                    <p className="text-xs font-medium text-[#1A1A1A] italic">"{ticket.response}"</p>
                   </div>
                 )}
               </div>
 
               <div className="shrink-0 flex flex-col gap-3 h-full md:items-end">
-                <p className="text-[10px] font-black text-sp-muted uppercase tracking-widest">{ticket.filingDate}</p>
+                <p className="text-[10px] font-black text-[#A89F91] uppercase tracking-widest">{ticket.filingDate}</p>
                 <div className="flex gap-2 mt-auto">
                   {ticket.status !== 'ESCALATED' && ticket.status !== 'RESOLVED' && (
                     <Button 
                       variant="outline" 
                       onClick={() => handleEscalate(ticket._id)}
-                      className="rounded-xl border-sp-border text-[9px] font-black uppercase tracking-widest px-4 h-9 hover:border-red-500 hover:text-red-500"
+                      className="rounded-xl border-[#E5E1DA] text-[9px] font-black uppercase tracking-widest px-4 h-9 hover:border-red-500 hover:text-red-500"
                     >
                       Escalate
                     </Button>
                   )}
-                  <Button className="rounded-xl bg-sp-bg text-sp-muted px-4 h-9 hover:bg-sp-purple hover:text-white group-hover:bg-sp-purple group-hover:text-white transition-all">
+                  <Button className="rounded-xl bg-[#FAF8F5] text-[#A89F91] px-4 h-9 hover:bg-[#5D4037] hover:text-white group-hover:bg-[#5D4037] group-hover:text-white transition-all">
                     <ChevronRight size={16} />
                   </Button>
                 </div>
@@ -192,32 +192,32 @@ export default function BuyerComplaints() {
             >
               <button 
                 onClick={() => setShowNewModal(false)}
-                className="absolute top-8 right-8 text-sp-muted hover:text-sp-text p-2 hover:bg-sp-bg rounded-full transition-all"
+                className="absolute top-8 right-8 text-[#A89F91] hover:text-[#1A1A1A] p-2 hover:bg-[#FAF8F5] rounded-full transition-all"
               >
                 <X size={20} />
               </button>
 
-              <h2 className="text-2xl font-black text-sp-text mb-2">File a <span className="text-sp-purple">Complaint</span></h2>
-              <p className="text-xs font-bold text-sp-muted uppercase tracking-widest mb-8">Our team will assist in resolving any dispute.</p>
+              <h2 className="text-2xl font-black text-[#1A1A1A] mb-2">File a <span className="text-[#5D4037]">Complaint</span></h2>
+              <p className="text-xs font-bold text-[#A89F91] uppercase tracking-widest mb-8">Our team will assist in resolving any dispute.</p>
 
               <div className="space-y-6">
                 <div>
-                  <label className="text-[10px] font-black text-sp-muted uppercase tracking-widest mb-2 block">Case Title</label>
+                  <label className="text-[10px] font-black text-[#A89F91] uppercase tracking-widest mb-2 block">Case Title</label>
                   <Input 
                     value={newComplaint.title}
                     onChange={e => setNewComplaint({...newComplaint, title: e.target.value})}
                     placeholder="e.g. Delayed shipment or Material mismatch" 
-                    className="rounded-2xl h-14 border-sp-border bg-sp-bg/30 font-bold focus:bg-white" 
+                    className="rounded-2xl h-14 border-[#E5E1DA] bg-[#FAF8F5]/30 font-bold focus:bg-white" 
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] font-black text-sp-muted uppercase tracking-widest mb-2 block">Resolution Level</label>
+                    <label className="text-[10px] font-black text-[#A89F91] uppercase tracking-widest mb-2 block">Resolution Level</label>
                     <select 
                       value={newComplaint.category}
                       onChange={e => setNewComplaint({...newComplaint, category: e.target.value})}
-                      className="w-full rounded-2xl h-14 border-sp-border bg-sp-bg/30 px-4 text-sm font-bold focus:border-sp-purple outline-none"
+                      className="w-full rounded-2xl h-14 border-[#E5E1DA] bg-[#FAF8F5]/30 px-4 text-sm font-bold focus:border-[#5D4037] outline-none"
                     >
                       <option>Product Quality</option>
                       <option>Shipping Delay</option>
@@ -226,34 +226,34 @@ export default function BuyerComplaints() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-sp-muted uppercase tracking-widest mb-2 block">Manufacturer ID</label>
+                    <label className="text-[10px] font-black text-[#A89F91] uppercase tracking-widest mb-2 block">Manufacturer ID</label>
                     <Input 
                       value={newComplaint.manufacturer}
                       onChange={e => setNewComplaint({...newComplaint, manufacturer: e.target.value})}
                       placeholder="MFR-XXX" 
-                      className="rounded-2xl h-14 border-sp-border bg-sp-bg/30 font-bold focus:bg-white" 
+                      className="rounded-2xl h-14 border-[#E5E1DA] bg-[#FAF8F5]/30 font-bold focus:bg-white" 
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black text-sp-muted uppercase tracking-widest mb-2 block">Detailed Description</label>
+                  <label className="text-[10px] font-black text-[#A89F91] uppercase tracking-widest mb-2 block">Detailed Description</label>
                   <textarea 
                     value={newComplaint.description}
                     onChange={e => setNewComplaint({...newComplaint, description: e.target.value})}
                     placeholder="Explain the issue in detail..."
-                    className="w-full rounded-[2rem] p-6 border border-sp-border bg-sp-bg/30 h-32 text-sm font-bold focus:bg-white focus:border-sp-purple outline-none resize-none transition-all"
+                    className="w-full rounded-[2rem] p-6 border border-[#E5E1DA] bg-[#FAF8F5]/30 h-32 text-sm font-bold focus:bg-white focus:border-[#5D4037] outline-none resize-none transition-all"
                   />
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <Button variant="outline" className="flex-1 rounded-2xl h-14 border-sp-border text-sp-muted font-bold flex gap-2">
+                  <Button variant="outline" className="flex-1 rounded-2xl h-14 border-[#E5E1DA] text-[#A89F91] font-bold flex gap-2">
                     <ImageIcon size={18} /> Attach Evidence
                   </Button>
                   <Button 
                     onClick={handleSubmit}
                     disabled={submitting}
-                    className="flex-1 gradient-card-purple text-white rounded-2xl h-14 font-black uppercase tracking-widest shadow-xl shadow-sp-purple/20 hover:scale-105 active:scale-95 transition-all"
+                    className="flex-1 bg-[#5D4037] text-white rounded-2xl h-14 font-black uppercase tracking-widest shadow-xl shadow-sp-purple/20 hover:scale-105 active:scale-95 transition-all"
                   >
                     {submitting ? <Loader2 size={18} className="animate-spin" /> : 'File Ticket'}
                   </Button>
@@ -266,4 +266,5 @@ export default function BuyerComplaints() {
     </div>
   );
 }
+
 

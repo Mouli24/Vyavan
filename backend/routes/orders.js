@@ -128,8 +128,9 @@ router.patch('/:id/confirm', protect, requireRole('manufacturer'), async (req, r
       user: order.buyer.ref,
       title: 'Order Confirmed',
       message: `Manufacturer ${req.user.company} has confirmed your order ${order.orderId}.`,
-      type: 'order',
-      referenceId: order._id,
+      type: 'order_confirmed',
+      refModel: 'Order',
+      refId: order._id,
     });
 
     res.json(order);
@@ -155,8 +156,9 @@ router.patch('/:id/reject', protect, requireRole('manufacturer'), async (req, re
       user: order.buyer.ref,
       title: 'Order Rejected',
       message: `Manufacturer ${req.user.company} has rejected your order ${order.orderId}. Reason: ${reason}`,
-      type: 'order',
-      referenceId: order._id,
+      type: 'order_rejected',
+      refModel: 'Order',
+      refId: order._id,
     });
 
     res.json(order);
@@ -236,8 +238,9 @@ router.patch('/:id/dispatch', protect, requireRole('manufacturer'), async (req, 
       user: order.buyer.ref,
       title: 'Order Dispatched',
       message: `Your order ${order.orderId} has been dispatched via ${carrier}. Tracking: ${trackingNumber}`,
-      type: 'shipment',
-      referenceId: shipment._id,
+      type: 'order_shipped',
+      refModel: 'Shipment',
+      refId: shipment._id,
     });
 
     res.json({ order, shipment });
@@ -267,8 +270,9 @@ router.patch('/:id/delivered', protect, requireRole('buyer'), async (req, res) =
       user: order.manufacturer,
       title: 'Order Delivered',
       message: `Buyer has confirmed delivery for order ${order.orderId}. Payment released.`,
-      type: 'order',
-      referenceId: order._id,
+      type: 'order_delivered',
+      refModel: 'Order',
+      refId: order._id,
     });
 
     res.json(order);

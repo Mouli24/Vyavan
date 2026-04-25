@@ -1,4 +1,4 @@
-﻿import {
+import {
   Plus, Edit3, Star, Image as ImageIcon, Trash2,
   MessageSquare, Zap, Store, Package, Truck,
   ArrowRight, Loader2, Sparkles, Bell, MapPin,
@@ -166,6 +166,8 @@ export default function MyStore() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [showAddCampaign, setShowAddCampaign] = useState(false)
 
+  const [mfrProfile, setMfrProfile] = useState<any>(null)
+
   const fetchProducts = () => {
     setLoadingProducts(true)
     api.getMyProducts()
@@ -176,6 +178,10 @@ export default function MyStore() {
 
   useEffect(() => {
     fetchProducts()
+    api.getMyManufacturerProfile()
+      .then(profile => setMfrProfile(profile))
+      .catch(console.error)
+    
     api.getOnboardingAdvice()
       .then(plan => setOnboardingPlan(plan))
       .catch(() => {})
@@ -216,27 +222,52 @@ export default function MyStore() {
       <div className="p-6 lg:p-8 space-y-6">
 
         {/* ── Page Header ── */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">My Store</h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Your store's performance overview and product management.
-            </p>
+        <div className="flex flex-col space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">My Store</h1>
+              <p className="text-sm text-slate-500 mt-1">
+                Your store's performance overview and product management.
+              </p>
+            </div>
+            <div className="flex items-center gap-2.5 flex-shrink-0">
+              <button
+                onClick={() => setShowAddProduct(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-all shadow-sm"
+                style={{ background: '#5D4037' }}
+              >
+                <Plus size={15} /> New Product
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2.5 flex-shrink-0">
-            <button
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-sm font-medium hover:bg-slate-50 transition-all shadow-sm"
-            >
-              <Edit3 size={15} /> Customize Storefront
-            </button>
-            <button
-              onClick={() => setShowAddProduct(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-all shadow-sm"
-              style={{ background: '#5D4037' }}
-            >
-              <Plus size={15} /> New Product
-            </button>
-          </div>
+
+          {/* ── Brand Identity Section ── */}
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-5 p-5 bg-white rounded-[2rem] border border-slate-100 shadow-sm"
+          >
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-[#FAF8F5] overflow-hidden border border-slate-100 flex-shrink-0">
+              {mfrProfile?.logo ? (
+                <img src={mfrProfile.logo} alt="Logo" className="w-full h-full object-contain" />
+              ) : (
+                <Store size={24} className="text-slate-300" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-xl font-bold text-slate-900 truncate">
+                {mfrProfile?.tradeName || user?.company || 'Factory Identity'}
+              </h2>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="px-2 py-0.5 rounded-md bg-[#FCE7D6] text-[#5D4037] text-[10px] font-bold uppercase tracking-wider">
+                  {mfrProfile?.mainCategory || 'Industry Segment'}
+                </span>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  {mfrProfile?.address?.city ? `${mfrProfile.address.city}, ${mfrProfile.address.state}` : 'Location not set'}
+                </span>
+              </div>
+            </div>
+          </motion.div>
         </div>
 
         {/* ── Top 3 stat cards ── */}
@@ -317,34 +348,6 @@ export default function MyStore() {
               <span className="text-lg text-slate-400 font-medium">SKUs</span>
             </div>
             <p className="text-sm text-slate-400">Active products across 5 categories</p>
-          </div>
-        </div>
-
-        {/* ── AI Image Studio Banner ── */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-card p-6 flex items-center gap-8">
-          <div className="relative w-56 h-36 rounded-xl overflow-hidden flex-shrink-0 shadow-md">
-            <img src="https://picsum.photos/seed/industrial/600/400" alt="AI Enhanced"
-              className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-            <div className="absolute inset-0 bg-black/20" />
-            <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-full">
-              <Zap size={10} className="text-white fill-white" />
-              <span className="text-[9px] text-white font-bold uppercase tracking-wider">AI Enhanced</span>
-            </div>
-          </div>
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-slate-900 mb-2 tracking-tight">AI Image Studio</h2>
-            <p className="text-sm text-slate-500 mb-5 leading-relaxed max-w-lg">
-              Instantly enhance your product catalog photos. Our AI adjusts lighting, removes backgrounds, and sharpens textures to industrial-grade standards.
-            </p>
-            <div className="flex gap-3">
-              <button className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-                style={{ background: '#1E293B' }}>
-                Launch Studio
-              </button>
-              <button className="px-5 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
-                Bulk Auto-Enhance
-              </button>
-            </div>
           </div>
         </div>
 

@@ -47,10 +47,10 @@ const ADD_BTN_BG: Record<string, string> = {
 const SORT_OPTIONS = ['Popular', 'Price: Low to High', 'Price: High to Low', 'Newest']
 
 const FEATURE_PILLS = [
-  { icon: ShoppingCart, label: '1,250+',          sub: 'Products Available',  bg: '#FCE7D6', iconColor: '#5D4037',  to: '/buyer/browse'      },
-  { icon: Truck,        label: 'Fast & Reliable',  sub: 'Shipping',            bg: '#F5F2ED', iconColor: '#6B4E3D',  to: '/buyer/shipments'   },
-  { icon: Handshake,    label: 'Safe Negotiation', sub: 'with Suppliers',      bg: '#EDE8DF', iconColor: '#8B7355',  to: '/buyer/negotiation' },
-  { icon: ScanLine,     label: 'Track Orders',     sub: 'in Real Time',        bg: '#F0EBE3', iconColor: '#A89F91',  to: '/buyer/orders'      },
+  { icon: ShoppingCart, label: '1,250+',          sub: 'Products Available',  bg: '#FCE7D6', iconBg: '#F9D5B8', iconColor: '#5D4037',  to: '/buyer/browse'      },
+  { icon: Truck,        label: 'Fast & Reliable',  sub: 'Shipping',            bg: '#EBF3FF', iconBg: '#DBEAFE', iconColor: '#2563EB',  to: '/buyer/shipments'   },
+  { icon: Handshake,    label: 'Safe Negotiation', sub: 'with Suppliers',      bg: '#F3EEFF', iconBg: '#EDE9FE', iconColor: '#7C3AED',  to: '/buyer/negotiation' },
+  { icon: ScanLine,     label: 'Track Orders',     sub: 'in Real Time',        bg: '#ECFDF5', iconBg: '#D1FAE5', iconColor: '#059669',  to: '/buyer/orders'      },
 ]
 
 interface CartItem { product: Product; qty: number }
@@ -114,15 +114,23 @@ export default function BuyerDashboard() {
     <div className="min-h-screen" style={{ background: '#FAF8F5', fontFamily: "'Inter', sans-serif" }}>
 
       {/* ── Navbar ── */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-sp-border px-6 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          {/* Logo */}
-          <div className="cursor-pointer flex-shrink-0" onClick={() => navigate('/buyer/browse')}>
-            <VyawanLogo size={26} />
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-sp-border overflow-hidden" style={{ height: 64 }}>
+        <div className="flex items-center justify-between gap-4 h-full">
+          {/* Logo — flush left, full height */}
+          <div
+            className="cursor-pointer flex-shrink-0"
+            style={{ width: 220, height: 64, overflow: 'hidden' }}
+            onClick={() => navigate('/buyer/browse')}
+          >
+            <img
+              src="/vyawan (3).png"
+              alt="Vyawan"
+              style={{ height: '100%', width: '100%', display: 'block', objectFit: 'cover', objectPosition: 'center' }}
+            />
           </div>
 
           {/* Nav pills */}
-          <nav className="hidden md:flex items-center gap-2">
+          <nav className="hidden md:flex items-center gap-2 flex-1 justify-center">
             {[
               { label: 'Home',                   icon: Home,        to: '/buyer/dashboard', active: true  },
               { label: 'Tracking',               icon: ScanLine,    to: '/buyer/shipments', active: false },
@@ -136,7 +144,7 @@ export default function BuyerDashboard() {
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all border ${
                   item.active
                     ? 'bg-[#FCE7D6] border-[#F9D5B8] text-[#5D4037]'
-                    : 'bg-white border-sp-border text-slate-600 hover:border-[#F9D5B8] hover:text-[#5D4037]'
+                    : 'bg-white border-[#E5E1DA] text-slate-600 hover:border-[#F9D5B8] hover:text-[#5D4037]'
                 }`}
               >
                 <item.icon size={15} />
@@ -146,7 +154,7 @@ export default function BuyerDashboard() {
           </nav>
 
           {/* Right actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 pr-4 sm:pr-6">
             {/* Cart */}
             <button
               onClick={() => setCartOpen(o => !o)}
@@ -237,13 +245,14 @@ export default function BuyerDashboard() {
             <motion.div key={pill.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.07 }} onClick={() => navigate(pill.to)}
               className="rounded-2xl px-5 py-4 flex items-center gap-4 cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all"
-              style={{ background: pill.bg, border: '1px solid rgba(139,115,85,0.15)' }}>
-              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm flex-shrink-0">
+              style={{ background: pill.bg, border: '1px solid rgba(0,0,0,0.06)' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0"
+                style={{ background: pill.iconBg }}>
                 <pill.icon size={20} style={{ color: pill.iconColor }} />
               </div>
               <div>
-                <p className="font-black text-sm leading-tight" style={{ color: '#2C1810' }}>{pill.label}</p>
-                <p className="text-xs" style={{ color: '#8B7355' }}>{pill.sub}</p>
+                <p className="font-black text-sm leading-tight" style={{ color: pill.iconColor }}>{pill.label}</p>
+                <p className="text-xs font-medium" style={{ color: pill.iconColor, opacity: 0.7 }}>{pill.sub}</p>
               </div>
             </motion.div>
           ))}
@@ -268,11 +277,11 @@ export default function BuyerDashboard() {
                 {live.map((c: any) => (
                   <motion.div key={c.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                     className="flex items-center gap-4 p-4 rounded-2xl border">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0' style={{ background: '#5D4037' }}">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#5D4037' }}>
                       <Tag size={18} className="text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold truncate' style={{ color: '#1A1A1A' }}">{c.name}</p>
+                      <p className="text-sm font-bold truncate" style={{ color: '#1A1A1A' }}>{c.name}</p>
                       <p className="text-xs text-sp-muted">{c.manufacturerName} · {c.discountType === 'percent' ? `${c.discountValue}% off` : `₹${c.discountValue} off`}</p>
                     </div>
                     <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full uppercase flex-shrink-0">Live</span>
@@ -485,9 +494,17 @@ export default function BuyerDashboard() {
           <div>
             <h4 className="text-sm font-black text-slate-800 mb-3">Quick Links</h4>
             <ul className="space-y-2">
-              {['Catalog', 'My Orders', 'Tracking', 'Negotiation'].map(l => (
-                <li key={l}>
-                  <button className="text-sm text-slate-500 hover:' style={{ color: '#5D4037' }} transition-colors">{l}</button>
+              {[
+                { label: 'Catalog',      to: '/buyer/browse'       },
+                { label: 'My Orders',    to: '/buyer/orders'       },
+                { label: 'Tracking',     to: '/buyer/shipments'    },
+                { label: 'Negotiation',  to: '/buyer/negotiation'  },
+              ].map(({ label, to }) => (
+                <li key={label}>
+                  <button
+                    onClick={() => navigate(to)}
+                    className="text-sm text-slate-500 transition-colors hover:text-[#5D4037]"
+                  >{label}</button>
                 </li>
               ))}
             </ul>
@@ -497,9 +514,17 @@ export default function BuyerDashboard() {
           <div>
             <h4 className="text-sm font-black text-slate-800 mb-3">Support</h4>
             <ul className="space-y-2">
-              {['Help Center', 'Contact Us', 'Shipping Info', 'Returns & Refunds'].map(l => (
-                <li key={l}>
-                  <button className="text-sm text-slate-500 hover:' style={{ color: '#5D4037' }} transition-colors">{l}</button>
+              {[
+                { label: 'Help Center',       to: '/buyer/dashboard'  },
+                { label: 'Contact Us',        to: '/buyer/dashboard'  },
+                { label: 'Shipping Info',     to: '/buyer/shipments'  },
+                { label: 'Returns & Refunds', to: '/buyer/orders'     },
+              ].map(({ label, to }) => (
+                <li key={label}>
+                  <button
+                    onClick={() => navigate(to)}
+                    className="text-sm text-slate-500 transition-colors hover:text-[#5D4037]"
+                  >{label}</button>
                 </li>
               ))}
             </ul>
@@ -580,7 +605,7 @@ export default function BuyerDashboard() {
                     <Package size={64} className="text-slate-200" />
                   )}
                   <div className="absolute bottom-6 left-6 flex gap-2">
-                    <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur text-[10px] font-black uppercase tracking-widest ' style={{ color: '#5D4037' }} shadow-sm">
+                    <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur text-[10px] font-black uppercase tracking-widest shadow-sm" style={{ color: '#5D4037' }}>
                       {selectedProduct.category}
                     </span>
                     {selectedProduct.sampleEnabled && (
@@ -595,16 +620,16 @@ export default function BuyerDashboard() {
                 <div className="flex-1 p-8 md:p-10 overflow-y-auto custom-scrollbar bg-white">
                   <div className="mb-8">
                     <h2 className="text-3xl font-black text-slate-900 leading-tight mb-2">{selectedProduct.name}</h2>
-                    <p className="text-2xl font-black ' style={{ color: '#5D4037' }}">₹{selectedProduct.price.toLocaleString('en-IN')}</p>
+                    <p className="text-2xl font-black" style={{ color: '#5D4037' }}>₹{selectedProduct.price.toLocaleString('en-IN')}</p>
                   </div>
 
                   {/* Quick Specs Grid */}
                   <div className="grid grid-cols-2 gap-4 mb-8">
-                    <div className="rounded-2xl p-4 border' style={{ background: '#FAF8F5', borderColor: '#E5E1DA' }}">
+                    <div className="rounded-2xl p-4" style={{ background: '#FAF8F5', border: '1px solid #E5E1DA' }}>
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Minimum Order</p>
                       <p className="text-sm font-black text-slate-800">{selectedProduct.moq} {selectedProduct.unit}s</p>
                     </div>
-                    <div className="rounded-2xl p-4 border' style={{ background: '#FAF8F5', borderColor: '#E5E1DA' }}">
+                    <div className="rounded-2xl p-4" style={{ background: '#FAF8F5', border: '1px solid #E5E1DA' }}>
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Material</p>
                       <p className="text-sm font-black text-slate-800">{selectedProduct.material || 'Standard Grade'}</p>
                     </div>
@@ -612,7 +637,7 @@ export default function BuyerDashboard() {
 
                   {/* Description Section */}
                   <div className="mb-8">
-                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 mb-3 border-l-4 ' style={{ borderColor: '#5D4037' }} pl-3">Description</h4>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 mb-3 pl-3" style={{ borderLeft: '4px solid #5D4037' }}>Description</h4>
                     <p className="text-sm text-slate-600 leading-relaxed italic">
                       {selectedProduct.shortDescription || 'Crafted with premium materials and rigorous quality checks. Perfect for bulk retail and industrial supply chains.'}
                     </p>
@@ -622,7 +647,7 @@ export default function BuyerDashboard() {
                   {selectedProduct.bulkSlabs && selectedProduct.bulkSlabs.length > 0 && (
                     <div className="mb-8 p-6 bg-slate-50 rounded-3xl border border-slate-100">
                       <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
-                        <ShoppingCart size={12} className="' style={{ color: '#5D4037' }}" /> Bulk Pricing Slabs
+                        <ShoppingCart size={12} style={{ color: '#5D4037' }} /> Bulk Pricing Slabs
                       </h4>
                       <div className="space-y-3">
                         {selectedProduct.bulkSlabs.map((slab: any, i: number) => (
@@ -687,7 +712,7 @@ export default function BuyerDashboard() {
                           navigate(`/buyer/negotiation?manufacturer=${(selectedProduct.manufacturer as any)._id || selectedProduct.manufacturer}&product=${selectedProduct._id}`);
                         }
                       }}
-                      className="flex-1 py-4 rounded-2xl border-2 border-slate-200 text-slate-700 font-bold text-sm hover:' style={{ borderColor: '#5D4037' }} hover:' style={{ color: '#5D4037' }} transition-all"
+                      className="flex-1 py-4 rounded-2xl border-2 border-slate-200 text-slate-700 font-bold text-sm transition-all hover:border-[#5D4037] hover:text-[#5D4037]"
                     >
                       Negotiate
                     </button>
@@ -739,7 +764,7 @@ export default function BuyerDashboard() {
                       <p className="text-sm font-bold text-slate-800 truncate">{item.product.name}</p>
                       <p className="text-xs text-slate-500">Qty: {item.qty}</p>
                     </div>
-                    <p className="text-sm font-black ' style={{ color: '#5D4037' }} flex-shrink-0">
+                    <p className="text-sm font-black flex-shrink-0" style={{ color: '#5D4037' }}>
                       ₹{((item.product.price ?? 0) * item.qty).toLocaleString('en-IN')}
                     </p>
                   </div>

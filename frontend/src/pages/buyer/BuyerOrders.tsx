@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '@/lib/api'
 import type { Order } from '@/lib/api'
@@ -49,32 +49,32 @@ export default function BuyerOrders() {
   )
 
   return (
-    <div className="min-h-screen bg-sp-bg">
+    <div className="min-h-screen bg-[#FAF8F5]">
       <BuyerNavbar activePage="orders" />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-5">
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-sp-placeholder" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C4B5A8]" />
             <input
               type="text"
               placeholder="Search by order ID or items..."
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-sp-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sp-purple/20 focus:border-sp-purple"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E5E1DA] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#5D4037]/20 focus:border-[#5D4037]"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-sp-muted" />
+            <Filter className="w-4 h-4 text-[#A89F91]" />
             {['', 'In Production', 'Shipped', 'Delivered', 'Cancelled'].map(s => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
                 className={`px-3 py-2 text-xs font-semibold rounded-lg transition-all ${
                   statusFilter === s
-                    ? 'bg-sp-purple text-white'
-                    : 'bg-white border border-sp-border text-sp-muted hover:border-sp-purple/30'
+                    ? 'bg-[#5D4037] text-white'
+                    : 'bg-white border border-[#E5E1DA] text-[#A89F91] hover:border-[#5D4037]/30'
                 }`}
               >
                 {s || 'All'}
@@ -86,7 +86,7 @@ export default function BuyerOrders() {
         {/* Stats summary */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Total', count: orders.length, color: 'bg-sp-purple-pale text-sp-purple' },
+            { label: 'Total', count: orders.length, color: 'bg-[#5D4037]-pale text-[#5D4037]' },
             { label: 'In Production', count: orders.filter(o => o.status === 'In Production').length, color: 'bg-blue-50 text-blue-600' },
             { label: 'Shipped', count: orders.filter(o => o.status === 'Shipped').length, color: 'bg-purple-50 text-purple-600' },
             { label: 'Delivered', count: orders.filter(o => o.status === 'Delivered').length, color: 'bg-sp-mint text-sp-success' },
@@ -101,13 +101,13 @@ export default function BuyerOrders() {
         {/* Orders list */}
         {loading ? (
           <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-2 border-sp-purple border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#5D4037] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-sp-border p-16 text-center">
+          <div className="bg-white rounded-2xl border border-[#E5E1DA] p-16 text-center">
             <Package className="w-12 h-12 mx-auto mb-3 text-sp-border" />
-            <p className="font-medium text-sp-text mb-1">No orders found</p>
-            <p className="text-sm text-sp-muted">
+            <p className="font-medium text-[#1A1A1A] mb-1">No orders found</p>
+            <p className="text-sm text-[#A89F91]">
               {search || statusFilter ? 'Try adjusting your filters' : 'Start sourcing to place your first order'}
             </p>
           </div>
@@ -117,26 +117,26 @@ export default function BuyerOrders() {
               <div
                 key={order._id}
                 onClick={() => setSelected(order)}
-                className="bg-white rounded-2xl border border-sp-border-light shadow-card p-5 hover:border-sp-purple/20 hover:shadow-card-md transition-all cursor-pointer"
+                className="bg-white rounded-2xl border border-[#E5E1DA]-light shadow-card p-5 hover:border-[#5D4037]/20 hover:shadow-card-md transition-all cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3.5">
-                    <div className="w-9 h-9 bg-sp-purple-pale rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Package className="w-4 h-4 text-sp-purple" />
+                    <div className="w-9 h-9 bg-[#5D4037]-pale rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Package className="w-4 h-4 text-[#5D4037]" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-sm text-sp-text">{order.orderId}</span>
+                        <span className="font-semibold text-sm text-[#1A1A1A]">{order.orderId}</span>
                         <StatusBadge status={order.status} />
                       </div>
-                      <p className="text-sm text-sp-muted">{order.items}</p>
-                      <p className="text-xs text-sp-placeholder mt-0.5">Expected: {order.expectedDate}</p>
+                      <p className="text-sm text-[#A89F91]">{order.items}</p>
+                      <p className="text-xs text-[#C4B5A8] mt-0.5">Expected: {order.expectedDate}</p>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="font-bold text-sp-purple">{order.value}</p>
+                    <p className="font-bold text-[#5D4037]">{order.value}</p>
                     <div className="flex flex-col items-end gap-1.5 mt-1.5">
-                      <button className="flex items-center gap-1 text-xs text-sp-muted hover:text-sp-purple transition-colors">
+                      <button className="flex items-center gap-1 text-xs text-[#A89F91] hover:text-[#5D4037] transition-colors">
                         <Eye className="w-3 h-3" /> Details
                       </button>
                       {order.status === 'Delivered' && !order.isReviewed && (
@@ -163,20 +163,20 @@ export default function BuyerOrders() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/20 backdrop-blur-sm" onClick={() => setSelected(null)} />
-          <div className="w-full max-w-md bg-white border-l border-sp-border overflow-y-auto p-6">
+          <div className="w-full max-w-md bg-white border-l border-[#E5E1DA] overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-sp-text">Order Details</h2>
-              <button onClick={() => setSelected(null)} className="text-sp-muted">✕</button>
+              <h2 className="text-lg font-bold text-[#1A1A1A]">Order Details</h2>
+              <button onClick={() => setSelected(null)} className="text-[#A89F91]">✕</button>
             </div>
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-sp-text">{selected.orderId}</span>
+                <span className="font-bold text-[#1A1A1A]">{selected.orderId}</span>
                 <StatusBadge status={selected.status} />
               </div>
 
               {/* Progress bar */}
-              <div className="bg-sp-bg rounded-xl p-4">
-                <p className="text-xs text-sp-muted mb-3 uppercase tracking-wider">Order Progress</p>
+              <div className="bg-[#FAF8F5] rounded-xl p-4">
+                <p className="text-xs text-[#A89F91] mb-3 uppercase tracking-wider">Order Progress</p>
                 <div className="flex items-center gap-2">
                   {['Pending', 'In Production', 'Shipped', 'Delivered'].map((s, idx, arr) => {
                     const statuses = ['', 'In Production', 'Shipped', 'Delivered']
@@ -185,13 +185,13 @@ export default function BuyerOrders() {
                     return (
                       <div key={s} className="flex items-center gap-2 flex-1">
                         <div className={`flex flex-col items-center ${idx < arr.length - 1 ? 'flex-1' : ''}`}>
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${active ? 'gradient-card-purple text-white' : 'bg-sp-border text-sp-muted'}`}>
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${active ? 'bg-[#5D4037] text-white' : 'bg-[#E5E1DA] text-[#A89F91]'}`}>
                             {active ? '✓' : idx + 1}
                           </div>
-                          <span className="text-[9px] text-sp-muted mt-1 text-center leading-tight">{s}</span>
+                          <span className="text-[9px] text-[#A89F91] mt-1 text-center leading-tight">{s}</span>
                         </div>
                         {idx < arr.length - 1 && (
-                          <div className={`flex-1 h-0.5 mb-4 ${active ? 'bg-sp-purple' : 'bg-sp-border'}`} />
+                          <div className={`flex-1 h-0.5 mb-4 ${active ? 'bg-[#5D4037]' : 'bg-[#E5E1DA]'}`} />
                         )}
                       </div>
                     )
@@ -206,9 +206,9 @@ export default function BuyerOrders() {
                   { label: 'Expected', value: selected.expectedDate },
                   { label: 'Buyer', value: selected.buyer?.name },
                 ].map(row => (
-                  <div key={row.label} className="bg-sp-bg rounded-xl p-3">
-                    <p className="text-[10px] text-sp-muted uppercase tracking-wider mb-1">{row.label}</p>
-                    <p className="text-sm font-medium text-sp-text">{row.value ?? '—'}</p>
+                  <div key={row.label} className="bg-[#FAF8F5] rounded-xl p-3">
+                    <p className="text-[10px] text-[#A89F91] uppercase tracking-wider mb-1">{row.label}</p>
+                    <p className="text-sm font-medium text-[#1A1A1A]">{row.value ?? '—'}</p>
                   </div>
                 ))}
               </div>
@@ -228,11 +228,11 @@ export default function BuyerOrders() {
                         alert('Failed to update status.');
                       }
                     }}
-                    className="w-full py-4 gradient-card-purple text-white font-extrabold rounded-2xl shadow-lg hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-[#5D4037] text-white font-extrabold rounded-2xl shadow-lg hover:opacity-90 transition-all flex items-center justify-center gap-2"
                   >
                     <CheckCircle className="w-5 h-5" /> Confirm Delivery
                   </button>
-                  <p className="text-[10px] text-center text-sp-muted mt-3 px-4">
+                  <p className="text-[10px] text-center text-[#A89F91] mt-3 px-4">
                     By clicking this, you confirm that you have inspected the goods and they meet your requirements.
                   </p>
                 </div>
@@ -275,14 +275,14 @@ function ReviewModal({ order, onClose, onDone }: { order: Order; onClose: () => 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-        <div className="p-6 border-b border-sp-border flex items-center justify-between">
-          <h3 className="text-lg font-bold text-sp-text">Rate Your Experience</h3>
-          <button onClick={onClose} className="text-sp-muted hover:text-sp-text">✕</button>
+        <div className="p-6 border-b border-[#E5E1DA] flex items-center justify-between">
+          <h3 className="text-lg font-bold text-[#1A1A1A]">Rate Your Experience</h3>
+          <button onClick={onClose} className="text-[#A89F91] hover:text-[#1A1A1A]">✕</button>
         </div>
         <div className="p-6 space-y-6">
           <div className="text-center mb-2">
-            <p className="text-xs text-sp-muted uppercase tracking-widest mb-1">Manufacturer</p>
-            <p className="font-bold text-sp-text">{(order.manufacturer as any)?.company || (order.manufacturer as any)?.name || 'Manufacturer'}</p>
+            <p className="text-xs text-[#A89F91] uppercase tracking-widest mb-1">Manufacturer</p>
+            <p className="font-bold text-[#1A1A1A]">{(order.manufacturer as any)?.company || (order.manufacturer as any)?.name || 'Manufacturer'}</p>
           </div>
 
           <div className="space-y-4">
@@ -292,7 +292,7 @@ function ReviewModal({ order, onClose, onDone }: { order: Order; onClose: () => 
               { key: 'communication', label: 'Communication' },
             ].map(param => (
               <div key={param.key} className="flex items-center justify-between">
-                <span className="text-sm font-medium text-sp-text">{param.label}</span>
+                <span className="text-sm font-medium text-[#1A1A1A]">{param.label}</span>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map(star => (
                     <button
@@ -301,7 +301,7 @@ function ReviewModal({ order, onClose, onDone }: { order: Order; onClose: () => 
                       className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
                         ratings[param.key as keyof typeof ratings] >= star
                           ? 'bg-amber-100 text-amber-500'
-                          : 'bg-sp-bg text-sp-border hover:bg-gray-100'
+                          : 'bg-[#FAF8F5] text-sp-border hover:bg-gray-100'
                       }`}
                     >
                       <Star className={`w-4 h-4 ${ratings[param.key as keyof typeof ratings] >= star ? 'fill-current' : ''}`} />
@@ -313,9 +313,9 @@ function ReviewModal({ order, onClose, onDone }: { order: Order; onClose: () => 
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-sp-muted uppercase tracking-wider mb-2">Review Comment (Optional)</label>
+            <label className="block text-xs font-bold text-[#A89F91] uppercase tracking-wider mb-2">Review Comment (Optional)</label>
             <textarea
-              className="w-full bg-sp-bg border border-sp-border rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-sp-purple/20 focus:border-sp-purple"
+              className="w-full bg-[#FAF8F5] border border-[#E5E1DA] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#5D4037]/20 focus:border-[#5D4037]"
               rows={3}
               placeholder="Share your experience (max 500 characters)..."
               maxLength={500}
@@ -327,7 +327,7 @@ function ReviewModal({ order, onClose, onDone }: { order: Order; onClose: () => 
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full py-4 gradient-card-purple text-white font-extrabold rounded-2xl shadow-lg hover:opacity-90 transition-all disabled:opacity-50"
+            className="w-full py-4 bg-[#5D4037] text-white font-extrabold rounded-2xl shadow-lg hover:opacity-90 transition-all disabled:opacity-50"
           >
             {loading ? 'Submitting...' : 'Submit Review'}
           </button>
@@ -336,3 +336,4 @@ function ReviewModal({ order, onClose, onDone }: { order: Order; onClose: () => 
     </div>
   );
 }
+

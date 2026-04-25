@@ -60,7 +60,7 @@ router.post('/', protect, requireRole('buyer'), async (req, res) => {
       type: 'call_scheduled',
       title: 'New Call Scheduled',
       message: `${req.user.name} from ${req.user.company ?? 'a company'} has requested a ${duration}-min call on ${new Date(scheduledAt).toLocaleDateString()}.`,
-      link: '/manufacturer/schedule',
+      link: '/manufacturer/scheduled-calls',
       refModel: 'CallSchedule',
       refId: call._id,
     });

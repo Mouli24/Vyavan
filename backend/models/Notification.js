@@ -5,13 +5,15 @@ const notificationSchema = new mongoose.Schema({
   type:    {
     type: String,
     enum: [
-      'order_placed', 'order_confirmed', 'order_shipped', 'order_delivered',
+      'order_placed', 'order_confirmed', 'order_rejected', 'order_shipped', 'order_delivered',
       'negotiation_offer', 'negotiation_accepted', 'negotiation_rejected', 'negotiation_counter',
       'complaint_filed', 'complaint_responded', 'complaint_escalated', 'complaint_resolved',
       'manufacturer_approved', 'manufacturer_rejected',
       'call_scheduled', 'call_reminder', 'call_cancelled',
       'payment_received', 'payment_failed',
       'shipment_update',
+      'action_required',
+      'holiday_auto_response',
       'system',
     ],
     default: 'system',

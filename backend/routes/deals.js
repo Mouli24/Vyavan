@@ -139,6 +139,7 @@ router.post('/', protect, requireRole('buyer'), async (req, res) => {
     const populated = await deal.populate('buyer manufacturer product', 'name company price unit image');
     res.status(201).json(populated);
   } catch (err) {
+    console.error('Error initiating deal:', err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -231,6 +232,9 @@ router.patch('/:id', protect, async (req, res) => {
 
     await deal.save();
 
+    // Re-populate to ensure frontend has all necessary fields (name, company, etc.)
+    const finalDeal = await Deal.findById(deal._id).populate('buyer manufacturer product', 'name company price unit image');
+
     // Notify other party
     const recipient = isMfr ? deal.buyer : deal.manufacturer;
     const typeMap = { Accepted: 'negotiation_accepted', Rejected: 'negotiation_rejected', Negotiating: 'negotiation_counter' };
@@ -245,8 +249,9 @@ router.patch('/:id', protect, async (req, res) => {
       refId: deal._id,
     });
 
-    res.json(deal);
+    res.json(finalDeal);
   } catch (err) {
+    console.error('Error updating deal:', err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -291,10 +296,11 @@ router.post('/:id/convert', protect, requireRole('buyer'), async (req, res) => {
     // Notify manufacturer
     await Notification.create({
       user: deal.manufacturer,
-      type: 'order',
+      type: 'order_placed',
       title: 'Negotiation Converted to Order',
       message: `Buyer has placed an order based on your accepted negotiation for ${deal.title}.`,
-      referenceId: order._id,
+      refModel: 'Order',
+      refId: order._id,
     });
 
     res.status(201).json({ order, deal });

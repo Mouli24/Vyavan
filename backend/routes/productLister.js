@@ -23,12 +23,9 @@ cloudinary.config({
 });
 
 // Gemini settings (Initialized inside routes to ensure fresh env variables)
-let genAI;
 const getGenAI = () => {
-  if (!genAI) {
-    genAI = new GoogleGenerativeAI((process.env.GEMINI_API_KEY || '').trim(), { apiVersion: 'v1' });
-  }
-  return genAI;
+  const key = (process.env.GEMINI_API_KEY || '').trim();
+  return new GoogleGenerativeAI(key, { apiVersion: 'v1' });
 };
 
 
@@ -48,9 +45,9 @@ function fileToGenerativePart(buffer, mimeType) {
 /**
  * @route   POST /api/product-lister/analyze
  * @desc    Analyze product photo using Gemini Vision and upload to Cloudinary
- * @access  Private (Manufacturer)
+ * @access  Private (Auth Users)
  */
-router.post('/analyze', protect, requireRole('manufacturer'), upload.single('image'), async (req, res) => {
+router.post('/analyze', protect, upload.single('image'), async (req, res) => {
   try {
     // Check for required env variables
     const missingKeys = [];
@@ -172,7 +169,7 @@ router.post('/analyze', protect, requireRole('manufacturer'), upload.single('ima
   }
 });
 
-router.post('/extract-multi', protect, requireRole('manufacturer'), upload.array('images', 2), async (req, res) => {
+router.post('/extract-multi', protect, upload.array('images', 2), async (req, res) => {
   try {
     const key = (process.env.GEMINI_API_KEY || '').trim();
     if (!key) {
@@ -250,7 +247,7 @@ router.post('/extract-multi', protect, requireRole('manufacturer'), upload.array
  * @route   POST /api/product-lister/regenerate-field
  * @desc    Regenerate a specific field based on user instruction and context
  */
-router.post('/regenerate-field', protect, requireRole('manufacturer'), async (req, res) => {
+router.post('/regenerate-field', protect, async (req, res) => {
   try {
     const { field, instruction, context } = req.body;
     if (!field || !instruction) {

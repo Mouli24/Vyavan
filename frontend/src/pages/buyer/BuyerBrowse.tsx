@@ -91,7 +91,7 @@ export default function BuyerBrowse() {
       <header className="sticky top-0 z-50 bg-white border-b border-[#EDE8E0] px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-10">
           <div className="cursor-pointer" onClick={() => navigate('/login')}>
-            <VyawanLogo size={26} />
+            <VyawanLogo size={44} />
           </div>
           <nav className="hidden md:flex items-center gap-7">
             {['Collections', 'Artisans', 'Services', 'Inquiry', 'Tracking'].map((item, i) => (

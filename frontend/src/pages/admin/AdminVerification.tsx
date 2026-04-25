@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
 import {
   ClipboardCheck, CheckCircle, XCircle, Eye, Search,
@@ -89,11 +90,16 @@ export default function AdminVerification() {
 
   useEffect(() => { fetchData() }, [])
 
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successData, setSuccessData] = useState<any>(null)
+
   const handleApprove = async (id: string) => {
     setActionLoading(true)
     try {
-      await api.approveManufacturer(id)
+      const res = await api.approveManufacturer(id)
       setManufacturers(prev => prev.filter(m => m._id !== id))
+      setSuccessData(res)
+      setShowSuccessModal(true)
       setSelected(null)
     } catch (e) { console.error(e) }
     finally { setActionLoading(false) }
@@ -605,6 +611,37 @@ export default function AdminVerification() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {/* Success Modal */}
+      {showSuccessModal && successData && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-md" onClick={() => setShowSuccessModal(false)} />
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative bg-white rounded-[2.5rem] p-10 w-full max-w-md shadow-2xl text-center border border-sp-border">
+            <div className="w-20 h-20 bg-sp-mint rounded-3xl mx-auto mb-6 flex items-center justify-center text-sp-success shadow-lg shadow-sp-success/10">
+               <CheckCircle size={40} />
+            </div>
+            <h3 className="text-2xl font-black text-sp-text mb-2 tracking-tight">Approved Successfully!</h3>
+            <p className="text-sm text-sp-muted mb-8 font-medium">The manufacturer <b>{successData.user?.name}</b> is now verified. Please share these codes with them:</p>
+            
+            <div className="space-y-4 mb-10">
+               <div className="p-5 bg-sp-bg rounded-2xl border border-sp-border flex flex-col items-center">
+                  <span className="text-[10px] font-black text-sp-muted uppercase tracking-widest mb-1">Company Store ID</span>
+                  <span className="text-2xl font-black text-sp-purple tracking-wider font-mono">{successData.companyCode}</span>
+               </div>
+               <div className="p-5 bg-sp-bg rounded-2xl border border-sp-border flex flex-col items-center">
+                  <span className="text-[10px] font-black text-sp-muted uppercase tracking-widest mb-1">Activation Code</span>
+                  <span className="text-2xl font-black text-sp-text tracking-[0.25em] font-mono">{successData.activationCode}</span>
+               </div>
+            </div>
+
+            <button 
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full py-4 bg-sp-text text-white font-black rounded-2xl hover:opacity-90 transition-all shadow-xl shadow-sp-text/10 uppercase tracking-widest text-xs"
+            >
+              Done
+            </button>
+          </motion.div>
         </div>
       )}
     </div>

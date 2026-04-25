@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import NotificationBell from '../NotificationBell'
 import { VyawanIcon } from '../VyawanLogo'
+import { VerticalDock } from '../Dock'
 import {
   LayoutDashboard, Users, Factory, ShoppingCart,
   AlertCircle, BarChart2, Settings, LogOut, Shield,
@@ -129,50 +130,40 @@ export default function AdminLayout() {
     })
   }, [location.pathname])
 
+  // Build dock items from ADMIN_NAV
+  const navDockItems = ADMIN_NAV.map(item => ({
+    icon: <item.icon size={16} />,
+    label: item.label,
+    onClick: () => {
+      const target = item.to || item.subItems?.[0]?.to || '/admin/dashboard'
+      navigate(target)
+      setSidebarOpen(false)
+    },
+    isActive: activeCategory?.label === item.label,
+  }))
+
   const SidebarContent = () => (
     <div className="flex flex-col h-full" style={{ background: S.bg, borderRight: `1px solid ${S.border}` }}>
-      {/* Logo */}
-      <div className="px-4 py-5 flex items-center justify-between flex-shrink-0"
+      {/* Logo — edge to edge */}
+      <div className="flex items-center justify-between flex-shrink-0"
         style={{ borderBottom: `1px solid ${S.border}` }}>
-        <div className="flex items-center gap-3">
-          <VyawanIcon size={32} />
-          <div>
-            <p className="text-sm font-black tracking-tight" style={{ color: S.dark }}>Vyawan</p>
-            <p className="text-[10px] font-medium uppercase tracking-widest" style={{ color: S.muted }}>Admin Portal</p>
-          </div>
-        </div>
-        <button className="lg:hidden p-1 rounded-lg" style={{ color: S.muted }}
+        <VyawanIcon size={44} className="w-full" />
+        <button className="lg:hidden p-1 rounded-lg flex-shrink-0 absolute right-2 top-3" style={{ color: S.muted }}
           onClick={() => setSidebarOpen(false)}>
           <X size={18} />
         </button>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto custom-scrollbar">
-        {ADMIN_NAV.map((item, idx) => {
-          const isActive = activeCategory?.label === item.label
-          const targetTo = item.to || item.subItems?.[0]?.to || '/admin/dashboard'
-          
-          return (
-            <NavLink
-              key={idx}
-              to={targetTo}
-              onClick={() => setSidebarOpen(false)}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${
-                isActive ? 'shadow-sm' : 'hover:bg-white/50'
-              }`}
-              style={{
-                background: isActive ? S.peach : 'transparent',
-                color: isActive ? S.activeText : S.muted,
-              }}
-            >
-              <item.icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-sp-brown' : 'text-sp-muted'}`} />
-              <span className="truncate">{item.label}</span>
-              {isActive && <div className="ml-auto w-1 h-4 rounded-full" style={{ background: S.brown }} />}
-            </NavLink>
-          )
-        })}
-      </nav>
+      {/* Nav — VerticalDock with magnification animation */}
+      <div className="flex-1 overflow-y-auto px-3 py-4">
+        <VerticalDock
+          items={navDockItems}
+          baseItemSize={36}
+          magnification={42}
+          distance={100}
+          spring={{ mass: 0.1, stiffness: 180, damping: 14 }}
+        />
+      </div>
 
       {/* User + Logout */}
       <div className="px-3 py-3 flex-shrink-0" style={{ borderTop: `1px solid ${S.border}` }}>

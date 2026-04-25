@@ -68,30 +68,65 @@ export default function Negotiation() {
 
   const handleSend = async () => {
     if (!input.trim() || !activeDeal) return
+    
+    if (activeAction === 'reject') {
+       await handleDealAction('Rejected', undefined, input)
+       setActiveAction(null)
+       setInput('')
+       return
+    }
+
+    if (activeAction === 'negotiate') {
+       const price = parseInt(input.replace(/[^0-9]/g, ''))
+       if (isNaN(price)) {
+         alert('Please enter a valid price for the counter-offer')
+         return
+       }
+       await handleDealAction('Negotiating', price, 'Manufacturer sent a counter-offer')
+       setActiveAction(null)
+       setInput('')
+       return
+    }
+
     setSendingMsg(true)
     try {
-      const msg = await api.sendMessage({ deal: activeDeal._id, content: input })
-      setMessages(prev => [...prev, msg])
-      setInput('')
+       const msg = await api.sendMessage({ deal: activeDeal._id, content: input })
+       setMessages(prev => [...prev, msg])
+       setInput('')
     } catch (e) { console.error(e) }
     finally { setSendingMsg(false) }
   }
 
-  const handleDealAction = async (status: string, requestedPrice?: number) => {
+  const [activeAction, setActiveAction] = useState<'negotiate' | 'reject' | null>(null)
+  const [showContract, setShowContract] = useState(false)
+
+  const handleDealAction = async (status: string, requestedPrice?: number, customMessage?: string) => {
     if (!activeDeal) return
-    let message = ''
-    if (status === 'Rejected') {
-      const reason = prompt('Reason for rejection:')
-      if (!reason) return
-      message = reason
+    let message = customMessage || ''
+    
+    if (status === 'Rejected' && !message) {
+      setActiveAction('reject')
+      setInput('')
+      return
     }
+
     setUpdating(true)
     try {
       const updated = await api.updateDeal(activeDeal._id, { status, requestedPrice, message } as any)
       setDeals(prev => prev.map(d => d._id === updated._id ? { ...d, ...updated } : d))
       setActiveDeal(updated)
+      setActiveAction(null)
+      setInput('')
     } catch (e) { alert((e as any).message || 'Action failed') }
     finally { setUpdating(false) }
+  }
+
+  const handleActionInitiate = (action: 'negotiate' | 'reject') => {
+    setActiveAction(action)
+    setInput('')
+    // Focus the chat input
+    const chatInput = document.getElementById('chat-input')
+    chatInput?.focus()
   }
 
   const suggestion = SUGGESTIONS[Math.floor((activeDeal?._id?.charCodeAt(0) || 0) % SUGGESTIONS.length)]
@@ -330,25 +365,34 @@ export default function Negotiation() {
 
           {/* Input bar */}
           <div className="flex-shrink-0 px-5 py-4 border-t bg-white" style={{ borderColor: '#E5E1DA' }}>
+            {activeAction && (
+              <div className="flex items-center gap-2 mb-2 px-4 py-1.5 rounded-xl bg-orange-50 border border-orange-100 animate-in fade-in slide-in-from-bottom-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-orange-600">
+                  Active Mode: {activeAction === 'reject' ? 'Rejection Reason' : 'Price Negotiation'}
+                </span>
+                <button onClick={() => setActiveAction(null)} className="ml-auto text-[10px] font-bold text-orange-400 hover:text-orange-600">Cancel</button>
+              </div>
+            )}
             <div className="flex items-center gap-3 px-4 py-2.5 rounded-full"
               style={{ background: '#F5F2ED', border: '1.5px solid #E5E1DA' }}>
               <button className="flex-shrink-0 transition-colors" style={{ color: '#A89F91' }}>
                 <Plus size={18} />
               </button>
               <input
+                id="chat-input"
                 type="text"
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSend()}
-                placeholder="Type your message or counter offer..."
+                placeholder={activeAction === 'reject' ? "Type reason for rejection..." : activeAction === 'negotiate' ? "Enter your counter price (e.g. 50000)..." : "Type your message..."}
                 className="flex-1 bg-transparent border-none focus:outline-none text-sm"
                 style={{ color: '#1A1A1A' }}
               />
               <button onClick={handleSend} disabled={!input.trim() || sendingMsg}
                 className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white transition-all disabled:opacity-50"
-                style={{ background: '#6B4E3D' }}>
+                style={{ background: activeAction ? '#EA580C' : '#6B4E3D' }}>
                 {sendingMsg ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                Send
+                {activeAction ? 'Confirm' : 'Send'}
               </button>
             </div>
           </div>
@@ -435,42 +479,29 @@ export default function Negotiation() {
               <div className="p-5 border-b" style={{ borderColor: '#F0EBE5' }}>
                 <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#A89F91' }}>Quick Actions</p>
                 <div className="space-y-2">
-                  {/* Counter offer input */}
-                  {(activeDeal.status === 'New Offer' || activeDeal.status === 'Negotiating') && (
-                    <div className="flex gap-1.5 mb-3">
-                      <input
-                        type="number"
-                        placeholder="Counter price"
-                        value={counterPrice}
-                        onChange={e => setCounterPrice(e.target.value)}
-                        className="flex-1 px-3 py-2 rounded-xl text-xs border focus:outline-none"
-                        style={{ borderColor: '#E5E1DA', background: '#F5F2ED', color: '#1A1A1A' }}
-                      />
-                      <button
-                        onClick={() => { if (counterPrice) { handleDealAction('Negotiating', parseInt(counterPrice)); setCounterPrice('') } }}
-                        disabled={!counterPrice || updating}
-                        className="px-3 py-2 rounded-xl text-xs font-bold text-white disabled:opacity-50"
-                        style={{ background: '#6B4E3D' }}>
-                        Send
-                      </button>
-                    </div>
-                  )}
-
                   <button
                     onClick={() => handleDealAction('Accepted')}
-                    disabled={updating}
+                    disabled={updating || activeDeal.status === 'Accepted' || activeDeal.status === 'Rejected'}
                     className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all disabled:opacity-50"
-                    style={{ background: '#F5F2ED', color: '#1A1A1A' }}>
-                    <PenLine size={14} /> Counter Offer
+                    style={{ background: '#ECFDF5', color: '#059669', border: '1px solid #D1FAE5' }}>
+                    <CheckCircle size={14} /> Accept Deal
                   </button>
                   <button
+                    onClick={() => handleActionInitiate('negotiate')}
+                    disabled={updating || activeDeal.status === 'Accepted' || activeDeal.status === 'Rejected'}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all disabled:opacity-50"
+                    style={{ background: '#F5F2ED', color: '#1A1A1A' }}>
+                    <PenLine size={14} /> Send Counter Offer
+                  </button>
+                  <button
+                    onClick={() => setShowContract(true)}
                     className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all"
                     style={{ background: '#F5F2ED', color: '#1A1A1A' }}>
                     <FileText size={14} /> View Contract
                   </button>
                   <button
-                    onClick={() => handleDealAction('Rejected')}
-                    disabled={updating}
+                    onClick={() => handleActionInitiate('reject')}
+                    disabled={updating || activeDeal.status === 'Accepted' || activeDeal.status === 'Rejected'}
                     className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all disabled:opacity-50"
                     style={{ background: '#FEF2F2', color: '#DC2626' }}>
                     <XCircle size={14} /> Reject Deal
@@ -494,6 +525,92 @@ export default function Negotiation() {
           )}
         </div>
       )}
+      {/* Contract Modal */}
+      <AnimatePresence>
+        {showContract && activeDeal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowContract(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-md" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+              
+              {/* Modal Header */}
+              <div className="px-8 py-6 border-b flex items-center justify-between" style={{ background: '#F5F2ED' }}>
+                <div>
+                  <h2 className="text-xl font-bold" style={{ color: '#6B4E3D' }}>Business Agreement</h2>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#A89F91]">Ref: #{activeDeal._id?.slice(-8).toUpperCase()}</p>
+                </div>
+                <button onClick={() => setShowContract(false)} style={{ color: '#A89F91' }}><XCircle size={24} /></button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                <div className="grid grid-cols-2 gap-8">
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-[#A89F91] mb-2">Manufacturer (Seller)</h4>
+                    <p className="text-sm font-bold text-[#1A1A1A]">{activeDeal.manufacturer?.company || 'Your Company'}</p>
+                    <p className="text-xs text-[#A89F91]">Authorized Personnel: {activeDeal.manufacturer?.name}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-[#A89F91] mb-2">Buyer (Customer)</h4>
+                    <p className="text-sm font-bold text-[#1A1A1A]">{activeDeal.buyer?.company || activeDeal.buyer?.name}</p>
+                    <p className="text-xs text-[#A89F91]">Location: {activeDeal.buyer?.location || 'India'}</p>
+                  </div>
+                </div>
+
+                <div className="border-t pt-8">
+                  <h4 className="text-sm font-bold text-[#6B4E3D] mb-4 underline decoration-[#D4C4B8] underline-offset-4">Project Specifications</h4>
+                  <div className="bg-[#FAF8F5] rounded-2xl p-5 border border-[#E5E1DA]">
+                    <div className="flex justify-between mb-2">
+                       <span className="text-xs text-[#A89F91]">Product Details:</span>
+                       <span className="text-sm font-bold text-[#1A1A1A]">{activeDeal.product?.name || activeDeal.title}</span>
+                    </div>
+                    <div className="flex justify-between mb-2">
+                       <span className="text-xs text-[#A89F91]">Quantity Order:</span>
+                       <span className="text-sm font-bold text-[#1A1A1A]">{activeDeal.quantity?.toLocaleString()} units</span>
+                    </div>
+                    <div className="flex justify-between mb-2">
+                       <span className="text-xs text-[#A89F91]">Unit Price Agreed:</span>
+                       <span className="text-sm font-bold text-[#1A1A1A]">₹{activeDeal.requestedPrice?.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between pt-4 border-t border-[#E5E1DA]">
+                       <span className="text-sm font-black uppercase tracking-widest text-[#6B4E3D]">Total Contract Value:</span>
+                       <span className="text-lg font-black text-[#6B4E3D]">₹{(activeDeal.requestedPrice * activeDeal.quantity).toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                   <h4 className="text-sm font-bold text-[#6B4E3D] mb-3">Terms & Conditions</h4>
+                   <ul className="text-xs text-[#A89F91] space-y-2 list-disc pl-4">
+                     <li>This contract is subject to quality inspection at source before dispatch.</li>
+                     <li>Standard delivery timeline of 10-14 working days applies upon 15% deposit receipt.</li>
+                     <li>Disputes are subject to jurisdiction of local arbitration board.</li>
+                   </ul>
+                </div>
+
+                <div className="pt-4 italic text-[10px] text-[#A89F91] text-center">
+                  This document serves as a digital letter of intent. Formal signature required on checkout.
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-6 border-t flex justify-end gap-3 bg-[#FAF8F5]">
+                <button onClick={() => setShowContract(false)} 
+                  className="px-6 py-2.5 rounded-xl text-sm font-bold text-[#6B4E3D] border border-[#D4C4B8]">
+                  Close Preview
+                </button>
+                <button onClick={() => { setShowContract(false); window.print(); }}
+                  className="px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-xl shadow-[#6B4E3D]/20"
+                  style={{ background: '#6B4E3D' }}>
+                  Print Agreement
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

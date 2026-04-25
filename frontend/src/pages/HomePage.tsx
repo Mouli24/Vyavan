@@ -153,7 +153,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16 gap-6">
           {/* Logo */}
           <div className="flex items-center gap-2.5 cursor-pointer flex-shrink-0" onClick={() => navigate("/")}>
-            <VyawanLogo size={30} />
+            <VyawanLogo size={44} />
           </div>
 
           {/* Search bar — center, full width */}
