@@ -5,7 +5,7 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "nodemon server.js",
+    "start": "node server.js",
     "dev": "tsx watch server.js",
     "seed": "node seed/seed.js",
     "seed:test": "node seed/test_seed.js",
