@@ -10,7 +10,7 @@ import BuyerNavbar from '@/components/layout/BuyerNavbar'
 
 const STATUS_MAP: Record<string, string> = {
   pending:   'bg-amber-100 text-amber-700',
-  confirmed: 'bg-sp-mint text-sp-success',
+  confirmed: 'bg-emerald-100 text-emerald-700',
   cancelled: 'bg-red-100 text-red-600',
   completed: 'bg-gray-100 text-gray-600',
 }

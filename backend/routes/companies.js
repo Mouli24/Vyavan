@@ -71,11 +71,17 @@ router.get('/', async (req, res) => {
 // GET /api/companies/by-code/:code — look up by company code
 router.get('/by-code/:code', async (req, res) => {
   try {
+    const code = req.params.code.toUpperCase();
+    console.log(`[DEBUG] Store Code Search: "${code}"`);
     const profile = await ManufacturerProfile.findOne({
-      companyCode: req.params.code.toUpperCase(),
+      companyCode: code,
     }).populate('user', '-password');
 
-    if (!profile) return res.status(404).json({ message: 'Company not found' });
+    if (!profile) {
+      console.log(`[DEBUG] Profile NOT found for code: "${code}"`);
+      return res.status(404).json({ message: 'Company not found' });
+    }
+    console.log(`[DEBUG] Profile FOUND for code: "${code}" (${profile.user?.name})`);
     res.json(profile);
   } catch (err) {
     res.status(500).json({ message: err.message });

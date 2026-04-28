@@ -40,6 +40,8 @@ const orderSchema = new mongoose.Schema({
   products: [{
     product:  { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     quantity: { type: Number, min: 1 },
+    isSample: { type: Boolean, default: false },
+    price:    { type: Number }, // Snapshot of price at order time
   }],
   isReviewed: { type: Boolean, default: false },
   review: { type: mongoose.Schema.Types.ObjectId, ref: 'Review' },

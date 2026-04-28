@@ -270,7 +270,7 @@ export default function BuyerShipments() {
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <Badge className={`rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-widest border-none ${
-                        s.status === 'Delivered' ? 'bg-sp-mint text-sp-success' :
+                        s.status === 'Delivered' ? 'bg-emerald-100 text-emerald-700' :
                         s.status === 'Delayed' ? 'bg-red-100 text-red-600' :
                         'bg-[#FCE7D6] text-[#5D4037]'
                       }`}>

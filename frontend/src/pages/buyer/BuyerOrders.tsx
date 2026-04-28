@@ -1,18 +1,18 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '@/lib/api'
 import type { Order } from '@/lib/api'
 import {
   Package, Truck, CheckCircle, Clock, XCircle,
-  Search, Filter, Eye, RotateCcw,
+  Search, Filter, Eye, RotateCcw, Star,
 } from 'lucide-react'
 import BuyerNavbar from '@/components/layout/BuyerNavbar'
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
   'In Production':    { label: 'In Production', color: 'bg-blue-100 text-blue-700', icon: RotateCcw },
   'Pending Payment':  { label: 'Pending Payment', color: 'bg-amber-100 text-amber-700', icon: Clock },
-  'Shipped':          { label: 'Shipped', color: 'bg-purple-100 text-purple-700', icon: Truck },
-  'Delivered':        { label: 'Delivered', color: 'bg-sp-mint text-sp-success', icon: CheckCircle },
+  'Shipped':          { label: 'Shipped', color: 'bg-[#F3EEFF] text-[#5D4037]', icon: Truck },
+  'Delivered':        { label: 'Delivered', color: 'bg-emerald-50 text-emerald-600', icon: CheckCircle },
   'Cancelled':        { label: 'Cancelled', color: 'bg-red-100 text-red-600', icon: XCircle },
 }
 
@@ -86,10 +86,10 @@ export default function BuyerOrders() {
         {/* Stats summary */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Total', count: orders.length, color: 'bg-[#5D4037]-pale text-[#5D4037]' },
-            { label: 'In Production', count: orders.filter(o => o.status === 'In Production').length, color: 'bg-blue-50 text-blue-600' },
-            { label: 'Shipped', count: orders.filter(o => o.status === 'Shipped').length, color: 'bg-purple-50 text-purple-600' },
-            { label: 'Delivered', count: orders.filter(o => o.status === 'Delivered').length, color: 'bg-sp-mint text-sp-success' },
+            { label: 'Total', count: orders.length, color: 'bg-[#FCE7D6] text-[#5D4037]' },
+            { label: 'In Production', count: orders.filter(o => o.status === 'In Production').length, color: 'bg-[#EBF3FF] text-[#2563EB]' },
+            { label: 'Shipped', count: orders.filter(o => o.status === 'Shipped').length, color: 'bg-[#FCE7D6] text-[#5D4037]' },
+            { label: 'Delivered', count: orders.filter(o => o.status === 'Delivered').length, color: 'bg-emerald-50 text-emerald-600' },
           ].map(s => (
             <div key={s.label} className={`${s.color} rounded-xl p-4 text-center border border-white/60`}>
               <p className="text-2xl font-bold tracking-tight">{s.count}</p>
@@ -121,16 +121,21 @@ export default function BuyerOrders() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3.5">
-                    <div className="w-9 h-9 bg-[#5D4037]-pale rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-9 h-9 bg-[#FCE7D6] rounded-xl flex items-center justify-center flex-shrink-0">
                       <Package className="w-4 h-4 text-[#5D4037]" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-semibold text-sm text-[#1A1A1A]">{order.orderId}</span>
                         <StatusBadge status={order.status} />
+                        {order.products?.some(p => p.isSample) && (
+                          <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[9px] font-black uppercase">Sample</span>
+                        )}
                       </div>
-                      <p className="text-sm text-[#A89F91]">{order.items}</p>
-                      <p className="text-xs text-[#C4B5A8] mt-0.5">Expected: {order.expectedDate}</p>
+                      <p className="text-sm text-[#A89F91]">
+                        {order.products?.some(p => p.isSample) ? 'Request for Sample Product' : order.items}
+                      </p>
+                      <p className="text-xs text-[#C4B5A8] mt-0.5">Expected: {order.expectedDate || 'TBD'}</p>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
@@ -145,7 +150,7 @@ export default function BuyerOrders() {
                             e.stopPropagation();
                             setReviewOrder(order);
                           }}
-                          className="flex items-center gap-1 text-xs font-bold text-sp-success hover:bg-sp-mint px-2 py-1 rounded-md transition-colors"
+                          className="flex items-center gap-1 text-xs font-bold text-emerald-600 hover:bg-emerald-50 px-2 py-1 rounded-md transition-colors"
                         >
                           <Star className="w-3 h-3 fill-current" /> Rate Now
                         </button>
@@ -201,9 +206,9 @@ export default function BuyerOrders() {
 
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: 'Items', value: selected.items },
+                  { label: 'Items', value: selected.products?.some(p => p.isSample) ? 'Request for Sample Product' : selected.items },
                   { label: 'Value', value: selected.value },
-                  { label: 'Expected', value: selected.expectedDate },
+                  { label: 'Expected', value: selected.expectedDate || 'TBD' },
                   { label: 'Buyer', value: selected.buyer?.name },
                 ].map(row => (
                   <div key={row.label} className="bg-[#FAF8F5] rounded-xl p-3">

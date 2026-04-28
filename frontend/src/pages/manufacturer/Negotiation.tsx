@@ -43,6 +43,9 @@ export default function Negotiation() {
   const [quickReplies, setQuickReplies] = useState<any[]>([])
   const [showQuickReplies, setShowQuickReplies] = useState(false)
   const [counterPrice, setCounterPrice] = useState('')
+  const [counterTerm, setCounterTerm] = useState('advance_100')
+  const [activeAction, setActiveAction] = useState<'negotiate' | 'reject' | null>(null)
+  const [showContract, setShowContract] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -97,9 +100,6 @@ export default function Negotiation() {
     finally { setSendingMsg(false) }
   }
 
-  const [activeAction, setActiveAction] = useState<'negotiate' | 'reject' | null>(null)
-  const [showContract, setShowContract] = useState(false)
-
   const handleDealAction = async (status: string, requestedPrice?: number, customMessage?: string) => {
     if (!activeDeal) return
     let message = customMessage || ''
@@ -112,7 +112,7 @@ export default function Negotiation() {
 
     setUpdating(true)
     try {
-      const updated = await api.updateDeal(activeDeal._id, { status, requestedPrice, message } as any)
+      const updated = await api.updateDeal(activeDeal._id, { status, requestedPrice, requestedTerm: counterTerm, message } as any)
       setDeals(prev => prev.map(d => d._id === updated._id ? { ...d, ...updated } : d))
       setActiveDeal(updated)
       setActiveAction(null)
@@ -127,6 +127,11 @@ export default function Negotiation() {
     // Focus the chat input
     const chatInput = document.getElementById('chat-input')
     chatInput?.focus()
+  }
+
+  const formatTerm = (term?: string) => {
+    if (!term) return '100% Advance'
+    return term.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
   }
 
   const suggestion = SUGGESTIONS[Math.floor((activeDeal?._id?.charCodeAt(0) || 0) % SUGGESTIONS.length)]
@@ -298,7 +303,7 @@ export default function Negotiation() {
                   <span className="font-bold" style={{ color: '#1A1A1A' }}>
                     ₹{activeDeal.priceRaw?.toLocaleString('en-IN')}
                   </span>{' '}
-                  with a 15% deposit.
+                  ({formatTerm(activeDeal.requestedTerm)}).
                 </p>
 
                 {/* Price box */}
@@ -429,7 +434,9 @@ export default function Negotiation() {
                     </div>
                     <div className="rounded-xl p-3" style={{ background: '#F5F2ED' }}>
                       <p className="text-sm font-bold" style={{ color: '#1A1A1A' }}>₹{h.price?.toLocaleString('en-IN')}</p>
-                      <p className="text-[10px] mt-0.5" style={{ color: '#A89F91' }}>by {h.offeredBy}</p>
+                      <p className="text-[10px] mt-0.5" style={{ color: '#A89F91' }}>
+                        {formatTerm(h.term)} · by {h.offeredBy}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -453,6 +460,12 @@ export default function Negotiation() {
                     <p className="text-xl font-bold" style={{ color: '#1A1A1A' }}>
                       {activeDeal.margin ? `${activeDeal.margin}%` : '24.5%'}
                     </p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-wider mb-2" style={{ color: '#A89F91' }}>Payment Term</p>
+                    <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200/50">
+                      {formatTerm(activeDeal.requestedTerm)}
+                    </span>
                   </div>
                   <div>
                     <p className="text-[9px] font-bold uppercase tracking-wider mb-2" style={{ color: '#A89F91' }}>Logistics Phase</p>
@@ -479,6 +492,39 @@ export default function Negotiation() {
               <div className="p-5 border-b" style={{ borderColor: '#F0EBE5' }}>
                 <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#A89F91' }}>Quick Actions</p>
                 <div className="space-y-2">
+                  {/* Counter offer input */}
+                  {(activeDeal.status === 'New Offer' || activeDeal.status === 'Negotiating') && (
+                    <div className="space-y-2 mb-3">
+                      <div className="flex gap-1.5">
+                        <input
+                          type="number"
+                          placeholder="Counter price"
+                          value={counterPrice}
+                          onChange={e => setCounterPrice(e.target.value)}
+                          className="flex-1 px-3 py-2 rounded-xl text-xs border focus:outline-none"
+                          style={{ borderColor: '#E5E1DA', background: '#F5F2ED', color: '#1A1A1A' }}
+                        />
+                        <button
+                          onClick={() => { if (counterPrice) { handleDealAction('Negotiating', parseInt(counterPrice)); setCounterPrice('') } }}
+                          disabled={!counterPrice || updating}
+                          className="px-3 py-2 rounded-xl text-xs font-bold text-white disabled:opacity-50"
+                          style={{ background: '#6B4E3D' }}>
+                          Send
+                        </button>
+                      </div>
+                      <select
+                        value={counterTerm}
+                        onChange={e => setCounterTerm(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl text-[10px] font-bold border focus:outline-none appearance-none cursor-pointer"
+                        style={{ borderColor: '#E5E1DA', background: '#F5F2ED', color: '#6B4E3D' }}
+                      >
+                        <option value="advance_100">100% Advance</option>
+                        <option value="split_50_50">50-50 Split</option>
+                        <option value="net_15">Net 15 (Credit)</option>
+                        <option value="net_30">Net 30 (Credit)</option>
+                      </select>
+                    </div>
+                  )}
                   <button
                     onClick={() => handleDealAction('Accepted')}
                     disabled={updating || activeDeal.status === 'Accepted' || activeDeal.status === 'Rejected'}

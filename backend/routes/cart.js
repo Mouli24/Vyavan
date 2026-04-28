@@ -25,17 +25,20 @@ router.get('/', protect, requireRole('buyer'), async (req, res) => {
 // POST /api/cart/add — Add or increment an item
 router.post('/add', protect, requireRole('buyer'), async (req, res) => {
   try {
-    const { productId, quantity } = req.body;
+    const { productId, quantity, isSample } = req.body;
     let cart = await Cart.findOne({ buyer: req.user._id });
     
     if (!cart) {
-      cart = new Cart({ buyer: req.user._id, items: [{ product: productId, quantity }] });
+      cart = new Cart({ buyer: req.user._id, items: [{ product: productId, quantity, isSample: !!isSample }] });
     } else {
-      const existing = cart.items.find(item => item.product.toString() === productId);
+      const existing = cart.items.find(item => 
+        item.product.toString() === productId && 
+        !!item.isSample === !!isSample
+      );
       if (existing) {
         existing.quantity += quantity;
       } else {
-        cart.items.push({ product: productId, quantity });
+        cart.items.push({ product: productId, quantity, isSample: !!isSample });
       }
     }
     

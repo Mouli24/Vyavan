@@ -57,7 +57,7 @@ router.get('/:id', protect, async (req, res) => {
 // POST /api/negotiation — Initiate negotiation (Round 1)
 router.post('/', protect, async (req, res) => {
   try {
-    const { manufacturer, product, quantity, offeredPrice, message } = req.body;
+    const { manufacturer, product, quantity, offeredPrice, offeredTerm, message } = req.body;
 
     const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48h from now
 
@@ -67,6 +67,7 @@ router.post('/', protect, async (req, res) => {
       product,
       quantity,
       currentOfferPrice: offeredPrice,
+      currentOfferTerm: offeredTerm,
       status: 'Initiated',
       expiresAt
     });
@@ -76,6 +77,7 @@ router.post('/', protect, async (req, res) => {
       sender: req.user._id,
       senderRole: req.user.role,
       offeredPrice,
+      offeredTerm,
       message,
       roundNumber: 1,
       isLatest: true
@@ -101,7 +103,7 @@ router.post('/', protect, async (req, res) => {
 // POST /api/negotiation/:id/counter — Send counter offer
 router.post('/:id/counter', protect, async (req, res) => {
   try {
-    const { offeredPrice, message } = req.body;
+    const { offeredPrice, offeredTerm, message } = req.body;
     const negotiation = await Negotiation.findById(req.params.id);
 
     if (!negotiation) return res.status(404).json({ message: 'Negotiation not found' });
@@ -121,12 +123,14 @@ router.post('/:id/counter', protect, async (req, res) => {
       sender: req.user._id,
       senderRole: req.user.role,
       offeredPrice,
+      offeredTerm,
       message,
       roundNumber: newRoundNumber,
       isLatest: true
     });
 
     negotiation.currentOfferPrice = offeredPrice;
+    negotiation.currentOfferTerm = offeredTerm;
     negotiation.totalRounds = newRoundNumber;
     negotiation.status = 'Active';
     negotiation.lastActivityAt = Date.now();
@@ -138,7 +142,7 @@ router.post('/:id/counter', protect, async (req, res) => {
       user: recipientId,
       type: 'negotiation_counter',
       title: 'Counter Offer Received',
-      message: `${req.user.name} sent a counter offer of ₹${offeredPrice.toLocaleString()}.`,
+      message: `${req.user.name} sent a counter offer of ₹${offeredPrice.toLocaleString()} (${offeredTerm?.replace(/_/g, ' ') || 'Advance'}).`,
       link: req.user.role === 'buyer' ? '/manufacturer/negotiation' : '/buyer/negotiations',
       refModel: 'Negotiation',
       refId: negotiation._id

@@ -17,6 +17,9 @@ const productSchema = new mongoose.Schema({
   
   // Extended fields for Manufacturer AddProductModal
   shortDescription: { type: String },
+  sku:              { type: String },
+  sector:           { type: String },
+  unitsPerPack:     { type: String }, // e.g. "1 box = 24 packets"
   seoTags:          [{ type: String }],
   hsCode:           { type: String },
   packagingType:    { type: String },

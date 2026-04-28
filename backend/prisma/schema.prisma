@@ -1,0 +1,178 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// ENUMS
+// -----------------------------------------------------------------------------
+
+enum PaymentTerm {
+  advance_100
+  split_50_50
+  net_15
+  net_30
+}
+
+enum PaymentStatus {
+  pending
+  partial
+  paid
+  overdue
+}
+
+enum PaymentMethod {
+  manual
+  bank_transfer
+  upi
+  cheque
+}
+
+enum ReminderType {
+  pre_due
+  day1
+  day3
+  day7
+  custom
+}
+
+enum ReminderChannel {
+  email
+  sms
+  whatsapp
+}
+
+// -----------------------------------------------------------------------------
+// SHELL MODELS (To support relations in Postgres)
+// -----------------------------------------------------------------------------
+
+model User {
+  id                    String                 @id @default(uuid())
+  name                  String
+  email                 String                 @unique
+  role                  String
+  payment_transactions  PaymentTransaction[]   @relation("MarkedBy")
+  
+  @@map("users")
+}
+
+model Manufacturer {
+  id                    String                         @id @default(uuid())
+  user_id               String                         @unique
+  payment_settings      ManufacturerPaymentSettings?
+  buyer_terms          BuyerPaymentTerms[]
+  orders               Order[]
+  
+  @@map("manufacturers")
+}
+
+model Buyer {
+  id                    String               @id @default(uuid())
+  user_id               String               @unique
+  payment_terms         BuyerPaymentTerms[]
+  orders               Order[]
+  
+  @@map("buyers")
+}
+
+model Order {
+  id                    String               @id @default(uuid())
+  manufacturer_id       String
+  manufacturer          Manufacturer         @relation(fields: [manufacturer_id], references: [id])
+  buyer_id              String
+  buyer                 Buyer                @relation(fields: [buyer_id], references: [id])
+  payment_records       OrderPaymentRecord[]
+  
+  @@map("orders")
+}
+
+// -----------------------------------------------------------------------------
+// CORE PAYMENT MODELS
+// -----------------------------------------------------------------------------
+
+model ManufacturerPaymentSettings {
+  id              String       @id @default(uuid())
+  manufacturer_id String       @unique
+  manufacturer    Manufacturer @relation(fields: [manufacturer_id], references: [id])
+  allowed_terms   Json         // ["advance_100", "split_50_50", "net_15", "net_30"]
+  default_terms   PaymentTerm
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+
+  @@map("manufacturer_payment_settings")
+  @@index([manufacturer_id])
+}
+
+model BuyerPaymentTerms {
+  id              String       @id @default(uuid())
+  manufacturer_id String
+  manufacturer    Manufacturer @relation(fields: [manufacturer_id], references: [id])
+  buyer_id        String
+  buyer           Buyer        @relation(fields: [buyer_id], references: [id])
+  allowed_terms   Json
+  credit_limit    Decimal      @db.Decimal(12, 2)
+  is_flagged      Boolean      @default(false)
+  flagged_at      DateTime?
+  notes           String?      @db.Text
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+
+  @@unique([manufacturer_id, buyer_id])
+  @@index([manufacturer_id])
+  @@index([buyer_id])
+  @@map("buyer_payment_terms")
+}
+
+model OrderPaymentRecord {
+  id              String               @id @default(uuid())
+  order_id        String
+  order           Order                @relation(fields: [order_id], references: [id])
+  payment_term    PaymentTerm
+  total_amount    Decimal              @db.Decimal(12, 2)
+  amount_paid     Decimal              @default(0) @db.Decimal(12, 2)
+  amount_due      Decimal              @db.Decimal(12, 2)
+  due_date        DateTime?            @db.Date
+  status          PaymentStatus
+  transactions    PaymentTransaction[]
+  reminders       PaymentRemindersLog[]
+  created_at      DateTime             @default(now())
+  updated_at      DateTime             @updatedAt
+
+  @@index([order_id])
+  @@index([status])
+  @@index([due_date])
+  @@map("order_payment_records")
+}
+
+model PaymentTransaction {
+  id                      String             @id @default(uuid())
+  order_payment_record_id String
+  order_payment_record    OrderPaymentRecord @relation(fields: [order_payment_record_id], references: [id])
+  amount                  Decimal            @db.Decimal(12, 2)
+  payment_method          PaymentMethod
+  marked_by_id            String
+  marked_by               User               @relation("MarkedBy", fields: [marked_by_id], references: [id])
+  transaction_ref         String?            @db.Text
+  payment_date            DateTime           @db.Date
+  created_at              DateTime           @default(now())
+
+  @@map("payment_transactions")
+}
+
+model PaymentRemindersLog {
+  id                      String             @id @default(uuid())
+  order_payment_record_id String
+  order_payment_record    OrderPaymentRecord @relation(fields: [order_payment_record_id], references: [id])
+  reminder_type           ReminderType
+  sent_at                 DateTime           @default(now())
+  channel                 ReminderChannel
+
+  @@map("payment_reminders_log")
+}

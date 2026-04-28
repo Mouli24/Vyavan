@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Search, Bell, ShoppingBag, ChevronDown, MapPin,
@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { api } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import NotificationBell from '@/components/NotificationBell'
+import VyawanLogo from '@/components/VyawanLogo'
 
 // ── Category taxonomy ──────────────────────────────────────────────────────
 const TAXONOMY: Record<string, string[]> = {

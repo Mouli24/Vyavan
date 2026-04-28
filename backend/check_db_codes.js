@@ -1,0 +1,27 @@
+import 'dotenv/config';
+import mongoose from 'mongoose';
+import dns from 'dns';
+import ManufacturerProfile from './models/ManufacturerProfile.js';
+import User from './models/User.js';
+
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
+async function check() {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log('✅ Connected to DB');
+    
+    const profiles = await ManufacturerProfile.find({}).populate('user', 'email company');
+    console.log('Total Profiles:', profiles.length);
+    profiles.forEach(p => {
+      console.log(`- ${p.companyCode} | ${p.user?.email} | ${p.user?.company}`);
+    });
+
+  } catch (err) {
+    console.error('❌ Error:', err.message);
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+check();

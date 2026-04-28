@@ -44,10 +44,13 @@ function fileToGenerativePart(buffer, mimeType) {
 
 /**
  * @route   POST /api/product-lister/analyze
- * @desc    Analyze product photo using Gemini Vision and upload to Cloudinary
- * @access  Private (Auth Users)
+ * @desc    Analyze dual product photos (front & back) using Gemini Vision and upload to Cloudinary
+ * @access  Private (Manufacturer)
  */
-router.post('/analyze', protect, upload.single('image'), async (req, res) => {
+router.post('/analyze', protect, requireRole('manufacturer'), upload.fields([
+  { name: 'front', maxCount: 1 },
+  { name: 'back', maxCount: 1 }
+]), async (req, res) => {
   try {
     // Check for required env variables
     const missingKeys = [];
@@ -67,57 +70,78 @@ router.post('/analyze', protect, upload.single('image'), async (req, res) => {
     const key = (process.env.GEMINI_API_KEY || '').trim();
     console.log(`🤖 Using Gemini Key: ${key.substring(0, 4)}...${key.substring(key.length - 4)} (Length: ${key.length})`);
 
-    if (!req.file) {
-      return res.status(400).json({ message: 'Please upload a product photo.' });
+    const frontFile = req.files?.front?.[0];
+    const backFile = req.files?.back?.[0];
+
+    if (!frontFile && !backFile) {
+      return res.status(400).json({ message: 'Please upload at least one product photo (Front or Back).' });
     }
 
-    console.log('📸 Processing image:', req.file.originalname, '(' + req.file.size + ' bytes)');
+    console.log('📸 Processing images:', 
+      frontFile ? `Front: ${frontFile.originalname}` : 'No Front',
+      '|',
+      backFile ? `Back: ${backFile.originalname}` : 'No Back'
+    );
 
     // 1. Upload to Cloudinary
-    let cloudinaryResponse;
-    try {
-      cloudinaryResponse = await new Promise((resolve, reject) => {
+    let cloudinaryUrls = {};
+    const uploadToCloudinary = async (file, folderName) => {
+      return new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           { folder: 'product-lister' },
           (error, result) => {
             if (error) reject(error);
-            else resolve(result);
+            else resolve(result.secure_url);
           }
         );
-        uploadStream.end(req.file.buffer);
+        uploadStream.end(file.buffer);
       });
-      console.log('✅ Image uploaded to Cloudinary:', cloudinaryResponse.secure_url);
+    };
+
+    try {
+      if (frontFile) cloudinaryUrls.front = await uploadToCloudinary(frontFile);
+      if (backFile) cloudinaryUrls.back = await uploadToCloudinary(backFile);
+      console.log('✅ Images uploaded to Cloudinary:', cloudinaryUrls);
     } catch (uploadError) {
       console.error('[CLOUDINARY_UPLOAD_ERROR]', uploadError);
-      throw new Error('Failed to upload image to Cloudinary: ' + uploadError.message);
+      throw new Error('Failed to upload images to Cloudinary: ' + uploadError.message);
     }
 
     // 2. Prepare Gemini Prompt
     const model = getGenAI().getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = `
-      You are an expert B2B product specialist. Analyze this product image and generate a professional B2B listing in JSON format.
+      You are an expert B2B product specialist. Analyze these product images (Front and/or Back) and generate a professional B2B listing in JSON format.
       
-      The output MUST be a valid JSON object with these fields:
-      - name: A professional, catchy product name (max 60 chars)
-      - shortDescription: A 2-line summary of the product.
-      - description: A detailed, persuasive description (3-4 paragraphs) focusing on quality, durability, and business value.
-      - category: One from [Textiles, Electronics, Machinery, FMCG, Automotive, Construction, Chemicals, Agriculture, Pharmaceuticals, Furniture, Leather Goods, Plastics, Metal Products, Paper Products].
-      - specifications: A flat object with at least 5 key specs (e.g., { "Material": "Grade A Steel", "Weight": "2.5kg", ... }).
-      - keyFeatures: An array of 5 bullet points highlighting USPs.
-      - seoTags: An array of 8 search-friendly keywords.
-      - hsCode: An estimated 4-6 digit HS Code for international shipping.
-      - packagingType: Recommended packaging (e.g., "Corrugated Box", "Wooden Crate").
+      - THE FRONT IMAGE contains the branding, product name, and visual appeal.
+      - THE BACK IMAGE contains the technical specifications, materials, certifications, HS codes, and company details.
+      
+      Combine information from BOTH images to fill this JSON structure:
+      {
+        "name": "Professional product name",
+        "category": "One from [Textiles, Electronics, Machinery, FMCG, Automotive, Construction, Chemicals, Agriculture, Pharmaceuticals, Furniture, Leather Goods, Plastics, Metal Products, Paper Products]",
+        "shortDescription": "2-line summary",
+        "description": "3-4 paragraphs focusing on business value",
+        "specs": { "Key": "Value", ... },
+        "keyFeatures": ["bullet 1", "bullet 2", ...],
+        "seoTags": ["tag1", "tag2", ...],
+        "hsCode": "estimated HS Code",
+        "packagingType": "Recommended packaging type",
+        "suggestedPrice": 0,
+        "suggestedMoq": 0
+      }
 
-      Be precise. Use industry-standard terminology. Ensure the JSON is valid.
+      Be precise and professional.
     `;
 
-    const imagePart = fileToGenerativePart(req.file.buffer, req.file.mimetype);
+    const imageParts = [];
+    if (frontFile) imageParts.push(fileToGenerativePart(frontFile.buffer, frontFile.mimetype));
+    if (backFile) imageParts.push(fileToGenerativePart(backFile.buffer, backFile.mimetype));
     
     // 3. Call Gemini
     console.log('🤖 Sending to Gemini for analysis...');
     let result;
     try {
-      result = await model.generateContent([prompt, imagePart]);
+      result = await model.generateContent([prompt, ...imageParts]);
     } catch (aiError) {
       console.error('[GEMINI_AI_ERROR]', aiError);
       let errMsg = aiError.message;
@@ -156,7 +180,7 @@ router.post('/analyze', protect, upload.single('image'), async (req, res) => {
 
     res.json({
       success: true,
-      imageUrl: cloudinaryResponse.secure_url,
+      cloudinaryUrls,
       analysis
     });
 

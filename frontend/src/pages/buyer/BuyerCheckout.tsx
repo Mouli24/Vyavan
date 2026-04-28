@@ -1,9 +1,24 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, Address } from '@/lib/api'
-import { Mail, Shield, CheckCircle, Package, ArrowLeft, Loader2, CreditCard, MapPin, Navigation, Plus, Map, Calendar } from 'lucide-react'
+import { Mail, Shield, CheckCircle, Package, ArrowLeft, Loader2, CreditCard, MapPin, Navigation, Plus, Map, Calendar, Wallet, Star } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useAuth } from '@/context/AuthContext'
+import { api, PaymentTerm } from '@/lib/api'
+import PaymentTermsSelector from '@/features/payments/PaymentTermsSelector'
+
+interface Address {
+  _id?: string
+  fullName: string
+  companyName?: string
+  phone: string
+  addressLine1: string
+  addressLine2?: string
+  city: string
+  state: string
+  pincode: string
+  country: string
+  isDefault: boolean
+}
 
 export default function BuyerCheckout() {
   const navigate = useNavigate()
@@ -38,7 +53,7 @@ export default function BuyerCheckout() {
   })
 
   // Other form states
-  const [paymentMethod, setPaymentMethod] = useState('bank_transfer')
+  const [selectedTerms, setSelectedTerms] = useState<Record<string, PaymentTerm>>({})
   const [otpSent, setOtpSent] = useState(false)
   const [otpEntered, setOtpEntered] = useState('')
 
@@ -96,7 +111,7 @@ export default function BuyerCheckout() {
     }
   }, [newAddressForm.pincode])
 
-  const cartTotal = cart.reduce((s, i) => s + (i.product?.price ?? 0) * i.quantity, 0)
+  const cartTotal = cart.reduce((s, i) => s + (i.isSample ? i.product?.samplePrice : (i.product?.price ?? 0)) * i.quantity, 0)
   
   // Group by manufacturer
   const groupedCart = cart.reduce((acc, item) => {
@@ -193,7 +208,7 @@ export default function BuyerCheckout() {
     try {
       for (const mId in groupedCart) {
         const items = groupedCart[mId]
-        const subtotal = items.reduce((s: number, i: any) => s + (i.product?.price ?? 0) * i.quantity, 0)
+        const subtotal = items.reduce((s: number, i: any) => s + (i.isSample ? (i.product?.samplePrice ?? 0) : (i.product?.price ?? 0)) * i.quantity, 0)
         
         const reward = groupRewards[mId]
         let rewardAmount = 0
@@ -209,17 +224,20 @@ export default function BuyerCheckout() {
         
         await api.placeOrder({
           manufacturer: mId,
-          items: items.map((i: any) => `${i.product.name} (x${i.quantity})`).join(', '),
+          items: items.map((i: any) => `${i.product.name}${i.isSample ? ' (Sample)' : ''} (x${i.quantity})`).join(', '),
           value: `₹${total.toLocaleString('en-IN')}`,
           valueRaw: total,
           appliedRewardValue: rewardAmount,
           appliedGroupId: reward?.groupId,
           products: items.map((i: any) => ({
             product: i.product._id,
-            quantity: i.quantity
+            quantity: i.quantity,
+            isSample: !!i.isSample,
+            price: i.isSample ? i.product.samplePrice : i.product.price
           })),
           expectedDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-          deliveryAddress: selectedAddress
+          deliveryAddress: selectedAddress,
+          payment_term: selectedTerms[mId]
         })
       }
 
@@ -408,22 +426,37 @@ export default function BuyerCheckout() {
 
           <div className="bg-white border border-sp-border rounded-[1.5rem] p-6 sm:p-8 shadow-sm">
             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-6">
-              <CreditCard className="text-[#7C3AED]" size={20} /> Payment Terms
+              <CreditCard className="text-[#C47A2B]" size={20} /> Payment & Credit Terms
             </h3>
-            <div className="flex flex-col gap-3">
-              {[
-                { id: 'bank_transfer', label: 'Bank Transfer (NEFT/RTGS/Wire)' },
-                { id: 'letter_of_credit', label: 'Letter of Credit (L/C)' },
-                { id: 'credit_card', label: 'Corporate Credit Card / Netbanking' }
-              ].map(opt => (
-                <label key={opt.id} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${paymentMethod === opt.id ? 'border-[#7C3AED] bg-[#F5F3FF]' : 'border-sp-border hover:border-[#C4B5FD]'}`}>
-                  <input type="radio" name="payment" value={opt.id} checked={paymentMethod === opt.id} onChange={() => setPaymentMethod(opt.id)} className="w-4 h-4 text-[#7C3AED] focus:ring-[#7C3AED]" />
-                  <span className={`text-sm font-semibold ${paymentMethod === opt.id ? 'text-[#7C3AED]' : 'text-slate-600'}`}>{opt.label}</span>
-                </label>
-              ))}
-            </div>
-            <p className="text-xs text-slate-400 mt-4 leading-relaxed">
-              * Note: For standard B2B orders, selecting 'Bank Transfer' will generate an invoice requiring payment before dispatch. For approved credit lines, orders are processed instantly.
+            
+            <div className="space-y-8">
+              {Object.keys(groupedCart).map((mId) => {
+                const mfrName = groupedCart[mId][0]?.product?.manufacturer?.company || 'Supplier'
+                const items = groupedCart[mId]
+                const subtotal = items.reduce((s: number, i: any) => s + (i.isSample ? (i.product?.samplePrice ?? 0) : (i.product?.price ?? 0)) * i.quantity, 0)
+                const total = subtotal * 1.18
+
+                return (
+                  <div key={mId} className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-dashed">
+                       <span className="text-xs font-black uppercase text-slate-400">Order for:</span>
+                       <span className="text-xs font-bold text-[#C47A2B]">{mfrName}</span>
+                       <span className="ml-auto text-xs font-black text-slate-800">₹{total.toLocaleString('en-IN')}</span>
+                    </div>
+                    <PaymentTermsSelector 
+                      mfrId={mId}
+                      buyerId={user?._id || ''}
+                      orderAmount={total}
+                      onSelect={(term) => setSelectedTerms(prev => ({ ...prev, [mId]: term }))}
+                      selectedTerm={selectedTerms[mId]}
+                    />
+                  </div>
+                )
+              })}
+
+            <p className="text-[10px] text-slate-400 mt-8 leading-relaxed italic">
+              * Payment terms are subject to manufacturer approval and your current credit standing. 
+              Restricted terms will be disabled if credit limits are exceeded or overdue payments exist.
             </p>
           </div>
         </div>
@@ -440,11 +473,14 @@ export default function BuyerCheckout() {
                     {item.product?.image ? <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" /> : <Package className="w-6 h-6 m-auto text-slate-300 mt-3" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-slate-800 truncate">{item.product?.name || 'Unknown Item'}</p>
+                    <p className="text-sm font-bold text-slate-800 truncate">
+                      {item.product?.name || 'Unknown Item'}
+                      {item.isSample && <span className="ml-2 text-[8px] bg-green-100 text-green-700 px-1 py-0.5 rounded uppercase font-black">Sample</span>}
+                    </p>
                     <p className="text-xs text-slate-500">Qty: {item.quantity}</p>
                   </div>
                   <p className="text-sm font-black text-slate-800">
-                    ₹{((item.product?.price || 0) * item.quantity).toLocaleString('en-IN')}
+                    ₹{((item.isSample ? (item.product?.samplePrice ?? 0) : (item.product?.price ?? 0)) * item.quantity).toLocaleString('en-IN')}
                   </p>
                 </div>
               ))}
@@ -458,7 +494,7 @@ export default function BuyerCheckout() {
               
               {Object.entries(groupRewards).map(([mId, reward]: [string, any]) => {
                 const mItems = cart.filter(i => i.product?.manufacturer?._id === mId)
-                const mSubtotal = mItems.reduce((s, i) => s + (i.product?.price ?? 0) * i.quantity, 0)
+                const mSubtotal = mItems.reduce((s, i) => s + (i.isSample ? (i.product?.samplePrice ?? 0) : (i.product?.price ?? 0)) * i.quantity, 0)
                 let mDiscount = 0
                 if (reward.rewardType === 'percentage_discount') mDiscount = mSubtotal * (reward.rewardValue / 100)
                 else if (reward.rewardType === 'flat_discount') mDiscount = Math.min(reward.rewardValue, mSubtotal)
@@ -482,7 +518,7 @@ export default function BuyerCheckout() {
                 {(() => {
                   const totalDiscount = Object.entries(groupRewards).reduce((acc, [mId, reward]: [string, any]) => {
                     const mItems = cart.filter(i => i.product?.manufacturer?._id === mId)
-                    const mSubtotal = mItems.reduce((s, i) => s + (i.product?.price ?? 0) * i.quantity, 0)
+                    const mSubtotal = mItems.reduce((s, i) => s + (i.isSample ? (i.product?.samplePrice ?? 0) : (i.product?.price ?? 0)) * i.quantity, 0)
                     if (reward.rewardType === 'percentage_discount') return acc + (mSubtotal * (reward.rewardValue / 100))
                     if (reward.rewardType === 'flat_discount') return acc + Math.min(reward.rewardValue, mSubtotal)
                     return acc
@@ -495,7 +531,7 @@ export default function BuyerCheckout() {
                 {(() => {
                   const totalDiscount = Object.entries(groupRewards).reduce((acc, [mId, reward]: [string, any]) => {
                     const mItems = cart.filter(i => i.product?.manufacturer?._id === mId)
-                    const mSubtotal = mItems.reduce((s, i) => s + (i.product?.price ?? 0) * i.quantity, 0)
+                    const mSubtotal = mItems.reduce((s, i) => s + (i.isSample ? (i.product?.samplePrice ?? 0) : (i.product?.price ?? 0)) * i.quantity, 0)
                     if (reward.rewardType === 'percentage_discount') return acc + (mSubtotal * (reward.rewardValue / 100))
                     if (reward.rewardType === 'flat_discount') return acc + Math.min(reward.rewardValue, mSubtotal)
                     return acc
@@ -503,6 +539,44 @@ export default function BuyerCheckout() {
                   return <span>₹{((cartTotal - totalDiscount) * 1.18).toLocaleString('en-IN')}</span>
                 })()}
               </div>
+
+              {/* Amount Due Now Calculation */}
+              <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100 space-y-2 mt-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-purple-700">Amount Due Now</span>
+                  <span className="text-lg font-black text-purple-900">
+                    ₹{Object.keys(groupedCart).reduce((acc, mId) => {
+                      const items = groupedCart[mId]
+                      const total = items.reduce((s: number, i: any) => s + (i.isSample ? (i.product?.samplePrice ?? 0) : (i.product?.price ?? 0)) * i.quantity, 0) * 1.18
+                      const term = (selectedTerms as any)[mId]
+                      if (term === 'advance_100') return acc + total
+                      if (term === 'split_50_50') return acc + (total * 0.5)
+                      return acc
+                    }, 0).toLocaleString('en-IN')}
+                  </span>
+                </div>
+                
+                <div className="text-[10px] text-purple-600 font-medium flex flex-col gap-1 italic border-t border-purple-100 pt-2 mt-1">
+                   {Object.keys(groupedCart).map(mId => {
+                     const term = (selectedTerms as any)[mId]
+                     const mfrName = (groupedCart as any)[mId][0]?.product?.manufacturer?.company || 'Supplier'
+                     if (!term) return null
+                     
+                     let dueDateStr = ''
+                     if (term === 'net_15') dueDateStr = `due by ${new Date(Date.now() + 15*24*60*60*1000).toLocaleDateString()}`
+                     if (term === 'net_30') dueDateStr = `due by ${new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString()}`
+                     if (term === 'split_50_50') dueDateStr = `balance due by ${new Date(Date.now() + 15*24*60*60*1000).toLocaleDateString()}`
+                     
+                     return (
+                       <div key={mId} className="flex justify-between">
+                         <span>{mfrName} ({term.replace(/_/g, ' ')})</span>
+                         <span>{dueDateStr}</span>
+                       </div>
+                     )
+                   })}
+                </div>
+              </div>
+            </div>
 
             {/* Mock OTP Area */}
             <AnimatePresence>

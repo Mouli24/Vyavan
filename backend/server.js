@@ -27,10 +27,12 @@ import manufacturerPaymentRoutes from './routes/manufacturerPayment.js';
 import productListerRoutes from './routes/productLister.js';
 import seedRoutes from './routes/seed.js';
 import aiRoutes from './routes/ai.js';
+import creditTermsRoutes from './routes/creditTerms.js';
 import reviewRoutes from './routes/reviews.js';
 import groupRoutes from './routes/groups.js';
 
 import negotiationRoutes from './routes/negotiation.js'; 
+import { initPaymentJobs } from './jobs/paymentJobs.js';
 import { initReviewScheduler } from './utils/reviewScheduler.js';
 
 const app = express();
@@ -118,6 +120,7 @@ app.use('/api/manufacturer/payment', manufacturerPaymentRoutes);
 app.use('/api/product-lister', productListerRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/credit-terms', creditTermsRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/groups', groupRoutes);
 
@@ -142,6 +145,7 @@ app.use((err, _req, res, _next) => {
 // ── Start ─────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT ?? 5000;
 connectDB().then(() => {
+  initPaymentJobs();
   server.listen(PORT, () => {
     console.log(`🚀 API running on http://localhost:${PORT}`);
     initReviewScheduler();

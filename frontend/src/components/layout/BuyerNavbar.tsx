@@ -1,33 +1,31 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ScanLine, Package, Handshake, PhoneCall, User, ChevronDown, Home } from 'lucide-react'
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import { ScanLine, Package, Handshake, PhoneCall, User, ChevronDown, Home, ShoppingCart } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
 import { useAuth } from '@/context/AuthContext'
-import VyawanLogo from '@/components/VyawanLogo'
-import { useTranslation } from 'react-i18next'
-import LanguageToggle from '../LanguageToggle'
+import NotificationBell from '@/components/NotificationBell'
 
 interface Props {
   activePage?: 'home' | 'tracking' | 'orders' | 'negotiation' | 'schedule'
 }
 
-const getNavItems = (t: any) => [
-  { label: t('navigation.home', 'Home'),                    icon: Home,      to: '/buyer/dashboard', key: 'home'        },
-  { label: t('navigation.tracking', 'Tracking'),            icon: ScanLine,  to: '/buyer/shipments', key: 'tracking'    },
-  { label: t('navigation.orders', 'My Orders'),             icon: Package,   to: '/buyer/orders',    key: 'orders'      },
-  { label: t('navigation.negotiation', 'Negotiation & Chat Now'), icon: Handshake, to: '/buyer/negotiation', key: 'negotiation' },
-  { label: t('navigation.schedule', 'Schedule Call'),       icon: PhoneCall, to: '/buyer/schedule',  key: 'schedule'    },
+const NAV_ITEMS = [
+  { label: 'Home',                    icon: Home,      to: '/buyer/dashboard', key: 'home'        },
+  { label: 'Tracking',               icon: ScanLine,  to: '/buyer/shipments', key: 'tracking'    },
+  { label: 'My Orders',              icon: Package,   to: '/buyer/orders',    key: 'orders'      },
+  { label: 'Negotiation & Chat Now', icon: Handshake, to: '/buyer/negotiation', key: 'negotiation' },
+  { label: 'Schedule Call',          icon: PhoneCall, to: '/buyer/schedule',  key: 'schedule'    },
 ]
 
 export default function BuyerNavbar({ activePage }: Props) {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
-  const { t } = useTranslation()
-  const NAV_ITEMS = getNavItems(t)
+  const [accountOpen, setAccountOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-[#E5E1DA] overflow-hidden">
-      <div className="flex items-center justify-between gap-4" style={{ height: 64 }}>
-        {/* Logo — absolute left edge, tall, no padding */}
+    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-[#E5E1DA] overflow-hidden" style={{ height: 64 }}>
+      <div className="flex items-center justify-between gap-4 h-full">
+        {/* Logo */}
         <div
           className="cursor-pointer flex-shrink-0"
           style={{ width: 220, height: 64, overflow: 'hidden' }}
@@ -58,64 +56,55 @@ export default function BuyerNavbar({ activePage }: Props) {
           ))}
         </nav>
 
-        {/* Right: Account & Language */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 pr-4 sm:pr-6">
-          <LanguageToggle />
-          <div className="w-px h-6 bg-gray-200 hidden sm:block" />
-          
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              <button
-                type="button"
-                className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full border border-[#E5E1DA] bg-white text-slate-700 text-sm font-semibold hover:border-[#F9D5B8] hover:text-[#5D4037] cursor-pointer transition-all focus:outline-none"
-              >
-                <div className="w-6 h-6 rounded-full bg-[#FCE7D6] flex items-center justify-center text-[#5D4037]">
-                   <User size={14} />
-                </div>
-                <span className="hidden sm:inline lowercase first-letter:uppercase">{user ? user.name?.split(' ')[0] : 'Account'}</span>
-                <ChevronDown size={13} className="text-[#A89F91]" />
-              </button>
-            </DropdownMenu.Trigger>
+        {/* Right actions */}
+        <div className="flex items-center gap-2 flex-shrink-0 pr-4 sm:pr-6">
+          <NotificationBell />
 
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content 
-                align="end" 
-                sideOffset={8}
-                className="z-[100] w-48 bg-white rounded-2xl p-1.5 shadow-2xl border border-[#E5E1DA] animate-in fade-in zoom-in-95"
-              >
-                <div className="px-3 py-2 border-b border-[#F5F2ED] mb-1">
-                   <p className="text-[10px] font-black uppercase tracking-widest text-[#A89F91]">Signed in as</p>
-                   <p className="text-xs font-bold text-[#1A1A1A] truncate">{user?.email}</p>
-                </div>
-                
-                <DropdownMenu.Item 
-                  onClick={() => navigate('/buyer/profile')}
-                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-[#F5F2ED] hover:text-[#5D4037] rounded-xl cursor-pointer outline-none transition-colors"
-                >
-                  Profile Details
-                </DropdownMenu.Item>
-                
-                <DropdownMenu.Item 
-                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-[#F5F2ED] hover:text-[#5D4037] rounded-xl cursor-pointer outline-none transition-colors"
-                >
-                  Account Settings
-                </DropdownMenu.Item>
+          {/* Account Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setAccountOpen(o => !o)}
+              className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#E5E1DA] bg-white text-slate-700 text-sm font-semibold hover:border-[#F9D5B8] hover:text-[#5D4037] transition-all"
+            >
+              <User size={15} />
+              <span className="hidden sm:inline">{user ? user.name?.split(' ')[0] : 'Account'}</span>
+              <ChevronDown size={13} />
+            </button>
 
-                <DropdownMenu.Separator className="h-px bg-[#F5F2ED] my-1" />
-                
-                <DropdownMenu.Item 
-                  onClick={() => { logout?.(); navigate('/login'); }}
-                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-xl cursor-pointer outline-none transition-colors"
+            <AnimatePresence>
+              {accountOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50"
                 >
-                  Sign Out
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
+                  <div className="px-4 py-3 border-b border-slate-100">
+                    <p className="text-sm font-bold text-slate-900 truncate">{user?.name}</p>
+                    <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+                  </div>
+                  {[
+                    { label: 'My Orders',    path: '/buyer/orders' },
+                    { label: 'Negotiations', path: '/buyer/negotiation' },
+                    { label: 'Shipments',    path: '/buyer/shipments' },
+                  ].map(item => (
+                    <button key={item.label} onClick={() => { setAccountOpen(false); navigate(item.path); }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
+                      {item.label}
+                    </button>
+                  ))}
+                  <div className="border-t border-slate-100">
+                    <button onClick={() => { setAccountOpen(false); logout(); navigate('/login'); }}
+                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors">
+                      Sign Out
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </header>
   )
 }
-
-

@@ -12,7 +12,23 @@ router.get('/', async (req, res) => {
     const { category, manufacturer } = req.query;
     const filter = { isActive: true };
     if (category) filter.category = category;
-    if (manufacturer) filter.manufacturer = manufacturer;
+    
+    if (manufacturer) {
+      if (manufacturer.match(/^[0-9a-fA-F]{24}$/)) {
+        filter.manufacturer = manufacturer;
+      } else {
+        // Assume it's a company code
+        const { default: ManufacturerProfile } = await import('../models/ManufacturerProfile.js');
+        const profile = await ManufacturerProfile.findOne({ companyCode: manufacturer.toUpperCase() });
+        if (profile) {
+          filter.manufacturer = profile.user;
+        } else {
+          // If code not found, return empty
+          return res.json([]);
+        }
+      }
+    }
+
     const products = await Product.find(filter)
       .populate('manufacturer', 'name company location manufacturerStatus');
     res.json(products);

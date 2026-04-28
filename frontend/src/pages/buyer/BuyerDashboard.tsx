@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ShoppingCart, Truck, Handshake, ScanLine,
   Search, ChevronDown, Loader2,
   Share2, AtSign, Camera, ShoppingBag,
-  User, Package, X, Check, BellOff,
-  PhoneCall, MessageCircle, Home, Tag, Factory, Trophy, ShieldCheck
+  User, Package, X, Star,
+  PhoneCall, Home, Tag, Factory, Trophy, ShieldCheck
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
-import { api, Product, Notification as NotifType } from '@/lib/api'
+import { api, Product } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import NotificationBell from '@/components/NotificationBell'
 import VyawanLogo from '@/components/VyawanLogo'
@@ -56,7 +56,7 @@ const FEATURE_PILLS = [
 interface CartItem { product: Product; qty: number }
 
 export default function BuyerDashboard() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
 
   const [products, setProducts] = useState<Product[]>([])
@@ -69,10 +69,13 @@ export default function BuyerDashboard() {
   const [email, setEmail] = useState('')
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [rewards, setRewards] = useState<any[]>([])
+  const [accountOpen, setAccountOpen] = useState(false)
 
   useEffect(() => {
+    const directAccessCode = localStorage.getItem('directStoreAccess');
+    
     // Fetch Products
-    api.getProducts()
+    api.getProducts(directAccessCode ? { manufacturer: directAccessCode } : {})
       .then(setProducts)
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -89,15 +92,24 @@ export default function BuyerDashboard() {
     api.getMyRewards().then(setRewards).catch(console.error)
   }, [])
 
-  const addToCart = async (product: Product) => {
+  const addToCart = async (product: Product, isSample = false) => {
     try {
-      const res = await api.addToCart(product._id, 1);
+      const res = await api.addToCart(product._id, 1, isSample);
       if (res && res.items) {
-        setCart(res.items.map((i: any) => ({ product: i.product, qty: i.quantity })))
+        setCart(res.items.map((i: any) => ({ 
+          product: i.product, 
+          qty: i.quantity,
+          isSample: i.isSample 
+        })))
       }
     } catch (e) {
       console.error(e)
     }
+  }
+
+  const buyNow = async (product: Product, isSample = false) => {
+    await addToCart(product, isSample);
+    navigate('/buyer/checkout');
   }
 
   const cartCount = cart.reduce((s, i) => s + i.qty, 0)
@@ -174,14 +186,47 @@ export default function BuyerDashboard() {
             <NotificationBell />
 
             {/* Account */}
-            <button
-              onClick={() => navigate('/login')}
-              className="flex items-center gap-2 px-4 py-2 rounded-full border border-sp-border bg-white text-slate-700 text-sm font-semibold hover:border-[#F9D5B8] transition-all"
-            >
-              <User size={15} />
-              {user ? user.name?.split(' ')[0] : 'My Account'}
-              <ChevronDown size={13} />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setAccountOpen(o => !o)}
+                className="flex items-center gap-2 px-4 py-2 rounded-full border border-sp-border bg-white text-slate-700 text-sm font-semibold hover:border-[#F9D5B8] transition-all"
+              >
+                <User size={15} />
+                {user ? user.name?.split(' ')[0] : 'My Account'}
+                <ChevronDown size={13} />
+              </button>
+              <AnimatePresence>
+                {accountOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 6 }}
+                    className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50"
+                  >
+                    <div className="px-4 py-3 border-b border-slate-100">
+                      <p className="text-sm font-bold text-slate-900 truncate">{user?.name}</p>
+                      <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+                    </div>
+                    {[
+                      { label: 'My Orders', path: '/buyer/orders' },
+                      { label: 'Negotiations', path: '/buyer/negotiation' },
+                      { label: 'Shipments', path: '/buyer/shipments' },
+                    ].map(item => (
+                      <button key={item.label} onClick={() => { setAccountOpen(false); navigate(item.path); }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
+                        {item.label}
+                      </button>
+                    ))}
+                    <div className="border-t border-slate-100">
+                      <button onClick={() => { setAccountOpen(false); logout(); navigate('/login'); }}
+                        className="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors">
+                        Logout
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </header>
@@ -218,21 +263,21 @@ export default function BuyerDashboard() {
             {/* Illustration */}
             <div className="hidden md:flex items-end gap-3 pr-4">
               <motion.div animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}>
-                <div className="w-28 h-28 rounded-2xl flex items-center justify-center shadow-xl"
+                <div className="w-28 h-28 rounded-full flex items-center justify-center shadow-xl border-4 border-white"
                   style={{ background: 'linear-gradient(135deg, #FCE7D6, #F9D5B8)' }}>
-                  <ShoppingBag size={48} style={{ color: '#5D4037' }} />
+                  <ShoppingBag size={42} style={{ color: '#5D4037' }} />
                 </div>
               </motion.div>
               <motion.div animate={{ y: [0, -12, 0] }} transition={{ repeat: Infinity, duration: 3.5, ease: 'easeInOut', delay: 0.3 }}>
-                <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg"
+                <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg border-4 border-white"
                   style={{ background: 'linear-gradient(135deg, #F5E6D3, #EDD5B8)' }}>
-                  <Package size={36} style={{ color: '#6B4E3D' }} />
+                  <Package size={32} style={{ color: '#6B4E3D' }} />
                 </div>
               </motion.div>
               <motion.div animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut', delay: 0.6 }}>
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-md"
+                <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-md border-2 border-white"
                   style={{ background: 'linear-gradient(135deg, #EDE8DF, #D9D2C7)' }}>
-                  <Truck size={28} style={{ color: '#8B7355' }} />
+                  <Truck size={24} style={{ color: '#8B7355' }} />
                 </div>
               </motion.div>
             </div>
@@ -244,15 +289,15 @@ export default function BuyerDashboard() {
           {FEATURE_PILLS.map((pill, i) => (
             <motion.div key={pill.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.07 }} onClick={() => navigate(pill.to)}
-              className="rounded-2xl px-5 py-4 flex items-center gap-4 cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all"
-              style={{ background: pill.bg, border: '1px solid rgba(0,0,0,0.06)' }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0"
-                style={{ background: pill.iconBg }}>
+              className="bg-white rounded-2xl px-5 py-4 flex items-center gap-4 cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all border border-slate-100"
+            >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-sm flex-shrink-0"
+                style={{ background: pill.bg }}>
                 <pill.icon size={20} style={{ color: pill.iconColor }} />
               </div>
               <div>
-                <p className="font-black text-sm leading-tight" style={{ color: pill.iconColor }}>{pill.label}</p>
-                <p className="text-xs font-medium" style={{ color: pill.iconColor, opacity: 0.7 }}>{pill.sub}</p>
+                <p className="font-bold text-sm leading-tight text-slate-900">{pill.label}</p>
+                <p className="text-[10px] uppercase font-black tracking-widest mt-0.5" style={{ color: pill.iconColor }}>{pill.sub}</p>
               </div>
             </motion.div>
           ))}
@@ -685,37 +730,49 @@ export default function BuyerDashboard() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-3 sm:gap-4 sticky bottom-0 bg-white pt-4">
-                    <button
-                      onClick={() => { addToCart(selectedProduct); setSelectedProduct(null) }}
-                      className="flex-1 py-4 rounded-2xl text-white font-black text-sm hover:scale-[1.02] active:scale-100 transition-all"
-                      style={{ background: '#5D4037', boxShadow: '0 8px 24px rgba(93,64,55,0.25)' }}
-                    >
-                      Add to Bulk Order
-                    </button>
-
-                    {selectedProduct.sampleEnabled && (
+                  <div className="flex flex-col gap-3 sticky bottom-0 bg-white pt-4">
+                    <div className="flex gap-3">
                       <button
                         onClick={() => { addToCart(selectedProduct); setSelectedProduct(null) }}
-                        className="flex-1 py-4 rounded-2xl bg-green-500 text-white font-black text-sm shadow-xl shadow-green-500/20 hover:scale-[1.02] active:scale-100 transition-all"
+                        className="flex-1 py-4 rounded-2xl text-white font-black text-xs hover:scale-[1.02] active:scale-100 transition-all"
+                        style={{ background: '#5D4037', boxShadow: '0 8px 24px rgba(93,64,55,0.25)' }}
                       >
-                        Order Sample
+                        Add to Bulk Order
                       </button>
-                    )}
 
-                    <button
-                      onClick={() => {
-                        setSelectedProduct(null);
-                        if (user?.role === 'manufacturer') {
-                          navigate('/manufacturer/negotiation');
-                        } else {
-                          navigate(`/buyer/negotiation?manufacturer=${(selectedProduct.manufacturer as any)._id || selectedProduct.manufacturer}&product=${selectedProduct._id}`);
-                        }
-                      }}
-                      className="flex-1 py-4 rounded-2xl border-2 border-slate-200 text-slate-700 font-bold text-sm transition-all hover:border-[#5D4037] hover:text-[#5D4037]"
-                    >
-                      Negotiate
-                    </button>
+                      <button
+                        onClick={() => { buyNow(selectedProduct); setSelectedProduct(null) }}
+                        className="flex-1 py-4 rounded-2xl bg-white border-2 border-[#5D4037] text-[#5D4037] font-black text-xs hover:scale-[1.02] active:scale-100 transition-all"
+                      >
+                        Buy Now
+                      </button>
+                    </div>
+
+                    <div className="flex gap-3">
+                      {selectedProduct.sampleEnabled && (
+                        <button
+                          onClick={() => { buyNow(selectedProduct, true); setSelectedProduct(null) }}
+                          className="flex-1 py-4 rounded-2xl bg-green-600 text-white font-black text-xs shadow-lg shadow-green-600/20 hover:scale-[1.02] active:scale-100 transition-all flex flex-col items-center justify-center leading-tight"
+                        >
+                          <span>Order Sample</span>
+                          <span className="text-[9px] opacity-90">₹{selectedProduct.samplePrice}</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          setSelectedProduct(null);
+                          if (user?.role === 'manufacturer') {
+                            navigate('/manufacturer/negotiation');
+                          } else {
+                            navigate(`/buyer/negotiation?manufacturer=${(selectedProduct.manufacturer as any)._id || selectedProduct.manufacturer}&product=${selectedProduct._id}`);
+                          }
+                        }}
+                        className="flex-1 py-4 rounded-2xl border-2 border-slate-200 text-slate-700 font-bold text-xs transition-all hover:border-[#5D4037] hover:text-[#5D4037]"
+                      >
+                        Negotiate
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -761,11 +818,16 @@ export default function BuyerDashboard() {
                       }
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-800 truncate">{item.product.name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-bold text-slate-800 truncate">{item.product.name}</p>
+                        {item.isSample && (
+                          <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 text-[8px] font-black uppercase">Sample</span>
+                        )}
+                      </div>
                       <p className="text-xs text-slate-500">Qty: {item.qty}</p>
                     </div>
                     <p className="text-sm font-black flex-shrink-0" style={{ color: '#5D4037' }}>
-                      ₹{((item.product.price ?? 0) * item.qty).toLocaleString('en-IN')}
+                      ₹{((item.isSample ? item.product.samplePrice : (item.product.price ?? 0)) * item.qty).toLocaleString('en-IN')}
                     </p>
                   </div>
                 ))}
@@ -776,7 +838,7 @@ export default function BuyerDashboard() {
                   <div className="flex justify-between mb-4">
                     <span className="font-bold text-slate-700">Total</span>
                     <span className="font-black text-xl text-slate-900">
-                      ₹{cart.reduce((s, i) => s + (i.product.price ?? 0) * i.qty, 0).toLocaleString('en-IN')}
+                      ₹{cart.reduce((s, i) => s + (i.isSample ? i.product.samplePrice : (i.product.price ?? 0)) * i.qty, 0).toLocaleString('en-IN')}
                     </span>
                   </div>
                   <button

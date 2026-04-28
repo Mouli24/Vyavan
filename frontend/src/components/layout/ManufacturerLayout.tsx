@@ -10,7 +10,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
   LayoutDashboard, Store, Truck, MessageSquare, CreditCard,
   AlertCircle, Settings, HelpCircle, Zap, LogOut, ClipboardList,
-  ShoppingCart, Boxes, CalendarClock, CalendarDays, Menu, X, Star, Users, Lock, KeyRound, ChevronDown
+  ShoppingCart, Boxes, CalendarClock, CalendarDays, Menu, X, Wallet, Star, Users, Lock, KeyRound, ChevronDown
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
@@ -19,6 +19,7 @@ const getNavItems = (t: any) => [
   { icon: <LayoutDashboard size={16} />, label: t('navigation.overview'),            to: '/manufacturer/overview' },
   { icon: <Store size={16} />,           label: t('navigation.myStore'),            to: '/manufacturer/store' },
   { icon: <ShoppingCart size={16} />,    label: t('navigation.orders'),              to: '/manufacturer/orders' },
+  { icon: <Wallet size={16} />,          label: t('navigation.receivables', 'Receivables'), to: '/manufacturer/receivables' },
   { icon: <Boxes size={16} />,           label: t('navigation.inventory'),           to: '/manufacturer/inventory' },
   { icon: <Truck size={16} />,           label: t('navigation.shipment'),            to: '/manufacturer/shipment' },
   { icon: <MessageSquare size={16} />,   label: t('navigation.negotiation'),         to: '/manufacturer/negotiation' },
@@ -26,8 +27,8 @@ const getNavItems = (t: any) => [
   { icon: <AlertCircle size={16} />,     label: t('navigation.complaints'),          to: '/manufacturer/complaints' },
   { icon: <CalendarClock size={16} />,   label: t('navigation.scheduledCalls', 'Scheduled Calls'),     to: '/manufacturer/scheduled-calls' },
   { icon: <CalendarDays size={16} />,    label: t('navigation.holidays', 'Holiday & Availability'), to: '/manufacturer/holidays' },
-  { icon: <Star size={16} />,            label: 'Reviews',                           to: '/manufacturer/reviews' },
-  { icon: <Users size={16} />,           label: 'Buyer Groups',                      to: '/manufacturer/groups' },
+  { icon: <Star size={16} />,            label: t('navigation.reviews', 'Reviews'),                           to: '/manufacturer/reviews' },
+  { icon: <Users size={16} />,           label: t('navigation.groups', 'Buyer Groups'),                      to: '/manufacturer/groups' },
   { icon: <ClipboardList size={16} />,   label: t('navigation.onboarding'),          to: '/manufacturer/onboarding' },
 ]
 
@@ -52,9 +53,15 @@ export default function ManufacturerLayout() {
   const bottomDockItems = [
     {
       icon: <Settings size={16} />,
-      label: t('navigation.settings'),
+      label: t('navigation.settings', 'General Settings'),
       onClick: () => { navigate('/manufacturer/settings'); setSidebarOpen(false) },
       isActive: location.pathname === '/manufacturer/settings',
+    },
+    {
+      icon: <CreditCard size={16} />,
+      label: 'Payment Settings',
+      onClick: () => { navigate('/manufacturer/settings/payments'); setSidebarOpen(false) },
+      isActive: location.pathname === '/manufacturer/settings/payments',
     },
     {
       icon: <HelpCircle size={16} />,

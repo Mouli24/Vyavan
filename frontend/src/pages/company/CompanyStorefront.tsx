@@ -15,6 +15,7 @@ export default function CompanyStorefront() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'products' | 'about' | 'certifications' | 'reviews'>('products')
+  const [canSchedule, setCanSchedule] = useState(false)
   const [holidayInfo, setHolidayInfo] = useState<any>(null)
 
   const handleAction = (type: string, productId?: string) => {
@@ -50,7 +51,7 @@ export default function CompanyStorefront() {
       try {
         // Try by company code first, then by ID
         let result
-        if (id.startsWith('MFR-')) {
+        if (id.startsWith('MFR-') || id.startsWith('MNG')) {
           const profile = await api.getCompanyByCode(id)
           result = await api.getCompany(profile.user._id)
         } else {
@@ -58,9 +59,10 @@ export default function CompanyStorefront() {
         }
         setData(result)
         
-        // Fetch holiday status
+        // Fetch status info
         const mfrId = result.user._id
         api.checkManufacturerHoliday(mfrId).then(setHolidayInfo).catch(() => {})
+        api.checkCallContext(mfrId).then(res => setCanSchedule(res.canSchedule)).catch(() => setCanSchedule(false))
       } catch (e) {
         console.error(e)
       } finally {
@@ -109,39 +111,33 @@ export default function CompanyStorefront() {
       )}
 
       {/* Nav */}
-      <header className="sticky top-0 z-10 bg-white border-b border-sp-border px-4 sm:px-6 py-4 flex items-center justify-between">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-sp-muted hover:text-sp-purple transition-colors">
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-indigo-600 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => handleAction('contact')}
-            className="flex items-center gap-2 px-4 py-2 gradient-card-purple text-white text-sm font-bold rounded-xl hover:opacity-90 transition-all"
-          >
-            <MessageCircle className="w-4 h-4" /> Contact
-          </button>
-        </div>
+        <button onClick={() => handleAction('contact')} className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:opacity-90">
+          <MessageCircle className="w-4 h-4 inline mr-2" /> Contact
+        </button>
       </header>
 
       {/* Hero / Banner */}
       <div className="relative">
-        <div
-          className="h-48 sm:h-64 gradient-hero relative overflow-hidden"
-          style={profile?.profileBanner ? { backgroundImage: `url(${profile.profileBanner})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
-        >
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        <div className="h-48 sm:h-64 bg-gray-100 flex items-center justify-center overflow-hidden">
+          {profile?.profileBanner ? (
+             <img src={profile.profileBanner} className="w-full h-full object-cover" />
+          ) : (
+             <div className="w-full h-full bg-slate-200" />
+          )}
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="relative -mt-16 flex items-end gap-4 mb-6">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="relative -mt-16 flex items-end gap-6 mb-8">
             {/* Logo */}
-            <div className="w-24 h-24 bg-white rounded-2xl border-4 border-white shadow-card overflow-hidden flex-shrink-0">
-              {profile?.logo ? (
-                <img src={profile.logo} alt={user.company} className="w-full h-full object-cover" />
+            <div className="w-28 h-28 bg-indigo-600 rounded-3xl border-4 border-white shadow-xl flex items-center justify-center flex-shrink-0">
+               {profile?.logo ? (
+                <img src={profile.logo} alt={user.company} className="w-full h-full object-cover rounded-2xl" />
               ) : (
-                <div className="w-full h-full gradient-card-purple flex items-center justify-center">
-                  <span className="text-3xl font-black text-white">{user.company?.[0] ?? 'M'}</span>
-                </div>
+                <span className="text-4xl font-black text-white">{user.company?.[0] ?? 'M'}</span>
               )}
             </div>
             <div className="pb-2">
@@ -168,56 +164,55 @@ export default function CompanyStorefront() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
-        {/* Stats bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-10">
           {[
             { icon: Package,  label: 'Products',    value: products?.length ?? 0 },
-            { icon: Star,     label: 'Avg Rating',  value: profile?.stats?.avgRating?.toFixed(1) ?? '4.5' },
+            { icon: Star,     label: 'Avg Rating',  value: profile?.stats?.avgRating?.toFixed(1) ?? '0.0' },
             { icon: Users,    label: 'Employees',   value: profile?.employeeCount ?? '—' },
             { icon: Award,    label: 'Est.',         value: profile?.yearEstablished ?? '—' },
           ].map(stat => (
-            <div key={stat.label} className="bg-white rounded-xl p-4 border border-sp-border shadow-card flex items-center gap-3">
-              <div className="w-8 h-8 bg-sp-purple-pale rounded-lg flex items-center justify-center">
-                <stat.icon className="w-4 h-4 text-sp-purple" />
+            <div key={stat.label} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center">
+                <stat.icon className="w-5 h-5 text-indigo-600" />
               </div>
               <div>
-                <p className="text-sm font-bold text-sp-text">{stat.value}</p>
-                <p className="text-xs text-sp-muted">{stat.label}</p>
+                <p className="text-lg font-bold text-gray-900">{stat.value}</p>
+                <p className="text-xs text-gray-400 font-medium">{stat.label}</p>
               </div>
             </div>
           ))}
         </div>
 
         {/* Action buttons */}
-        <div className="flex flex-wrap gap-3 mb-8">
+        <div className="flex flex-wrap gap-4 mb-10">
           <button
             onClick={() => handleAction('negotiate')}
-            className="flex items-center gap-2 px-5 py-2.5 gradient-card-purple text-white font-bold rounded-xl text-sm hover:opacity-90 transition-all"
+            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
           >
-            <MessageCircle className="w-4 h-4" /> Start Negotiation
+            <MessageCircle className="w-5 h-5" /> Start Negotiation
           </button>
           <button
             onClick={() => handleAction('chat')}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-sp-border text-sp-purple font-bold rounded-xl text-sm hover:border-sp-purple/30 transition-all"
+            className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 text-indigo-600 font-bold rounded-2xl hover:border-indigo-600/30 transition-all"
           >
-            <MessageCircle className="w-4 h-4" /> Chat Now
+            <MessageCircle className="w-5 h-5" /> Chat Now
           </button>
           <button
             onClick={() => handleAction('schedule')}
             disabled={!canSchedule}
-            className={`flex items-center gap-2 px-5 py-2.5 bg-white border border-sp-border font-semibold rounded-xl text-sm transition-all ${
+            className={`flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 font-bold rounded-2xl transition-all ${
               canSchedule 
-                ? 'text-sp-text hover:border-sp-purple/30' 
-                : 'text-sp-muted opacity-50 cursor-not-allowed grayscale'
+                ? 'text-gray-900 hover:border-indigo-600/30' 
+                : 'text-gray-300 cursor-not-allowed grayscale'
             }`}
           >
-            <Calendar className="w-4 h-4" /> Schedule Call
+            <Calendar className="w-5 h-5" /> Schedule Call
           </button>
           <button
             onClick={() => handleAction('contact')}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-sp-border text-sp-text font-semibold rounded-xl text-sm hover:border-sp-purple/30 transition-all"
+            className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 text-gray-700 font-bold rounded-2xl hover:border-indigo-600/30 transition-all"
           >
-            <Phone className="w-4 h-4" /> Contact
+            <Phone className="w-5 h-5" /> Contact
           </button>
         </div>
 

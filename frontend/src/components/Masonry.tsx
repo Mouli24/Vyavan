@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { gsap } from 'gsap'
+import gsap from 'gsap'
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 const useMedia = (queries: string[], values: number[], defaultValue: number): number => {

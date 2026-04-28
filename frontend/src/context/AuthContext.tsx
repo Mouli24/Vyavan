@@ -53,12 +53,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('directStoreAccess');
     setToken(null);
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, register, loading, setUser }}>
+    <AuthContext.Provider value={{ user, token, login, googleLogin, logout, register, loading, setUser }}>
       {children}
     </AuthContext.Provider>
   );

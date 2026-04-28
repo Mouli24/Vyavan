@@ -14,7 +14,7 @@ import BuyerNavbar from '@/components/layout/BuyerNavbar'
 const STATUS_PILL: Record<string, string> = {
   Negotiating:        'bg-amber-100 text-amber-700 font-black',
   Waiting:            'bg-slate-100 text-slate-600 font-black',
-  'New Offer':        'bg-violet-100 text-violet-700 font-black',
+  'New Offer':        'bg-[#FCE7D6] text-[#5D4037] font-black',
   Accepted:           'bg-emerald-100 text-emerald-700 font-black',
   Rejected:           'bg-red-100 text-red-600 font-black',
   Expired:            'bg-slate-100 text-slate-400 font-black',
@@ -69,7 +69,7 @@ export default function BuyerNegotiation() {
     if (!input.trim() || !activeDeal) return
 
     if (activeAction === 'reject') {
-       await handleDealAction('Rejected', undefined, input)
+       await handleDealAction('Rejected', undefined, undefined, input)
        setActiveAction(null)
        setInput('')
        return
@@ -81,7 +81,7 @@ export default function BuyerNegotiation() {
          alert('Please enter a valid price for the counter-offer')
          return
        }
-       await handleDealAction('Negotiating', price, 'Buyer sent a counter-offer')
+       await handleDealAction('Negotiating', price, undefined, 'Buyer sent a counter-offer')
        setActiveAction(null)
        setInput('')
        return
@@ -96,7 +96,7 @@ export default function BuyerNegotiation() {
     finally { setSendingMsg(false) }
   }
 
-  const handleDealAction = async (status: string, requestedPrice?: number, customMessage?: string) => {
+  const handleDealAction = async (status: string, requestedPrice?: number, requestedTerm?: string, customMessage?: string) => {
     if (!activeDeal) return
     let message = customMessage || ''
 
@@ -108,7 +108,7 @@ export default function BuyerNegotiation() {
 
     setUpdating(true)
     try {
-      const updated = await api.updateDeal(activeDeal._id, { status, requestedPrice, message } as any)
+      const updated = await api.updateDeal(activeDeal._id, { status, requestedPrice, requestedTerm, message } as any)
       setDeals(prev => prev.map(d => d._id === updated._id ? { ...d, ...updated } : d))
       setActiveDeal(updated)
       setActiveAction(null)
@@ -135,12 +135,44 @@ export default function BuyerNegotiation() {
         city: 'City',
         state: 'State',
         pincode: '000000',
+        payment_term: activeDeal.requestedTerm
       })
       alert('Success! Negotiation converted to order.')
       navigate('/buyer/orders')
     } catch (e) { alert((e as any).message || 'Conversion failed') }
     finally { setUpdating(false) }
   }
+
+  const formatTerm = (term?: string) => {
+    if (!term) return '100% Advance';
+    return term.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+
+  const [newDealContext, setNewDealContext] = useState<any>(null); // Added because it was missing in local but present in incoming
+
+  const handleInitiateDeal = async (requestedPrice: number, requestedTerm: string, quantity: number, message: string) => {
+    if (!newDealContext) return;
+    setUpdating(true);
+    try {
+      const deal = await api.createDeal({
+        manufacturer: (newDealContext.manufacturer as any)._id || newDealContext.manufacturer,
+        product: newDealContext._id,
+        quantity,
+        requestedPrice,
+        requestedTerm,
+        title: `Negotiation for ${newDealContext.name}`,
+        subtitle: `Initial offer for ${quantity} units`,
+        message
+      });
+      setDeals(prev => [deal, ...prev]);
+      setActiveDeal(deal);
+      setNewDealContext(null);
+    } catch (e) {
+      alert((e as any).message || 'Failed to start negotiation');
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   const suggestion = SUGGESTIONS[Math.floor((activeDeal?._id?.charCodeAt(0) || 0) % SUGGESTIONS.length)]
 
@@ -206,8 +238,79 @@ export default function BuyerNegotiation() {
         </div>
       </div>
 
-      {/* ── MIDDLE: Chat ───────────────────────────────────────────────────── */}
-      {activeDeal ? (
+      {/* ── MIDDLE: Chat / Initial Context ─────────────────────────────────── */}
+      {newDealContext ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#FAF8F5]">
+           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-lg w-full bg-white rounded-[2.5rem] shadow-2xl border border-[#E5E1DA] p-10 text-center">
+              <div className="w-24 h-24 bg-[#FCE7D6] rounded-3xl mx-auto mb-6 flex items-center justify-center text-[#6B4E3D] shadow-inner">
+                 <Zap size={48} />
+              </div>
+              <h2 className="text-2xl font-black text-[#1A1A1A] mb-2">Start New Negotiation</h2>
+              <p className="text-sm text-[#A89F91] mb-8 font-medium">You are initiating a negotiation with <b>{(newDealContext.manufacturer as any).company || 'the supplier'}</b> for <b>{newDealContext.name}</b>.</p>
+              
+              <div className="space-y-4 text-left mb-8">
+                 <div>
+                    <label className="block text-[10px] font-black uppercase text-[#A89F91] mb-2 tracking-widest pl-1">Target Quantity</label>
+                    <input 
+                      type="number" 
+                      id="initQty"
+                      defaultValue={newDealContext.moq || 100}
+                      className="w-full h-14 px-6 rounded-2xl border border-[#E5E1DA] bg-[#F5F2ED] focus:outline-none focus:ring-2 focus:ring-[#6B4E3D]/20 font-bold"
+                    />
+                 </div>
+                 <div>
+                    <label className="block text-[10px] font-black uppercase text-[#A89F91] mb-2 tracking-widest pl-1">Target Price (Per Unit)</label>
+                    <div className="relative">
+                      <span className="absolute left-6 top-1/2 -translate-y-1/2 font-bold text-[#A89F91]">₹</span>
+                      <input 
+                        type="number"
+                        id="initPrice"
+                        defaultValue={newDealContext.price}
+                        className="w-full h-14 pl-10 pr-6 rounded-2xl border border-[#E5E1DA] bg-[#F5F2ED] focus:outline-none focus:ring-2 focus:ring-[#6B4E3D]/20 font-bold"
+                      />
+                    </div>
+                 </div>
+                 <div>
+                    <label className="block text-[10px] font-black uppercase text-[#A89F91] mb-2 tracking-widest pl-1">Payment Term</label>
+                    <select
+                      id="initTerm"
+                      className="w-full h-14 px-6 rounded-2xl border border-[#E5E1DA] bg-[#F5F2ED] focus:outline-none focus:ring-2 focus:ring-[#6B4E3D]/20 font-bold text-sm appearance-none cursor-pointer"
+                    >
+                      <option value="advance_100">100% Advance</option>
+                      <option value="split_50_50">50-50 Split</option>
+                      <option value="net_15">Net 15 (Credit)</option>
+                      <option value="net_30">Net 30 (Credit)</option>
+                    </select>
+                 </div>
+                 <div>
+                    <label className="block text-[10px] font-black uppercase text-[#A89F91] mb-2 tracking-widest pl-1">Optional Message</label>
+                    <textarea 
+                      id="initMsg"
+                      placeholder="Add any specific requirements or context..."
+                      className="w-full h-24 px-6 py-4 rounded-2xl border border-[#E5E1DA] bg-[#F5F2ED] focus:outline-none focus:ring-2 focus:ring-[#6B4E3D]/20 font-medium text-sm"
+                    />
+                 </div>
+              </div>
+
+              <div className="flex gap-3">
+                 <button onClick={() => { setNewDealContext(null); if (deals.length > 0) setActiveDeal(deals[0]); }} className="flex-1 h-14 rounded-2xl bg-[#F5F2ED] text-[#6B4E3D] font-bold hover:bg-[#E5E1DA] transition-all">Cancel</button>
+                 <button 
+                   onClick={() => {
+                     const qty = (document.getElementById('initQty') as HTMLInputElement).value;
+                     const prc = (document.getElementById('initPrice') as HTMLInputElement).value;
+                     const term = (document.getElementById('initTerm') as HTMLSelectElement).value;
+                     const msg = (document.getElementById('initMsg') as HTMLTextAreaElement).value;
+                     handleInitiateDeal(parseInt(prc), term, parseInt(qty), msg);
+                   }}
+                   disabled={updating}
+                   className="flex-1 h-14 rounded-2xl bg-[#6B4E3D] text-white font-black uppercase tracking-widest hover:bg-[#5D4037] transition-all shadow-lg shadow-[#6B4E3D]/20 flex items-center justify-center"
+                 >
+                   {updating ? <Loader2 className="animate-spin" /> : 'Request Quote'}
+                 </button>
+              </div>
+           </motion.div>
+        </div>
+      ) : activeDeal ? (
         <div className="flex-1 flex flex-col min-w-0 bg-[#FAF8F5]">
           {/* Header */}
           <div className="flex-shrink-0 h-16 px-6 flex items-center justify-between border-b bg-white" style={{ borderColor: '#E5E1DA' }}>
@@ -262,7 +365,7 @@ export default function BuyerNegotiation() {
                 </div>
                 <h3 className="text-base font-black text-[#1A1A1A] mb-1">Deal Accepted!</h3>
                 <p className="text-xs text-[#A89F91] mb-6">Price locked at <b>{activeDeal.price}</b>. You have 24 hours to proceed.</p>
-                <button onClick={handleConvertToOrder} disabled={updating}
+                <button onClick={() => handleConvertToOrder(activeDeal.requestedTerm)} disabled={updating}
                   className="w-full h-14 rounded-2xl bg-emerald-600 text-white font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
                   {updating ? <Loader2 size={16} className="animate-spin" /> : <Package size={16} />}
                   Confirm Order
@@ -297,7 +400,7 @@ export default function BuyerNegotiation() {
               <button onClick={handleSend} disabled={!input.trim() || sendingMsg}
                 className="px-5 py-2 rounded-full text-xs font-black text-white hover:opacity-95 transition-all"
                 style={{ background: activeAction ? '#EA580C' : '#6B4E3D' }}>
-                {activeAction ? 'Confirm' : 'Send'}
+                {sendingMsg ? <Loader2 size={14} className="animate-spin" /> : (activeAction ? 'Confirm' : 'Send')}
               </button>
             </div>
           </div>
@@ -370,12 +473,12 @@ export default function BuyerNegotiation() {
 
               {/* Suggestions */}
               <div className="p-5 mt-auto">
-                 <div className="bg-[#F3F0FF] rounded-2xl p-4 border border-[#E9E4FF]">
-                    <div className="flex items-center gap-2 mb-2 text-[#7C3AED]">
+                 <div className="bg-[#FCE7D6] rounded-2xl p-4 border border-[#F9D5B8]">
+                    <div className="flex items-center gap-2 mb-2 text-[#5D4037]">
                        <Sparkles size={14} />
                        <span className="text-[10px] font-black tracking-widest uppercase">Smart Suggestion</span>
                     </div>
-                    <p className="text-[11px] leading-relaxed italic text-[#5B21B6]">{suggestion}</p>
+                    <p className="text-[11px] leading-relaxed italic text-[#6B4E3D]">{suggestion}</p>
                  </div>
               </div>
             </>
@@ -406,6 +509,33 @@ export default function BuyerNegotiation() {
                   <div>
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-[#A89F91] mb-2">Buyer (Customer)</h4>
                     <p className="text-sm font-black text-[#1A1A1A]">{user?.name} (You)</p>
+                  </div>
+                  
+                  <div className="col-span-2 relative pl-6 space-y-6">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-[#A89F91] mb-2">Negotiation History</h4>
+                    {/* Vertical line */}
+                    <div className="absolute left-2 top-10 bottom-2 w-0.5 bg-[#E5E1DA]" />
+                    
+                    {[(activeDeal as any).negotiationHistory || []].flat().length === 0 ? (
+                      <div className="text-[10px] text-[#A89F91] font-bold uppercase italic py-4">No previous rounds</div>
+                    ) : (activeDeal as any).negotiationHistory.map((h: any, idx: number) => (
+                      <div key={idx} className="relative">
+                        <div className={`absolute -left-[1.375rem] top-1 w-3 h-3 rounded-full border-2 border-white shadow-sm ${h.offeredBy === 'buyer' ? 'bg-[#6B4E3D]' : 'bg-[#D4C4B8]'}`} />
+                        <div>
+                          <div className="flex justify-between items-baseline mb-1">
+                            <span className="text-[11px] font-black text-[#1A1A1A] uppercase tracking-tighter">Round {h.round}</span>
+                            <span className="text-[10px] text-[#A89F91]">{new Date(h.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                          </div>
+                          <div className="bg-[#FAF8F5] border border-[#E5E1DA] rounded-xl p-3">
+                            <p className="text-base font-black text-[#1A1A1A]">₹{h.price?.toLocaleString()}</p>
+                            <p className="text-[10px] text-[#6B4E3D] font-bold uppercase tracking-widest mt-0.5">
+                              {formatTerm(h.term)}
+                            </p>
+                            <p className="text-[10px] text-[#A89F91] mt-1 font-medium leading-tight line-clamp-2">By {h.offeredBy}: {h.message}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
                 <div className="border-t pt-8">

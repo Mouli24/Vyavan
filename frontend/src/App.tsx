@@ -34,6 +34,8 @@ import Onboarding             from './pages/manufacturer/Onboarding'
 import ManufacturerSettings   from './pages/manufacturer/ManufacturerSettings'
 import ScheduledCalls         from './pages/manufacturer/ScheduledCalls'
 import HolidaySettings        from './pages/manufacturer/HolidaySettings'
+import PaymentSettingsPage    from './pages/manufacturer/PaymentSettingsPage'
+import ReceivablesDashboard   from './pages/manufacturer/ReceivablesDashboard'
 import ManufacturerReviews     from './pages/manufacturer/ManufacturerReviews'
 import ManufacturerGroups      from './pages/manufacturer/ManufacturerGroups'
 import BuyerPool                from './pages/manufacturer/BuyerPool'
@@ -124,28 +126,30 @@ export default function App() {
         {/* Search accessible without login */}
         <Route path="/browse" element={<BuyerBrowse />} />
 
-        {/* ── Manufacturer routes ── */}
-        <Route path="/manufacturer" element={
-          <ProtectedRoute allowedRole="manufacturer">
-            <ManufacturerLayout />
-          </ProtectedRoute>
-        }>
-          <Route index element={<Navigate to="overview" replace />} />
-          <Route path="overview"     element={<Overview />} />
-          <Route path="store"        element={<MyStore />} />
-          <Route path="orders"       element={<ManufacturerOrders />} />
-          <Route path="inventory"    element={<Inventory />} />
-          <Route path="shipment"     element={<Shipment />} />
-          <Route path="negotiation"  element={<Negotiation />} />
-          <Route path="payment"      element={<Payment />} />
-          <Route path="complaints"   element={<Complaints />} />
-          <Route path="scheduled-calls" element={<ScheduledCalls />} />
-          <Route path="holidays"        element={<HolidaySettings />} />
-          <Route path="settings"        element={<ManufacturerSettings />} />
-          <Route path="reviews"         element={<ManufacturerReviews />} />
-          <Route path="groups"          element={<ManufacturerGroups />} />
-          <Route path="groups/pool"     element={<BuyerPool />} />
-        </Route>
+      {/* ── Manufacturer routes ── */}
+      <Route path="/manufacturer" element={
+        <ProtectedRoute allowedRole="manufacturer">
+          <ManufacturerLayout />
+        </ProtectedRoute>
+      }>
+        <Route index element={<Navigate to="overview" replace />} />
+        <Route path="overview"     element={<Overview />} />
+        <Route path="store"        element={<MyStore />} />
+        <Route path="orders"       element={<ManufacturerOrders />} />
+        <Route path="inventory"    element={<Inventory />} />
+        <Route path="shipment"     element={<Shipment />} />
+        <Route path="negotiation"  element={<Negotiation />} />
+        <Route path="payment"      element={<Payment />} />
+        <Route path="complaints"   element={<Complaints />} />
+        <Route path="scheduled-calls" element={<ScheduledCalls />} />
+        <Route path="holidays"        element={<HolidaySettings />} />
+        <Route path="settings"        element={<ManufacturerSettings />} />
+        <Route path="settings/payments" element={<PaymentSettingsPage />} />
+        <Route path="receivables"     element={<ReceivablesDashboard />} />
+        <Route path="reviews"         element={<ManufacturerReviews />} />
+        <Route path="groups"          element={<ManufacturerGroups />} />
+        <Route path="groups/pool"     element={<BuyerPool />} />
+      </Route>
 
         <Route path="/manufacturer/onboarding" element={
           <ProtectedRoute allowedRole="manufacturer">

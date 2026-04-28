@@ -12,6 +12,7 @@ const dealSchema = new mongoose.Schema({
   product:        { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
   quantity:       { type: Number, default: 1 },
   requestedPrice: { type: Number },          // current offered price per unit
+  requestedTerm:  { type: String, default: 'advance_100' }, // current offered term
   floorPrice:     { type: Number },          // manufacturer secret minimum (never sent to buyer)
   round:          { type: Number, default: 1 },
   maxRounds:      { type: Number, default: 5 },
@@ -25,6 +26,7 @@ const dealSchema = new mongoose.Schema({
     round:       { type: Number },
     offeredBy:   { type: String, enum: ['buyer', 'manufacturer'] },
     price:       { type: Number },
+    term:        { type: String },
     message:     { type: String },
     createdAt:   { type: Date, default: Date.now },
   }],
