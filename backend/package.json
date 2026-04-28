@@ -4,6 +4,9 @@
   "description": "B2B platform REST API",
   "main": "server.js",
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "tsx watch server.js",
