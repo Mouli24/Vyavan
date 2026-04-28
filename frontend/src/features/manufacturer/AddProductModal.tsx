@@ -110,6 +110,9 @@ export default function AddProductModal({ open, onClose, onPublished, editProduc
         sector: (editProduct as any).sector ?? '',
         unitType: editProduct.unit ?? 'Piece',
         unitsPerPack: (editProduct as any).unitsPerPack ?? '',
+        sampleEnabled: (editProduct as any).sampleEnabled ?? false,
+        samplePrice: (editProduct as any).samplePrice ?? '',
+        sampleMaxUnits: (editProduct as any).sampleMaxUnits ?? 1,
       })
       setListingMode('manual')
     } else if (open && !editProduct) {
@@ -722,6 +725,29 @@ function Step4({ form, set, updateSlab, addSlab, removeSlab }: any) {
           </div>
         ))}
         <button onClick={addSlab} className="text-xs font-bold text-blue-600">+ Add Slab</button>
+      </div>
+
+      <div className="pt-4 border-t border-slate-100">
+        <label className="flex items-center gap-3 cursor-pointer group">
+          <div className={`w-10 h-5 rounded-full transition-colors relative ${form.sampleEnabled ? 'bg-green-500' : 'bg-slate-200'}`}>
+            <input type="checkbox" checked={form.sampleEnabled} onChange={e => set('sampleEnabled', e.target.checked)} className="hidden" />
+            <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${form.sampleEnabled ? 'left-6' : 'left-1'}`} />
+          </div>
+          <span className="text-sm font-bold text-slate-700">Enable Sample Requests</span>
+        </label>
+        
+        {form.sampleEnabled && (
+          <div className="grid grid-cols-2 gap-4 mt-4 animate-in slide-in-from-top-2 duration-200">
+            <div>
+              <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Sample Price (₹)</label>
+              <input type="number" value={form.samplePrice} onChange={e => set('samplePrice', e.target.value === '' ? '' : Number(e.target.value))} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-green-500/20" placeholder="0 for free" />
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Max Units / Request</label>
+              <input type="number" value={form.sampleMaxUnits} onChange={e => set('sampleMaxUnits', Number(e.target.value))} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-green-500/20" />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -41,7 +41,7 @@ export default function CompanyStorefront() {
         navigate('/buyer/checkout')
       }).catch(e => alert(e.message ?? 'Failed to add to cart'))
     } else if (type === 'schedule') {
-      navigate('/buyer/schedule')
+      navigate(`/buyer/schedule?manufacturer=${mfrId}`)
     }
   }
 

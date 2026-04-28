@@ -4,7 +4,7 @@ import {
   Calendar, Clock, Video, Phone, CheckCircle,
   XCircle, Plus,
 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import BuyerNavbar from '@/components/layout/BuyerNavbar'
 
@@ -18,6 +18,9 @@ const STATUS_MAP: Record<string, string> = {
 export default function ScheduleCall() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const [searchParams] = useSearchParams()
+  const mfrIdFromUrl = searchParams.get('manufacturer')
+  
   const [calls, setCalls] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showBookModal, setShowBookModal] = useState(false)
@@ -33,23 +36,26 @@ export default function ScheduleCall() {
   const [isLocked, setIsLocked] = useState(false)
 
   useEffect(() => {
+    setLoading(true)
     Promise.all([
       api.getScheduledCalls(),
-      api.getCompanies({ limit: 20 }),
+      api.getCompanies({ limit: 50 }),
     ]).then(([callData, mfrData]) => {
       setCalls(callData)
-      setManufacturers(mfrData.data ?? [])
+      const list = mfrData.data ?? []
+      setManufacturers(list)
       
-      const storeAccess = localStorage.getItem('directStoreAccess')
-      if (storeAccess) {
-        const found = (mfrData.data ?? []).find((m: any) => m._id === storeAccess || m.company === storeAccess)
+      const targetMfr = mfrIdFromUrl || localStorage.getItem('directStoreAccess')
+      if (targetMfr) {
+        const found = list.find((m: any) => m._id === targetMfr || m.company === targetMfr)
         if (found) {
           setSelectedMfr(found._id)
           setIsLocked(true)
+          if (mfrIdFromUrl) setShowBookModal(true) // Auto-open modal if from storefront
         }
       }
     }).catch(console.error).finally(() => setLoading(false))
-  }, [])
+  }, [mfrIdFromUrl])
 
   const handleBook = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -188,20 +194,33 @@ export default function ScheduleCall() {
             <form onSubmit={handleBook} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">Manufacturer</label>
-                <select
-                  value={selectedMfr}
-                  onChange={e => setSelectedMfr(e.target.value)}
-                  required
-                  disabled={isLocked}
-                  className={`w-full px-3 py-3 border border-[#E5E1DA] rounded-xl text-sm focus:outline-none focus:border-[#5D4037] ${isLocked ? 'bg-slate-100 text-slate-500 cursor-not-allowed opacity-80' : 'bg-[#FAF8F5]'}`}
-                >
-                  <option value="">Select manufacturer...</option>
-                  {manufacturers.map(m => (
-                    <option key={m._id} value={m._id}>
-                      {m.company ?? m.name} — {m.location}
-                    </option>
-                  ))}
-                </select>
+                {isLocked ? (
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <div className="w-10 h-10 rounded-full bg-[#5D4037] flex items-center justify-center text-white font-bold text-xs">
+                      {manufacturers.find(m => m._id === selectedMfr)?.company?.[0] || 'M'}
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-slate-900">
+                        {manufacturers.find(m => m._id === selectedMfr)?.company || 'Selected Manufacturer'}
+                      </p>
+                      <p className="text-[10px] text-slate-400 capitalize">Direct Sourcing Access Enabled</p>
+                    </div>
+                  </div>
+                ) : (
+                  <select
+                    value={selectedMfr}
+                    onChange={e => setSelectedMfr(e.target.value)}
+                    required
+                    className="w-full px-3 py-3 bg-[#FAF8F5] border border-[#E5E1DA] rounded-xl text-sm focus:outline-none focus:border-[#5D4037]"
+                  >
+                    <option value="">Select manufacturer...</option>
+                    {manufacturers.map(m => (
+                      <option key={m._id} value={m._id}>
+                        {m.company ?? m.name} — {m.location}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div>
