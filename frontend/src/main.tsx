@@ -6,7 +6,7 @@ import App from './App.tsx'
 import { AuthProvider } from './context/AuthContext.tsx'
 import './index.css'
 
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'dummy-client-id-to-prevent-crash.apps.googleusercontent.com';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
