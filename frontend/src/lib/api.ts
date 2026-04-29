@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL ?? 'https://vyavan-api-production.up.railway.app/api';
+const BASE = import.meta.env.VITE_API_URL || 'https://vyavan-api-production.up.railway.app/api';
 
 function getToken() {
   return localStorage.getItem('token');
@@ -88,7 +88,7 @@ export const api = {
     if (back) formData.append('back', back);
     
     const token = localStorage.getItem('token');
-    const base = import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api';
+    const base = BASE;
     
     const res = await fetch(`${base}/product-lister/analyze`, {
       method: 'POST',
@@ -278,7 +278,7 @@ export const api = {
 
   downloadManufacturerReport: async (period: string = '6months') => {
     const token = localStorage.getItem('token');
-    const base = import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api';
+    const base = BASE;
     const res = await fetch(`${base}/manufacturer/payment/report?format=pdf&period=${period}`, {
       headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
     });
