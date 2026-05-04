@@ -146,8 +146,9 @@ export default function BuyerNavbar({ activePage }: Props) {
             </AnimatePresence>
           </div>
         </div>
-      </header>
-      <ProfileEditModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
+      </div>
+    </header>
+    <ProfileEditModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
     </>
   )
 }
