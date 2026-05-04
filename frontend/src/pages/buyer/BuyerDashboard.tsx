@@ -12,6 +12,8 @@ import { api, Product } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import NotificationBell from '@/components/NotificationBell'
 import VyawanLogo from '@/components/VyawanLogo'
+import HelpCenterModal from '@/components/HelpCenterModal'
+import ProfileEditModal from '@/components/ProfileEditModal'
 
 // ── Category color map ────────────────────────────────────────────────────
 const CAT_COLOR: Record<string, string> = {
@@ -70,6 +72,8 @@ export default function BuyerDashboard() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [rewards, setRewards] = useState<any[]>([])
   const [accountOpen, setAccountOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   useEffect(() => {
     const directAccessCode = localStorage.getItem('directStoreAccess');
@@ -208,12 +212,20 @@ export default function BuyerDashboard() {
                       <p className="text-xs text-slate-400 truncate">{user?.email}</p>
                     </div>
                     {[
+                      { label: 'Profile Settings', onClick: () => setProfileOpen(true) },
                       { label: 'My Orders', path: '/buyer/orders' },
                       { label: 'Negotiations', path: '/buyer/negotiation' },
                       { label: 'Shipments', path: '/buyer/shipments' },
                     ].map(item => (
-                      <button key={item.label} onClick={() => { setAccountOpen(false); navigate(item.path); }}
-                        className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
+                      <button 
+                        key={item.label} 
+                        onClick={() => { 
+                          setAccountOpen(false); 
+                          if (item.onClick) item.onClick();
+                          else navigate(item.path!); 
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                      >
                         {item.label}
                       </button>
                     ))}
@@ -560,14 +572,14 @@ export default function BuyerDashboard() {
             <h4 className="text-sm font-black text-slate-800 mb-3">Support</h4>
             <ul className="space-y-2">
               {[
-                { label: 'Help Center',       to: '/buyer/dashboard'  },
-                { label: 'Contact Us',        to: '/buyer/dashboard'  },
+                { label: 'Help Center',       onClick: () => setHelpOpen(true) },
+                { label: 'Contact Us',        onClick: () => setHelpOpen(true) },
                 { label: 'Shipping Info',     to: '/buyer/shipments'  },
                 { label: 'Returns & Refunds', to: '/buyer/orders'     },
-              ].map(({ label, to }) => (
+              ].map(({ label, to, onClick }) => (
                 <li key={label}>
                   <button
-                    onClick={() => navigate(to)}
+                    onClick={() => onClick ? onClick() : navigate(to!)}
                     className="text-sm text-slate-500 transition-colors hover:text-[#5D4037]"
                   >{label}</button>
                 </li>
@@ -854,6 +866,8 @@ export default function BuyerDashboard() {
           </>
         )}
       </AnimatePresence>
+      <HelpCenterModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} role="buyer" />
+      <ProfileEditModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   )
 }

@@ -90,6 +90,33 @@ export default function Overview() {
     { name: 'Brass Hardware Set', pct: 45, color: '#3B82F6', warn: false },
   ]
 
+  const handleExport = () => {
+    if (orders.length === 0) {
+      alert('No data to export.')
+      return
+    }
+    const headers = ['Order ID', 'Buyer', 'Items', 'Value', 'Status', 'Expected Date']
+    const rows = orders.map(o => [
+      `"${o.orderId}"`,
+      `"${o.buyer?.name || 'Unknown'}"`,
+      `"${o.items}"`,
+      `"${o.value}"`,
+      `"${o.status}"`,
+      `"${o.expectedDate || ''}"`
+    ].join(','))
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `Manufacturer_Overview_Report_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="flex-1 overflow-y-auto" style={{ background: '#FAF8F5' }}>
       <div className="p-4 sm:p-6 lg:p-8">
@@ -192,6 +219,7 @@ export default function Overview() {
           </div>
           <div className="flex items-center gap-2.5 flex-shrink-0">
             <button
+              onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-sm font-medium hover:bg-slate-50 transition-all shadow-sm"
             >
               <Download size={15} /> Export Report

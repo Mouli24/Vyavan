@@ -48,7 +48,11 @@ const io = new Server(server, {
 const allowedOrigins = [
   process.env.CLIENT_ORIGIN,
   'http://localhost:5173',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  'http://localhost:4173',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:4173',
 ];
 
 app.use(cors({
@@ -59,7 +63,12 @@ app.use(cors({
     const isAllowed =
       allowedOrigins.includes(origin) ||
       origin.includes('vercel.app') ||
-      origin.includes('netlify.app');
+      origin.includes('netlify.app') ||
+      /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin) ||
+      /^http:\/\/localhost(:\d+)?$/.test(origin) ||
+      /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin) ||
+      /^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+(:\d+)?$/.test(origin) ||
+      /^http:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/.test(origin);
 
     if (isAllowed || process.env.NODE_ENV !== 'production') {
       return callback(null, true);

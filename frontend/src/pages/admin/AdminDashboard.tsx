@@ -30,7 +30,7 @@ interface Stats {
   }
 }
 
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') ?? 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') ?? 'https://vyavan-api-production.up.railway.app';
 
 function StatCard({
   icon: Icon, label, value, subCounts, color, bgColor, onClick, highlight = false

@@ -1,70 +1,71 @@
+import React, { Suspense, lazy } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import './i18n' // Import i18n configuration
 
 // Pages
-import HomePage               from './pages/HomePage'
-import LoginPage              from './pages/LoginPage'
+const HomePage               = lazy(() => import('./pages/HomePage'))
+const LoginPage              = lazy(() => import('./pages/LoginPage'))
 
 // Layouts
-import BuyerLayout            from './components/layout/BuyerLayout'
-import ManufacturerLayout     from './components/layout/ManufacturerLayout'
-import AdminLayout            from './components/layout/AdminLayout'
+const BuyerLayout            = lazy(() => import('./components/layout/BuyerLayout'))
+const ManufacturerLayout     = lazy(() => import('./components/layout/ManufacturerLayout'))
+const AdminLayout            = lazy(() => import('./components/layout/AdminLayout'))
 
 // Buyer pages
-import BuyerDashboard         from './pages/buyer/BuyerDashboard'
-import BuyerBrowse            from './pages/buyer/BuyerBrowse'
-import BuyerOrders            from './pages/buyer/BuyerOrders'
-import ScheduleCall           from './pages/buyer/ScheduleCall'
-import BuyerComplaints        from './pages/buyer/BuyerComplaints'
-import BuyerShipments         from './pages/buyer/BuyerShipments'
-import BuyerCheckout          from './pages/buyer/BuyerCheckout'
-import BuyerNegotiation       from './pages/buyer/BuyerNegotiation'
+const BuyerDashboard         = lazy(() => import('./pages/buyer/BuyerDashboard'))
+const BuyerBrowse            = lazy(() => import('./pages/buyer/BuyerBrowse'))
+const BuyerOrders            = lazy(() => import('./pages/buyer/BuyerOrders'))
+const ScheduleCall           = lazy(() => import('./pages/buyer/ScheduleCall'))
+const BuyerComplaints        = lazy(() => import('./pages/buyer/BuyerComplaints'))
+const BuyerShipments         = lazy(() => import('./pages/buyer/BuyerShipments'))
+const BuyerCheckout          = lazy(() => import('./pages/buyer/BuyerCheckout'))
+const BuyerNegotiation       = lazy(() => import('./pages/buyer/BuyerNegotiation'))
 
 // Manufacturer pages
-import Overview               from './pages/manufacturer/Overview'
-import MyStore                from './pages/manufacturer/MyStore'
-import ManufacturerOrders     from './pages/manufacturer/ManufacturerOrders'
-import Inventory              from './pages/manufacturer/Inventory'
-import Shipment               from './pages/manufacturer/Shipment'
-import Negotiation            from './pages/manufacturer/Negotiation'
-import Payment                from './pages/manufacturer/Payment'
-import Complaints             from './pages/manufacturer/Complaints'
-import Onboarding             from './pages/manufacturer/Onboarding'
-import ManufacturerSettings   from './pages/manufacturer/ManufacturerSettings'
-import ScheduledCalls         from './pages/manufacturer/ScheduledCalls'
-import HolidaySettings        from './pages/manufacturer/HolidaySettings'
-import PaymentSettingsPage    from './pages/manufacturer/PaymentSettingsPage'
-import ReceivablesDashboard   from './pages/manufacturer/ReceivablesDashboard'
-import ManufacturerReviews     from './pages/manufacturer/ManufacturerReviews'
-import ManufacturerGroups      from './pages/manufacturer/ManufacturerGroups'
-import BuyerPool                from './pages/manufacturer/BuyerPool'
+const Overview               = lazy(() => import('./pages/manufacturer/Overview'))
+const MyStore                = lazy(() => import('./pages/manufacturer/MyStore'))
+const ManufacturerOrders     = lazy(() => import('./pages/manufacturer/ManufacturerOrders'))
+const Inventory              = lazy(() => import('./pages/manufacturer/Inventory'))
+const Shipment               = lazy(() => import('./pages/manufacturer/Shipment'))
+const Negotiation            = lazy(() => import('./pages/manufacturer/Negotiation'))
+const Payment                = lazy(() => import('./pages/manufacturer/Payment'))
+const Complaints             = lazy(() => import('./pages/manufacturer/Complaints'))
+const Onboarding             = lazy(() => import('./pages/manufacturer/Onboarding'))
+const ManufacturerSettings   = lazy(() => import('./pages/manufacturer/ManufacturerSettings'))
+const ScheduledCalls         = lazy(() => import('./pages/manufacturer/ScheduledCalls'))
+const HolidaySettings        = lazy(() => import('./pages/manufacturer/HolidaySettings'))
+const PaymentSettingsPage    = lazy(() => import('./pages/manufacturer/PaymentSettingsPage'))
+const ReceivablesDashboard   = lazy(() => import('./pages/manufacturer/ReceivablesDashboard'))
+const ManufacturerReviews     = lazy(() => import('./pages/manufacturer/ManufacturerReviews'))
+const ManufacturerGroups      = lazy(() => import('./pages/manufacturer/ManufacturerGroups'))
+const BuyerPool                = lazy(() => import('./pages/manufacturer/BuyerPool'))
 
 // Admin pages
-import AdminDashboard         from './pages/admin/AdminDashboard'
-import AdminManufacturers     from './pages/admin/AdminManufacturers'
-import AdminVerification      from './pages/admin/AdminVerification'
-import AdminComplaints        from './pages/admin/AdminComplaints'
-import AdminAnalytics         from './pages/admin/AdminAnalytics'
-import AdminBuyers            from './pages/admin/AdminBuyers'
-import AdminOrders            from './pages/admin/AdminOrders'
-import AdminSettings          from './pages/admin/AdminSettings'
-import AdminPayments          from './pages/admin/AdminPayments'
-import AdminContent           from './pages/admin/AdminContent'
-import AdminComingSoon        from './pages/admin/AdminComingSoon'
-import AdminManufacturerDetail from './pages/admin/AdminManufacturerDetail'
-import AdminBuyerDetail      from './pages/admin/AdminBuyerDetail'
-import AdminBuyerVerification from './pages/admin/AdminBuyerVerification'
-import AdminGlobalActivity   from './pages/admin/AdminGlobalActivity'
-import AdminFraudCenter      from './pages/admin/AdminFraudCenter'
-import AdminOrderDetail      from './pages/admin/AdminOrderDetail'
-import AdminStuckOrders      from './pages/admin/AdminStuckOrders'
-import AdminDisputeResolution from './pages/admin/AdminDisputeResolution'
-import AdminReturns           from './pages/admin/AdminReturns'
-import AdminPlans             from './pages/admin/AdminPlans'
+const AdminDashboard         = lazy(() => import('./pages/admin/AdminDashboard'))
+const AdminManufacturers     = lazy(() => import('./pages/admin/AdminManufacturers'))
+const AdminVerification      = lazy(() => import('./pages/admin/AdminVerification'))
+const AdminComplaints        = lazy(() => import('./pages/admin/AdminComplaints'))
+const AdminAnalytics         = lazy(() => import('./pages/admin/AdminAnalytics'))
+const AdminBuyers            = lazy(() => import('./pages/admin/AdminBuyers'))
+const AdminOrders            = lazy(() => import('./pages/admin/AdminOrders'))
+const AdminSettings          = lazy(() => import('./pages/admin/AdminSettings'))
+const AdminPayments          = lazy(() => import('./pages/admin/AdminPayments'))
+const AdminContent           = lazy(() => import('./pages/admin/AdminContent'))
+const AdminComingSoon        = lazy(() => import('./pages/admin/AdminComingSoon'))
+const AdminManufacturerDetail = lazy(() => import('./pages/admin/AdminManufacturerDetail'))
+const AdminBuyerDetail      = lazy(() => import('./pages/admin/AdminBuyerDetail'))
+const AdminBuyerVerification = lazy(() => import('./pages/admin/AdminBuyerVerification'))
+const AdminGlobalActivity   = lazy(() => import('./pages/admin/AdminGlobalActivity'))
+const AdminFraudCenter      = lazy(() => import('./pages/admin/AdminFraudCenter'))
+const AdminOrderDetail      = lazy(() => import('./pages/admin/AdminOrderDetail'))
+const AdminStuckOrders      = lazy(() => import('./pages/admin/AdminStuckOrders'))
+const AdminDisputeResolution = lazy(() => import('./pages/admin/AdminDisputeResolution'))
+const AdminReturns           = lazy(() => import('./pages/admin/AdminReturns'))
+const AdminPlans             = lazy(() => import('./pages/admin/AdminPlans'))
 
 // Public pages
-import CompanyStorefront      from './pages/company/CompanyStorefront'
+const CompanyStorefront      = lazy(() => import('./pages/company/CompanyStorefront'))
 
 // ── Protected route wrapper ──────────────────────────────────────────────────
 function ProtectedRoute({
@@ -97,9 +98,13 @@ function ProtectedRoute({
 
 export default function App() {
   return (
-    <>
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-8 h-8 border-2 border-sp-purple border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
       <Routes>
-        {/* ── Public routes ── */}
+        {/* ... existing routes ... */}
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
 
@@ -197,6 +202,6 @@ export default function App() {
         {/* ── Catch-all ── */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </>
+    </Suspense>
   )
 }

@@ -35,6 +35,8 @@ export default function BuyerOrders() {
   const [statusFilter, setStatusFilter] = useState('')
   const [selected, setSelected] = useState<Order | null>(null)
   const [reviewOrder, setReviewOrder] = useState<Order | null>(null)
+  const [complaintOrder, setComplaintOrder] = useState<Order | null>(null)
+  const [returnOrder, setReturnOrder] = useState<Order | null>(null)
 
   useEffect(() => {
     api.getOrders(statusFilter ? { status: statusFilter } : undefined)
@@ -224,10 +226,9 @@ export default function BuyerOrders() {
                     onClick={async () => {
                       if (!confirm('Are you sure you have received the products in good condition? This will release the escrow payment.')) return;
                       try {
-                        // Mock API call
-                        await new Promise(r => setTimeout(r, 1000));
-                        setOrders(prev => prev.map(o => o._id === selected._id ? { ...o, status: 'Delivered' } : o));
-                        setSelected(prev => prev ? { ...prev, status: 'Delivered' } : null);
+                        await api.markDelivered(selected._id);
+                        setOrders(prev => prev.map(o => o._id === selected._id ? { ...o, status: 'Delivered', deliveredAt: new Date().toISOString() } : o));
+                        setSelected(prev => prev ? { ...prev, status: 'Delivered', deliveredAt: new Date().toISOString() } : null);
                         alert('Order marked as Delivered. Payment released to manufacturer.');
                       } catch (e) {
                         alert('Failed to update status.');
@@ -242,15 +243,79 @@ export default function BuyerOrders() {
                   </p>
                 </div>
               )}
+
+              {selected.status === 'Delivered' && (
+                <div className="pt-6 space-y-3">
+                   <div className="flex gap-3">
+                      {!selected.isReviewed && (
+                        <button 
+                          onClick={() => setReviewOrder(selected)}
+                          className="flex-1 py-3.5 bg-emerald-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                        >
+                          <Star className="w-4 h-4 fill-current" /> Rate Now
+                        </button>
+                      )}
+                      
+                      {(() => {
+                        const deliveredAt = selected.deliveredAt ? new Date(selected.deliveredAt).getTime() : 0;
+                        const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
+                        const canReturn = deliveredAt > 0 && (Date.now() - deliveredAt) < threeDaysInMs;
+                        
+                        return canReturn && selected.status !== 'Return Requested' && (
+                          <button 
+                            onClick={() => setReturnOrder(selected)}
+                            className="flex-1 py-3.5 bg-amber-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-amber-600 transition-all flex items-center justify-center gap-2"
+                          >
+                            <RotateCcw className="w-4 h-4" /> Return Items
+                          </button>
+                        );
+                      })()}
+                   </div>
+
+                   <button 
+                     onClick={() => setComplaintOrder(selected)}
+                     className="w-full py-3.5 bg-white border border-red-200 text-red-600 font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-red-50 transition-all flex items-center justify-center gap-2"
+                   >
+                     <XCircle className="w-4 h-4" /> Raise Complaint
+                   </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
+
       {/* Review Modal */}
       {reviewOrder && <ReviewModal order={reviewOrder} onClose={() => setReviewOrder(null)} onDone={(rev) => {
         setOrders(prev => prev.map(o => o._id === reviewOrder._id ? { ...o, isReviewed: true, review: rev._id } : o));
         setReviewOrder(null);
+        if (selected?._id === reviewOrder._id) setSelected(prev => prev ? { ...prev, isReviewed: true } : null);
       }} />}
+
+      {/* Complaint Modal */}
+      {complaintOrder && (
+        <ComplaintModal 
+          order={complaintOrder} 
+          onClose={() => setComplaintOrder(null)} 
+          onDone={() => {
+            setComplaintOrder(null);
+            alert('Complaint filed successfully. Manufacturer has been notified.');
+          }} 
+        />
+      )}
+
+      {/* Return Modal */}
+      {returnOrder && (
+        <ReturnModal 
+          order={returnOrder} 
+          onClose={() => setReturnOrder(null)} 
+          onDone={() => {
+            setOrders(prev => prev.map(o => o._id === returnOrder._id ? { ...o, status: 'Return Requested' } : o));
+            if (selected?._id === returnOrder._id) setSelected(prev => prev ? { ...prev, status: 'Return Requested' } : null);
+            setReturnOrder(null);
+          }} 
+        />
+      )}
     </div>
   )
 }
@@ -342,3 +407,149 @@ function ReviewModal({ order, onClose, onDone }: { order: Order; onClose: () => 
   );
 }
 
+function ComplaintModal({ order, onClose, onDone }: { order: Order; onClose: () => void; onDone: () => void }) {
+  const [category, setCategory] = useState('Product Quality');
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!description) return alert('Please provide details');
+    try {
+      setLoading(true);
+      await api.fileComplaint({
+        title: `Complaint for Order ${order.orderId}`,
+        description,
+        category,
+        manufacturer: (order.manufacturer as any)._id || order.manufacturer,
+        company: (order.manufacturer as any).company || 'Manufacturer',
+        orderId: order.orderId,
+      } as any);
+      onDone();
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
+        <div className="p-6 border-b border-[#E5E1DA] flex items-center justify-between bg-red-50">
+          <h3 className="text-lg font-bold text-red-700">Raise a Complaint</h3>
+          <button onClick={onClose} className="text-[#A89F91]">✕</button>
+        </div>
+        <div className="p-8 space-y-5">
+           <div>
+              <label className="block text-[10px] font-black uppercase text-[#A89F91] mb-2 tracking-widest">Issue Category</label>
+              <select 
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                className="w-full h-12 px-4 rounded-xl border border-[#E5E1DA] bg-[#FAF8F5] text-sm font-bold focus:outline-none"
+              >
+                 <option>Product Quality</option>
+                 <option>Damaged Items</option>
+                 <option>Missing Items</option>
+                 <option>Wrong Items Received</option>
+                 <option>Other</option>
+              </select>
+           </div>
+           <div>
+              <label className="block text-[10px] font-black uppercase text-[#A89F91] mb-2 tracking-widest">Description</label>
+              <textarea 
+                rows={4}
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder="Explain the issue in detail..."
+                className="w-full p-4 rounded-xl border border-[#E5E1DA] bg-[#FAF8F5] text-sm focus:outline-none"
+              />
+           </div>
+           <button 
+             onClick={handleSubmit}
+             disabled={loading}
+             className="w-full py-4 bg-red-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-red-700 transition-all disabled:opacity-50"
+           >
+             {loading ? 'Submitting...' : 'Submit Complaint'}
+           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReturnModal({ order, onClose, onDone }: { order: Order; onClose: () => void; onDone: () => void }) {
+  const [reason, setReason] = useState('Size/Fit Issue');
+  const [note, setNote] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    try {
+      setLoading(true);
+      await api.updateOrderStatus(order._id, 'Return Requested');
+      // Also file a "special" complaint for tracking
+      await api.fileComplaint({
+        title: `Return Request for ${order.orderId}`,
+        description: `Reason: ${reason}. Note: ${note}`,
+        category: 'Return Request',
+        manufacturer: (order.manufacturer as any)._id || order.manufacturer,
+        company: (order.manufacturer as any).company || 'Manufacturer',
+        orderId: order.orderId,
+      } as any);
+      alert('Return request submitted! Please wait for manufacturer approval.');
+      onDone();
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
+        <div className="p-6 border-b border-[#E5E1DA] flex items-center justify-between bg-amber-50">
+          <h3 className="text-lg font-bold text-amber-700">Request Return</h3>
+          <button onClick={onClose} className="text-[#A89F91]">✕</button>
+        </div>
+        <div className="p-8 space-y-5">
+           <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-100">
+              <p className="text-xs text-amber-800 leading-relaxed font-medium">
+                Returns must be initiated within 3 days of delivery. Goods must be in original condition.
+              </p>
+           </div>
+           <div>
+              <label className="block text-[10px] font-black uppercase text-[#A89F91] mb-2 tracking-widest">Reason for Return</label>
+              <select 
+                value={reason}
+                onChange={e => setReason(e.target.value)}
+                className="w-full h-12 px-4 rounded-xl border border-[#E5E1DA] bg-[#FAF8F5] text-sm font-bold focus:outline-none"
+              >
+                 <option>Defective Product</option>
+                 <option>Quality Not as Expected</option>
+                 <option>Incorrect Quantity</option>
+                 <option>Wrong Specification</option>
+                 <option>Other</option>
+              </select>
+           </div>
+           <div>
+              <label className="block text-[10px] font-black uppercase text-[#A89F91] mb-2 tracking-widest">Additional Notes</label>
+              <textarea 
+                rows={3}
+                value={note}
+                onChange={e => setNote(e.target.value)}
+                placeholder="Any other details..."
+                className="w-full p-4 rounded-xl border border-[#E5E1DA] bg-[#FAF8F5] text-sm focus:outline-none"
+              />
+           </div>
+           <button 
+             onClick={handleSubmit}
+             disabled={loading}
+             className="w-full py-4 bg-amber-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-amber-600 transition-all disabled:opacity-50"
+           >
+             {loading ? 'Processing...' : 'Confirm Return Request'}
+           </button>
+        </div>
+      </div>
+    </div>
+  );
+}

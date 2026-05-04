@@ -38,17 +38,18 @@ export default function ReceivablesDashboard() {
   
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<Receivable | null>(null)
+  const [period, setPeriod] = useState('30') // Days
 
   useEffect(() => {
     if (mfrId) {
       fetchReceivables()
     }
-  }, [mfrId, filters])
+  }, [mfrId, filters, period])
 
   async function fetchReceivables() {
     setLoading(true)
     try {
-      const res = await api.getReceivables(mfrId, filters)
+      const res = await api.getReceivables(mfrId, { ...filters, period })
       setData(res)
     } catch (err: any) {
       toast.error('Failed to load receivables')
@@ -64,6 +65,33 @@ export default function ReceivablesDashboard() {
     } catch (err: any) {
       toast.error('Failed to send reminder')
     }
+  }
+
+  const handleExportReport = () => {
+    if (data.list.length === 0) {
+      toast.error('No data to export')
+      return
+    }
+    const headers = ['Buyer', 'Order ID', 'Total Value', 'Amount Due', 'Due Date', 'Status']
+    const rows = data.list.map(r => [
+      `"${r.buyer_name || 'Individual Merchant'}"`,
+      `"${r.order_id}"`,
+      r.total_amount,
+      r.amount_due,
+      new Date(r.due_date).toLocaleDateString(),
+      r.status.toUpperCase()
+    ].join(','))
+    
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `Receivables_Report_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   const getStatusBadge = (status: string) => {
@@ -84,11 +112,23 @@ export default function ReceivablesDashboard() {
           <p className="text-sm text-mfr-muted mt-1">Track payments, manage debt, and send automated reminders.</p>
         </div>
         <div className="flex gap-2">
-           <Button variant="outline" className="border-mfr-border rounded-xl h-10 px-4">
-             <Calendar size={16} className="mr-2" />
-             Last 30 Days
-           </Button>
-           <Button variant="outline" className="border-mfr-border rounded-xl h-10 px-4">
+           <Select value={period} onValueChange={setPeriod}>
+             <SelectTrigger className="border-mfr-border rounded-xl h-10 px-4 bg-white">
+               <Calendar size={16} className="mr-2" />
+               <SelectValue placeholder="Period" />
+             </SelectTrigger>
+             <SelectContent>
+               <SelectItem value="7">Last 7 Days</SelectItem>
+               <SelectItem value="30">Last 30 Days</SelectItem>
+               <SelectItem value="90">Last 90 Days</SelectItem>
+               <SelectItem value="all">All Time</SelectItem>
+             </SelectContent>
+           </Select>
+           <Button 
+             variant="outline" 
+             className="border-mfr-border rounded-xl h-10 px-4 bg-white hover:bg-slate-50 transition-all"
+             onClick={handleExportReport}
+           >
              <Calculator size={16} className="mr-2" />
              Reports
            </Button>

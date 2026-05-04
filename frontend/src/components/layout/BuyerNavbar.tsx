@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ScanLine, Package, Handshake, PhoneCall, User, ChevronDown, Home, ShoppingCart, LogOut } from 'lucide-react'
-import { motion, AnimatePresence } from 'motion/react'
+import { ScanLine, Package, Handshake, PhoneCall, User, ChevronDown, Home, ShoppingCart, LogOut, Truck } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/context/AuthContext'
 import NotificationBell from '@/components/NotificationBell'
+import ProfileEditModal from '@/components/ProfileEditModal'
 import { api } from '@/lib/api'
 
 interface Props {
@@ -22,6 +23,7 @@ export default function BuyerNavbar({ activePage }: Props) {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const [accountOpen, setAccountOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
   const [cartCount, setCartCount] = useState(0)
 
   useEffect(() => {
@@ -31,17 +33,19 @@ export default function BuyerNavbar({ activePage }: Props) {
   }, [])
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-[#E5E1DA] overflow-hidden shadow-sm" style={{ height: 72 }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between gap-8">
-        {/* Logo */}
+    <>
+    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-[#E5E1DA] shadow-sm overflow-hidden" style={{ height: 64 }}>
+      <div className="flex items-center justify-between gap-4 h-full">
+        {/* Logo — flush left, full height */}
         <div
-          className="cursor-pointer flex-shrink-0 flex items-center transition-transform hover:scale-105 active:scale-95"
+          className="cursor-pointer flex-shrink-0"
+          style={{ width: 220, height: 64, overflow: 'hidden' }}
           onClick={() => navigate('/buyer/dashboard')}
         >
           <img
             src="/vyawan (3).png"
             alt="Vyawan"
-            className="h-12 w-auto object-contain"
+            style={{ height: '100%', width: '100%', display: 'block', objectFit: 'cover', objectPosition: 'center' }}
           />
         </div>
 
@@ -110,6 +114,13 @@ export default function BuyerNavbar({ activePage }: Props) {
                   </div>
 
                   <div className="space-y-0.5">
+                    <button
+                      onClick={() => { setAccountOpen(false); setProfileOpen(true); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-[#FCE7D6]/30 hover:text-[#5D4037] rounded-xl transition-all"
+                    >
+                      <User size={15} />
+                      Profile Settings
+                    </button>
                     {[
                       { label: 'My Orders',    icon: Package,  path: '/buyer/orders' },
                       { label: 'Negotiations', icon: Handshake, path: '/buyer/negotiation' },
@@ -135,7 +146,8 @@ export default function BuyerNavbar({ activePage }: Props) {
             </AnimatePresence>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+      <ProfileEditModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
+    </>
   )
 }

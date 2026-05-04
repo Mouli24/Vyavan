@@ -18,6 +18,8 @@ const STATUS_COLORS: Record<string, string> = {
   'New':       'bg-[#FCE7D6] text-[#5D4037]',
   'Confirmed': 'bg-[#F5E6D3] text-[#6B4E3D]',
   'Packed':    'bg-stone-100 text-stone-600',
+  'Return Requested': 'bg-orange-100 text-orange-700',
+  'Returned':  'bg-stone-100 text-stone-600',
 }
 
 const DOT_COLORS: Record<string, string> = {
@@ -29,6 +31,8 @@ const DOT_COLORS: Record<string, string> = {
   'New':       'bg-[#5D4037]',
   'Confirmed': 'bg-[#6B4E3D]',
   'Packed':    'bg-stone-500',
+  'Return Requested': 'bg-orange-500',
+  'Returned':  'bg-stone-500',
 }
 
 const PAGE_SIZE = 5
@@ -139,7 +143,7 @@ export default function ManufacturerOrders() {
       const loc = o.deliveryAddress ? `${o.deliveryAddress.city}, ${o.deliveryAddress.state}` : (o.buyer?.location || 'Unknown')
       
       // Escape commas and quotes for CSV
-      const escape = (str: string) => `"${String(str).replace(/"/g, '""')}"`
+      const escape = (str: string) => `"${String(str ?? '').replace(/"/g, '""')}"`
       
       return [
         escape(o.orderId),
@@ -152,12 +156,21 @@ export default function ManufacturerOrders() {
       ].join(',')
     })
 
-    const csvContent = [headers.join(','), ...rows].join('\n')
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n') // Added BOM for Excel compatibility
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `Orders_Report_${new Date().toISOString().slice(0, 10)}.csv`
+    
+    link.setAttribute('href', url)
+    link.setAttribute('download', `Orders_Report_${new Date().toISOString().slice(0, 10)}.csv`)
+    link.style.visibility = 'hidden'
+    
+    document.body.appendChild(link)
     link.click()
+    document.body.removeChild(link)
+    
+    // Clean up
+    setTimeout(() => URL.revokeObjectURL(url), 100)
   }
 
   return (
@@ -359,6 +372,14 @@ export default function ManufacturerOrders() {
                         </button>
                       </>
                     )}
+                    {order.status !== 'New' && (
+                      <button 
+                        onClick={() => navigate('/manufacturer/shipment')}
+                        className="px-3 py-1 rounded-full text-[10px] font-bold border border-[#E5D5C0] text-[#6B4E3D] hover:bg-[#F5E6D3] transition-all"
+                      >
+                        Shipment
+                      </button>
+                    )}
                     {order.status === 'Confirmed' && (
                       <button 
                         disabled={!!processingId}
@@ -377,6 +398,24 @@ export default function ManufacturerOrders() {
                       >
                         Dispatch
                       </button>
+                    )}
+                    {order.status === 'Return Requested' && (
+                      <>
+                        <button 
+                          disabled={!!processingId}
+                          onClick={() => handleStatusChange(order._id, 'Delivered')} 
+                          className="px-3 py-1 rounded-full text-[10px] font-bold border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 transition-all"
+                        >
+                          Reject Return
+                        </button>
+                        <button 
+                          disabled={!!processingId}
+                          onClick={() => handleStatusChange(order._id, 'Returned')} 
+                          className="px-3 py-1 rounded-full text-[10px] font-bold bg-[#5D4037] hover:bg-[#4E342E] text-white disabled:opacity-50 transition-all"
+                        >
+                          Accept Return
+                        </button>
+                      </>
                     )}
                     <button onClick={() => { setSelectedOrder(order); setShowDetailsModal(true) }} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-[#F5E6D3] text-[#A89F91] hover:text-[#5D4037] transition-all">
                       <MoreHorizontal size={16} />

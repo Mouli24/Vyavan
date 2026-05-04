@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
+import HelpCenterModal from '../HelpCenterModal'
 
 const getNavItems = (t: any) => [
   { icon: <LayoutDashboard size={16} />, label: t('navigation.overview'),            to: '/manufacturer/overview' },
@@ -38,6 +39,7 @@ export default function ManufacturerLayout() {
   const { user, logout } = useAuth()
   const { t } = useTranslation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   const NAV_ITEMS = getNavItems(t)
 
@@ -66,7 +68,7 @@ export default function ManufacturerLayout() {
     {
       icon: <HelpCircle size={16} />,
       label: 'Help Center',
-      onClick: () => {},
+      onClick: () => setHelpOpen(true),
     },
     {
       icon: <LogOut size={16} />,
@@ -283,6 +285,11 @@ export default function ManufacturerLayout() {
           )}
         </main>
       </div>
+      <HelpCenterModal 
+        isOpen={helpOpen} 
+        onClose={() => setHelpOpen(false)} 
+        role="manufacturer" 
+      />
     </div>
   )
 }

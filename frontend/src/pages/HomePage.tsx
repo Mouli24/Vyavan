@@ -149,14 +149,18 @@ export default function HomePage() {
     <div className="min-h-screen bg-white font-sans overflow-x-hidden">
 
       {/* NAVBAR */}
-      <header className="sticky top-0 z-50 border-b" style={{ background: "rgba(242,237,230,0.92)", backdropFilter: "blur(16px)", borderColor: "rgba(139,115,85,0.15)" }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16 gap-6">
-          {/* Logo */}
-          <div className="flex items-center gap-2.5 cursor-pointer flex-shrink-0" onClick={() => navigate("/")}>
-            <VyawanLogo size={44} />
+      <header className="sticky top-0 z-50 border-b overflow-hidden" style={{ background: "rgba(242,237,230,0.92)", backdropFilter: "blur(16px)", borderColor: "rgba(139,115,85,0.15)", height: 64 }}>
+        <div className="flex items-center justify-between h-full gap-6">
+          {/* Logo — absolute left edge, full navbar height */}
+          <div className="cursor-pointer flex-shrink-0" onClick={() => navigate("/")} style={{ height: 64, width: 210, overflow: 'hidden' }}>
+            <img
+              src="/vyawan (3).png"
+              alt="Vyawan"
+              style={{ height: '100%', width: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
+            />
           </div>
 
-          {/* Search bar — center, full width */}
+          {/* Search bar — center */}
           <form onSubmit={e => { e.preventDefault(); navigate("/login") }} className="flex-1 max-w-2xl">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#8B7355" }} />
@@ -168,7 +172,7 @@ export default function HomePage() {
           </form>
 
           {/* Right — Language + Sign In */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 pr-4 sm:pr-6">
             <LanguageToggle />
             <button onClick={() => navigate("/login")}
               className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all hover:opacity-80"

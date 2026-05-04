@@ -10,6 +10,7 @@ import { api } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import NotificationBell from '@/components/NotificationBell'
 import VyawanLogo from '@/components/VyawanLogo'
+import HelpCenterModal from '@/components/HelpCenterModal'
 
 // ── Category taxonomy ──────────────────────────────────────────────────────
 const TAXONOMY: Record<string, string[]> = {
@@ -56,6 +57,7 @@ export default function BuyerBrowse() {
   const [codeSearch, setCodeSearch] = useState('')
 
   const [filterOpen, setFilterOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   const subCats = mainCat !== 'All' ? TAXONOMY[mainCat] ?? [] : []
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -457,7 +459,14 @@ export default function BuyerBrowse() {
             <h4 className="text-xs font-black text-slate-700 uppercase tracking-widest mb-4">Resources</h4>
             <ul className="space-y-2">
               {['Shipping & Returns', 'Contact Us', 'Help Center'].map(l => (
-                <li key={l}><button className="text-sm text-slate-400 hover:text-slate-700 transition-colors">{l}</button></li>
+                <li key={l}>
+                  <button 
+                    onClick={() => setHelpOpen(true)}
+                    className="text-sm text-slate-400 hover:text-slate-700 transition-colors"
+                  >
+                    {l}
+                  </button>
+                </li>
               ))}
             </ul>
           </div>
@@ -482,6 +491,7 @@ export default function BuyerBrowse() {
           <p className="text-xs text-slate-400">© 2024 Vyawan. India's Premier B2B Marketplace.</p>
         </div>
       </footer>
+      <HelpCenterModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} role="buyer" />
     </div>
   )
 }

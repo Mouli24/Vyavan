@@ -91,7 +91,7 @@ export default function ProductLister({ open, onClose, onSuccess }: Props) {
     formData.append('image', file);
 
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://vyavan-api-production.up.railway.app/api';
       const cleanBaseUrl = baseUrl.replace(/\/$/, '');
       const apiUrl = cleanBaseUrl.endsWith('/api') ? cleanBaseUrl : `${cleanBaseUrl}/api`;
 

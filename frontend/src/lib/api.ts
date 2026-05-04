@@ -54,12 +54,20 @@ export const api = {
       method: 'PATCH', 
       body: JSON.stringify({ language }) 
     }),
+  
+  updateProfile: (data: { name?: string; email?: string; phone?: string; company?: string }) =>
+    request<User>('/auth/profile', { 
+      method: 'PATCH', 
+      body: JSON.stringify(data) 
+    }),
 
   // ── Products ──────────────────────────────────────────────────────────────
   getProducts: (params?: { category?: string; manufacturer?: string }) => {
     const qs = params ? '?' + new URLSearchParams(params as Record<string,string>).toString() : '';
     return request<Product[]>(`/products${qs}`);
   },
+
+  getProduct: (id: string) => request<Product>(`/products/${id}`),
 
   getMyProducts: () => request<Product[]>('/products/mine'),
 

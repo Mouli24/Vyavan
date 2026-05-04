@@ -1,24 +1,24 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell, Check, X, BellOff, Loader2 } from 'lucide-react';
 import { api, type Notification } from '@/lib/api';
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
+import * as Popover from '@radix-ui/react-popover';
 
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
 
   const fetchNotifications = async () => {
     setLoading(true);
     try {
       const data = await api.getNotifications();
-      const list = Array.isArray(data) ? data : (data as any).notifications ?? [];
+      const list = Array.isArray(data) ? data : (data as any)?.notifications ?? [];
       setNotifications(list);
       setUnreadCount(list.filter((n: Notification) => !n.read).length);
-    } catch {
-      // Silently fail — backend might not be running yet
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
     } finally {
       setLoading(false);
     }
@@ -26,17 +26,6 @@ export default function NotificationBell() {
 
   useEffect(() => {
     fetchNotifications();
-  }, []);
-
-  // Close popover on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   const markAllRead = async () => {
@@ -62,39 +51,39 @@ export default function NotificationBell() {
   };
 
   return (
-    <div ref={ref} className="relative">
-      <motion.button
-        onClick={() => { setOpen(o => !o); if (!open) fetchNotifications(); }}
-        whileHover={{ scale: 1.12 }}
-        whileTap={{ scale: 0.92 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-        className="relative p-2.5 rounded-full bg-white border border-sp-border shadow-sm text-sp-muted hover:text-sp-purple hover:bg-sp-purple-pale transition-colors"
-      >
-        <motion.div
-          animate={unreadCount > 0 ? { rotate: [0, -15, 15, -10, 10, 0] } : {}}
-          transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 4 }}
+    <Popover.Root open={open} onOpenChange={(val) => {
+      setOpen(val);
+      if (val) fetchNotifications();
+    }}>
+      <Popover.Trigger asChild>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          className="relative p-2.5 rounded-full bg-white border border-sp-border shadow-sm text-sp-muted hover:text-sp-purple hover:bg-sp-purple-pale transition-colors outline-none focus:ring-2 focus:ring-sp-purple/20"
         >
-          <Bell size={20} />
-        </motion.div>
-        {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 flex h-4 w-4">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sp-purple opacity-75" />
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-sp-purple text-[8px] font-black text-white items-center justify-center border-2 border-white">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          </span>
-        )}
-      </motion.button>
-
-      <AnimatePresence>
-        {open && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -8 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="absolute right-0 top-full mt-2 w-96 bg-white rounded-3xl shadow-2xl border border-sp-border overflow-hidden z-[200]"
+            animate={unreadCount > 0 ? { rotate: [0, -15, 15, -10, 10, 0] } : {}}
+            transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 4 }}
           >
+            <Bell size={20} />
+          </motion.div>
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 flex h-4 w-4">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sp-purple opacity-75" />
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-sp-purple text-[8px] font-black text-white items-center justify-center border-2 border-white">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            </span>
+          )}
+        </motion.button>
+      </Popover.Trigger>
+
+      <Popover.Portal>
+        <Popover.Content
+          align="end"
+          sideOffset={8}
+          className="z-[999] w-96 bg-white rounded-3xl shadow-2xl border border-sp-border overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        >
           {/* Header */}
           <div className="px-6 py-4 flex items-center justify-between border-b border-sp-border">
             <div className="flex items-center gap-2">
@@ -143,8 +132,8 @@ export default function NotificationBell() {
                       </div>
                       <p className="text-xs text-sp-muted font-medium leading-relaxed">{notif.message}</p>
                       <p className="text-[10px] font-bold text-sp-muted/50 uppercase tracking-widest pt-1">
-                        {new Date(notif.createdAt).toLocaleDateString()} at{' '}
-                        {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString() : 'Recently'} at{' '}
+                        {notif.createdAt ? new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                       </p>
                     </div>
                     <div className="flex flex-col gap-2">
@@ -178,9 +167,9 @@ export default function NotificationBell() {
               </button>
             </div>
           )}
-        </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
+

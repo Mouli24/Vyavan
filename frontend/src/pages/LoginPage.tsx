@@ -41,23 +41,20 @@ function PageShell({ children, onLogoClick }: { children: React.ReactNode; onLog
       <FloatingIcon icon={Truck}        style={{ bottom: '22%', left: '6%' }} />
       <FloatingIcon icon={ShoppingCart} style={{ bottom: '14%', right: '8%' }} />
 
-      {/* Logo — large, centered at top */}
+      {/* Logo — top left, large */}
       <div
-        style={{ textAlign: 'center', paddingTop: '3rem', paddingBottom: '0.5rem', cursor: 'pointer', zIndex: 1 }}
+        style={{ position: 'absolute', top: '1.5rem', left: '2rem', cursor: 'pointer', zIndex: 10 }}
         onClick={onLogoClick}
       >
         <img
           src="/vyawan (3).png"
           alt="Vyawan"
-          style={{ height: 120, width: 'auto', display: 'inline-block', objectFit: 'contain' }}
+          style={{ height: 80, width: 'auto', display: 'block', objectFit: 'contain' }}
         />
-        <p style={{ fontSize: 14, color: MUTED, margin: '6px 0 0', fontWeight: 400 }}>
-          The modern marketplace for global commerce.
-        </p>
       </div>
 
       {/* Card area */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '1.5rem 1rem 2rem', zIndex: 1 }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '7rem 1rem 2rem', zIndex: 1 }}>
         {children}
       </div>
 

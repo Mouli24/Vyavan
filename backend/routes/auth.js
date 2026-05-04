@@ -106,6 +106,32 @@ router.post('/login', [
 // GET /api/auth/me
 router.get('/me', protect, (req, res) => res.json(req.user));
 
+// PATCH /api/auth/profile
+router.patch('/profile', protect, async (req, res) => {
+  const { name, email, phone, company } = req.body;
+  
+  try {
+    const updates = {};
+    if (name) updates.name = name;
+    if (email) {
+      const existing = await User.findOne({ email, _id: { $ne: req.user._id } });
+      if (existing) return res.status(409).json({ message: 'Email already in use' });
+      updates.email = email;
+    }
+    if (phone) updates.phone = phone;
+    if (company) updates.company = company;
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: updates },
+      { new: true }
+    );
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // PATCH /api/auth/language
 router.patch('/language', protect, async (req, res) => {
   const { language } = req.body;

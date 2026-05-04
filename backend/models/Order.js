@@ -26,7 +26,7 @@ const orderSchema = new mongoose.Schema({
   valueRaw:     { type: Number, default: 0 },              // numeric for sorting/filtering
   status: {
     type: String,
-    enum: ['New', 'Confirmed', 'In Production', 'Packed', 'Shipped', 'Delivered', 'Cancelled', 'Rejected'],
+    enum: ['New', 'Confirmed', 'In Production', 'Packed', 'Shipped', 'Delivered', 'Cancelled', 'Rejected', 'Return Requested', 'Returned'],
     default: 'New',
   },
   rejectionReason: { type: String },

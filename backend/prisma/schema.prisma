@@ -144,7 +144,7 @@ model OrderPaymentRecord {
   reminders       PaymentRemindersLog[]
   created_at      DateTime             @default(now())
   updated_at      DateTime             @updatedAt
-
+ 
   @@index([order_id])
   @@index([status])
   @@index([due_date])

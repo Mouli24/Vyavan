@@ -46,24 +46,73 @@ export default function BuyerNegotiation() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    api.getBuyerDeals()
-      .then(data => {
-        const list = Array.isArray(data) ? data : []
-        setDeals(list)
-        if (list.length > 0) setActiveDeal(list[0])
-      })
-      .catch(() => setDeals([]))
-      .finally(() => setLoading(false))
-  }, [])
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const data = await api.getBuyerDeals();
+        const list = Array.isArray(data) ? data : [];
+        setDeals(list);
+
+        // If we came from a product page, try to find an existing deal or prepare a new one
+        if (initialProductId) {
+          const existing = list.find(d => (d.product._id === initialProductId || d.product === initialProductId) && d.status !== 'Rejected' && d.status !== 'Expired');
+          if (existing) {
+            setActiveDeal(existing);
+          } else {
+            // Fetch product details for the new deal
+            try {
+              const product = await api.getProduct(initialProductId);
+              setNewDealContext(product);
+            } catch (err) {
+              console.error('Failed to fetch product for negotiation:', err);
+            }
+          }
+        } else if (list.length > 0) {
+          setActiveDeal(list[0]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch deals:', err);
+        setDeals([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [initialProductId]);
 
   useEffect(() => {
-    if (!activeDeal?._id) return
-    api.getMessages(activeDeal._id).then(setMessages).catch(console.error)
-  }, [activeDeal?._id])
+    if (!activeDeal?._id) return;
+    const fetchMessages = async () => {
+      try {
+        const msgs = await api.getMessages(activeDeal._id);
+        
+        // Merge negotiation history into messages as "proposal" types for chat display
+        const historyMsgs = (activeDeal.negotiationHistory || []).map((h: any) => ({
+          _id: `h-${h.round}-${h.createdAt}`,
+          content: h.message || (h.offeredBy === 'buyer' ? 'Buyer sent a proposal' : 'Manufacturer sent a counter-offer'),
+          senderRole: h.offeredBy,
+          createdAt: h.createdAt || activeDeal.createdAt,
+          type: 'proposal',
+          price: h.price,
+          term: h.term,
+          round: h.round
+        }));
+
+        const combined = [...msgs, ...historyMsgs].sort((a, b) => 
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+        
+        setMessages(combined);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchMessages();
+  }, [activeDeal]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSend = async () => {
     if (!input.trim() || !activeDeal) return
@@ -329,25 +378,62 @@ export default function BuyerNegotiation() {
               <button onClick={() => setShowHistory(!showHistory)} className={`p-2 rounded-xl transition-all ${showHistory ? 'bg-[#FCE7D6] text-[#6B4E3D]' : 'text-[#A89F91]'}`}>
                 <History size={17} />
               </button>
-              <button className="p-2 rounded-xl text-[#A89F91]"><Phone size={17} /></button>
-              <button className="p-2 rounded-xl text-[#A89F91]"><MoreVertical size={17} /></button>
             </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
             <AnimatePresence>
               {messages.map(msg => {
                 const isMe = msg.senderRole === 'buyer'
+                const isProposal = msg.type === 'proposal'
+
                 return (
                   <motion.div key={msg._id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                     className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                    <div className={`max-w-sm px-5 py-3.5 text-sm leading-relaxed ${
-                      isMe ? 'text-white rounded-[1.5rem] rounded-tr-sm bg-[#6B4E3D]' : 'text-gray-700 rounded-[1.5rem] rounded-tl-sm bg-white border border-[#E5E1DA]'
-                    }`} style={{ boxShadow: isMe ? 'none' : '0 1px 4px rgba(0,0,0,0.05)' }}>
-                      {msg.content}
-                    </div>
-                    <span className="text-[10px] mt-1 px-1 text-[#A89F91]">
+                    
+                    {isProposal ? (
+                      <div className={`max-w-sm rounded-[2rem] border-2 overflow-hidden shadow-sm ${
+                        isMe ? 'border-[#6B4E3D]/20 bg-white' : 'border-amber-200 bg-amber-50/30'
+                      }`}>
+                         <div className={`px-5 py-2 text-[9px] font-black uppercase tracking-[0.2em] ${isMe ? 'bg-[#6B4E3D] text-white' : 'bg-amber-100 text-amber-700'}`}>
+                            Negotiation Round {msg.round}
+                         </div>
+                         <div className="p-5 space-y-3">
+                            <div className="flex items-center gap-3">
+                               <div className="w-10 h-10 rounded-xl bg-[#FAF8F5] flex items-center justify-center text-[#6B4E3D] border border-[#E5E1DA]">
+                                  <Zap size={18} />
+                               </div>
+                               <div>
+                                  <p className="text-[10px] font-black text-[#A89F91] uppercase tracking-widest leading-none mb-1">Proposed Price</p>
+                                  <p className="text-lg font-black text-[#1A1A1A]">₹{msg.price?.toLocaleString()}</p>
+                               </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                               <div className="w-10 h-10 rounded-xl bg-[#FAF8F5] flex items-center justify-center text-[#6B4E3D] border border-[#E5E1DA]">
+                                  <FileText size={18} />
+                               </div>
+                               <div>
+                                  <p className="text-[10px] font-black text-[#A89F91] uppercase tracking-widest leading-none mb-1">Payment Term</p>
+                                  <p className="text-xs font-bold text-[#1A1A1A]">{formatTerm(msg.term)}</p>
+                               </div>
+                            </div>
+                            {msg.content && (
+                              <div className="pt-3 border-t border-dashed border-[#E5E1DA]">
+                                 <p className="text-xs text-slate-600 italic leading-relaxed">"{msg.content}"</p>
+                              </div>
+                            )}
+                         </div>
+                      </div>
+                    ) : (
+                      <div className={`max-w-sm px-5 py-3.5 text-sm leading-relaxed ${
+                        isMe ? 'text-white rounded-[1.5rem] rounded-tr-sm bg-[#6B4E3D]' : 'text-gray-700 rounded-[1.5rem] rounded-tl-sm bg-white border border-[#E5E1DA]'
+                      }`} style={{ boxShadow: isMe ? 'none' : '0 1px 4px rgba(0,0,0,0.05)' }}>
+                        {msg.content}
+                      </div>
+                    )}
+                    
+                    <span className="text-[10px] mt-1 px-1 text-[#A89F91] font-bold">
                       {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </motion.div>

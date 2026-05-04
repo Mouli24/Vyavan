@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
@@ -33,6 +33,7 @@ export default function BuyerRegisterModal({ open, onClose, onSuccess }: Props) 
   const [otpVerified, setOtpVerified] = useState(false)
   const [otpLoading, setOtpLoading] = useState(false)
   const [otpMessage, setOtpMessage] = useState('')
+  const [storeCode, setStoreCode] = useState('')
 
   useEffect(() => {
     if (!open) {
@@ -52,6 +53,7 @@ export default function BuyerRegisterModal({ open, onClose, onSuccess }: Props) 
     if (!phone) return 'Phone number is required.'
     if (!otpSent) return 'Please send OTP first.'
     if (!otpVerified) return 'Please verify your phone number.'
+    if (!storeCode) return 'Store Access Code is required.'
     return ''
   }
 
@@ -85,12 +87,23 @@ export default function BuyerRegisterModal({ open, onClose, onSuccess }: Props) 
     setSubmitting(true)
     setError('')
     try {
+      // Validate store code first
+      const company = await api.getCompanyByCode(storeCode)
+      if (!company) {
+        setError('Invalid Store Access Code. Please check with your supplier.')
+        setSubmitting(false)
+        return
+      }
+      
       await register({
         name,
         email,
         password,
-        role: 'buyer'
+        role: 'buyer',
+        company: storeCode
       })
+      
+      localStorage.setItem('directStoreAccess', storeCode)
       onSuccess()
     } catch (e: any) {
       setError(e.message ?? 'Registration failed.')
@@ -170,6 +183,21 @@ export default function BuyerRegisterModal({ open, onClose, onSuccess }: Props) 
                 </button>
               </div>
             </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700 uppercase ml-1">Store Access Code</label>
+              <div className="relative">
+                <Building2 size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  className="w-full pl-11 pr-4 py-3 rounded-2xl border border-indigo-500 bg-indigo-50/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm font-bold placeholder:font-normal"
+                  placeholder="e.g. MNG-101"
+                  value={storeCode}
+                  onChange={e => setStoreCode(e.target.value.toUpperCase())}
+                />
+              </div>
+              <p className="text-[10px] text-slate-400 ml-1">Enter the code provided by your manufacturer.</p>
+            </div>
+
             <div className="flex gap-2">
               <div className="flex-1 space-y-1">
                 <label className="text-xs font-bold text-slate-700 uppercase ml-1">Phone Number</label>
