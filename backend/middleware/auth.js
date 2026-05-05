@@ -20,7 +20,19 @@ export async function protect(req, res, next) {
 // Role guard — use after protect()
 export function requireRole(...roles) {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    
+    const userRole = (req.user.role || '').toLowerCase();
+    
+    // Admins have access to everything
+    if (userRole === 'admin') {
+      return next();
+    }
+
+    if (!roles.map(r => r.toLowerCase()).includes(userRole)) {
+      console.log(`[AUTH] Role mismatch: User has '${userRole}', needs one of [${roles.join(', ')}]`);
       return res.status(403).json({ message: 'Forbidden: insufficient role' });
     }
     next();

@@ -49,8 +49,8 @@ router.get('/', protect, requireRole('manufacturer'), async (req, res) => {
   }
 });
 
-// ── GET /api/shipments/my — buyer sees shipments for their orders ─────────────
-router.get('/my', protect, requireRole('buyer'), async (req, res) => {
+// ── GET /api/shipments/my — buyer or manufacturer sees shipments for their orders ─────────────
+router.get('/my', protect, requireRole('buyer', 'manufacturer'), async (req, res) => {
   try {
     const buyerOrders = await Order.find({ 'buyer.ref': req.user._id }).select('_id');
     const ids = buyerOrders.map(o => o._id);
@@ -228,7 +228,7 @@ ${JSON.stringify(inputData, null, 2)}
 `;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'fake-key', { apiVersion: 'v1' });
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
     
     // Explicitly enforce structured output using generationConfig
     const result = await model.generateContent({

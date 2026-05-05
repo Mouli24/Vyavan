@@ -42,8 +42,8 @@ router.get('/:id', protect, async (req, res) => {
   }
 });
 
-// POST /api/orders  — buyer places order
-router.post('/', protect, requireRole('buyer'), async (req, res) => {
+// POST /api/orders  — buyer or manufacturer places order
+router.post('/', protect, requireRole('buyer', 'manufacturer'), async (req, res) => {
   try {
     const { 
       manufacturer, items, value, valueRaw, expectedDate, products, deliveryAddress,

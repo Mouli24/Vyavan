@@ -108,7 +108,7 @@ router.post('/analyze', protect, requireRole('manufacturer'), upload.fields([
     }
 
     // 2. Prepare Gemini Prompt
-    const model = getGenAI().getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-3-flash-preview" });
     const prompt = `
       You are an expert B2B product specialist. Analyze these product images (Front and/or Back) and generate a professional B2B listing in JSON format.
       
@@ -222,7 +222,7 @@ router.post('/extract-multi', protect, upload.array('images', 2), async (req, re
     const imageUrls = cloudinaryResults.map(r => r.secure_url);
 
     // 2. Prepare Gemini Prompt for multi-image analysis
-    const model = getGenAI().getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-3-flash-preview" });
     const prompt = `
       You are an expert B2B product specialist. I am providing you with ${req.files.length} images of a product (likely front and back).
       Analyze these images and generate a professional B2B listing in JSON format.
@@ -278,7 +278,7 @@ router.post('/regenerate-field', protect, async (req, res) => {
       return res.status(400).json({ message: 'Missing field or instruction' });
     }
 
-    const model = getGenAI().getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-3-flash-preview" });
     const prompt = `
       You are an expert B2B product specialist. The user wants to regenerate the "${field}" of a product listing.
       

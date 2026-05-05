@@ -5,7 +5,7 @@ import Cart from '../models/Cart.js';
 const router = Router();
 
 // GET /api/cart — Get current user's cart
-router.get('/', protect, requireRole('buyer'), async (req, res) => {
+router.get('/', protect, requireRole('buyer', 'manufacturer'), async (req, res) => {
   try {
     let cart = await Cart.findOne({ buyer: req.user._id }).populate({
       path: 'items.product',
@@ -23,7 +23,7 @@ router.get('/', protect, requireRole('buyer'), async (req, res) => {
 });
 
 // POST /api/cart/add — Add or increment an item
-router.post('/add', protect, requireRole('buyer'), async (req, res) => {
+router.post('/add', protect, requireRole('buyer', 'manufacturer'), async (req, res) => {
   try {
     const { productId, quantity, isSample } = req.body;
     let cart = await Cart.findOne({ buyer: req.user._id });
@@ -55,7 +55,7 @@ router.post('/add', protect, requireRole('buyer'), async (req, res) => {
 });
 
 // PATCH /api/cart/update — Update quantity or exact list
-router.patch('/update', protect, requireRole('buyer'), async (req, res) => {
+router.patch('/update', protect, requireRole('buyer', 'manufacturer'), async (req, res) => {
   try {
     // Allows sending full `items` array to override cart
     const { items } = req.body;
@@ -79,7 +79,7 @@ router.patch('/update', protect, requireRole('buyer'), async (req, res) => {
 });
 
 // DELETE /api/cart/clear — Empty the cart (used post-checkout)
-router.delete('/clear', protect, requireRole('buyer'), async (req, res) => {
+router.delete('/clear', protect, requireRole('buyer', 'manufacturer'), async (req, res) => {
   try {
     const cart = await Cart.findOneAndUpdate(
       { buyer: req.user._id },

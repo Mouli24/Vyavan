@@ -37,8 +37,8 @@ router.get('/', protect, requireRole('manufacturer'), async (req, res) => {
   }
 });
 
-// GET /api/deals/buyer — buyer sees their own deals
-router.get('/buyer', protect, requireRole('buyer'), async (req, res) => {
+// GET /api/deals/buyer — buyer or manufacturer sees their own deals
+router.get('/buyer', protect, requireRole('buyer', 'manufacturer'), async (req, res) => {
   try {
     const deals = await Deal.find({ buyer: req.user._id })
       .populate('manufacturer', 'name company avatar')
@@ -79,8 +79,8 @@ router.get('/:id', protect, async (req, res) => {
   }
 });
 
-// POST /api/deals  — buyer initiates a deal
-router.post('/', protect, requireRole('buyer'), async (req, res) => {
+// POST /api/deals  — user initiates a deal
+router.post('/', protect, requireRole('buyer', 'manufacturer'), async (req, res) => {
   try {
     const { manufacturer, product, quantity, requestedPrice, requestedTerm, title, subtitle, message } = req.body;
 
@@ -263,8 +263,8 @@ router.patch('/:id', protect, async (req, res) => {
   }
 });
 
-// POST /api/deals/:id/convert — Buyer converts accepted deal to order
-router.post('/:id/convert', protect, requireRole('buyer'), async (req, res) => {
+// POST /api/deals/:id/convert — User converts accepted deal to order
+router.post('/:id/convert', protect, requireRole('buyer', 'manufacturer'), async (req, res) => {
   try {
     const deal = await Deal.findOne({ _id: req.params.id, buyer: req.user._id, status: 'Accepted' })
       .populate('product');
